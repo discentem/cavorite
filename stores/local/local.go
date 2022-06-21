@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -48,24 +49,31 @@ func (s *Store) init() error {
 	return nil
 }
 
+func sha256FromBytes(b []byte) (string, error) {
+	hash := sha256.New()
+	if _, err := io.Copy(hash, bytes.NewReader(b)); err != nil {
+		return "", err
+	}
+	h := hex.EncodeToString(hash.Sum(nil))
+	return h, nil
+}
+
 func (s *Store) generateMetadata(f os.File) (*metadata.ObjectMetaData, error) {
 	fstat, err := f.Stat()
 	if err != nil {
 		return nil, err
 	}
-	var b []byte
-	_, err = f.Read(b)
+	b, err := ioutil.ReadAll(&f)
 	if err != nil {
 		return nil, err
 	}
-	hash := sha256.New()
-	if _, err := io.Copy(hash, bytes.NewReader(b)); err != nil {
+	hash, err := sha256FromBytes(b)
+	if err != nil {
 		return nil, err
 	}
-
 	m := &metadata.ObjectMetaData{
 		Name:         f.Name(),
-		Checksum:     hex.EncodeToString(hash.Sum(nil)),
+		Checksum:     hash,
 		DateModified: fstat.ModTime(),
 	}
 	return m, nil
@@ -79,28 +87,34 @@ func (s *Store) Upload(objects []string) error {
 			return err
 		}
 		defer f.Close()
-		// generate pantri metadata
-		m, err := s.generateMetadata(*f)
-		if err != nil {
-			return err
-		}
-
-		// convert to json
-		blob, err := json.Marshal(m)
-		if err != nil {
-			return err
-		}
-		// write json to pfile
-		mpath := path.Join(s.gitRepo, fmt.Sprintf("%s.pfile", o))
-		if err := os.WriteFile(mpath, blob, 0644); err != nil {
-			return err
-		}
 		objp := path.Join(s.pantri, o)
 		b, err := ioutil.ReadAll(f)
 		if err != nil {
 			return err
 		}
 		if err := os.WriteFile(objp, b, 0644); err != nil {
+			return err
+		}
+		mf, err := os.Open(objp)
+		if err != nil {
+			return err
+		}
+		defer mf.Close()
+
+		// generate pantri metadata
+		m, err := s.generateMetadata(*mf)
+		if err != nil {
+			return err
+		}
+
+		// convert to json
+		blob, err := json.MarshalIndent(m, "", " ")
+		if err != nil {
+			return err
+		}
+		// write json to pfile
+		mpath := path.Join(s.gitRepo, fmt.Sprintf("%s.pfile", o))
+		if err := os.WriteFile(mpath, blob, 0644); err != nil {
 			return err
 		}
 
@@ -113,6 +127,51 @@ func (s *Store) Upload(objects []string) error {
 	return nil
 }
 
+var (
+	ErrRetrieveFailureHashMismatch = errors.New("hashes don't match, Retrieve aborted")
+)
+
 func (s *Store) Retrieve(objects []string) error {
+	for _, o := range objects {
+		pfile, err := os.Open(path.Join(s.gitRepo, fmt.Sprintf("%s.pfile", o)))
+		if err != nil {
+			return err
+		}
+		pfileBytes, err := ioutil.ReadAll(pfile)
+		if err != nil {
+			return err
+		}
+		var metadata *metadata.ObjectMetaData
+		if err := json.Unmarshal(pfileBytes, &metadata); err != nil {
+			return err
+		}
+
+		f, err := os.Open(path.Join(s.pantri, o))
+		if err != nil {
+			return err
+		}
+		b, err := ioutil.ReadAll(f)
+		if err != nil {
+			return err
+		}
+
+		hash, err := sha256FromBytes(b)
+		if err != nil {
+			return err
+		}
+		if hash != metadata.Checksum {
+			fmt.Println(hash, metadata.Checksum)
+			return ErrRetrieveFailureHashMismatch
+		}
+
+		objp := path.Join(s.gitRepo, o)
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(objp, b, 0644); err != nil {
+			return err
+		}
+
+	}
 	return nil
 }

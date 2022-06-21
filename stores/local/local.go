@@ -131,21 +131,24 @@ var (
 	ErrRetrieveFailureHashMismatch = errors.New("hashes don't match, Retrieve aborted")
 )
 
+func (s *Store) metadataFromFile(obj string) (*metadata.ObjectMetaData, error) {
+	pfile, err := os.Open(path.Join(s.gitRepo, fmt.Sprintf("%s.pfile", obj)))
+	if err != nil {
+		return nil, err
+	}
+	pfileBytes, err := ioutil.ReadAll(pfile)
+	if err != nil {
+		return nil, err
+	}
+	var metadata *metadata.ObjectMetaData
+	if err := json.Unmarshal(pfileBytes, &metadata); err != nil {
+		return nil, err
+	}
+	return metadata, nil
+}
+
 func (s *Store) Retrieve(objects []string) error {
 	for _, o := range objects {
-		pfile, err := os.Open(path.Join(s.gitRepo, fmt.Sprintf("%s.pfile", o)))
-		if err != nil {
-			return err
-		}
-		pfileBytes, err := ioutil.ReadAll(pfile)
-		if err != nil {
-			return err
-		}
-		var metadata *metadata.ObjectMetaData
-		if err := json.Unmarshal(pfileBytes, &metadata); err != nil {
-			return err
-		}
-
 		f, err := os.Open(path.Join(s.pantri, o))
 		if err != nil {
 			return err
@@ -159,8 +162,12 @@ func (s *Store) Retrieve(objects []string) error {
 		if err != nil {
 			return err
 		}
-		if hash != metadata.Checksum {
-			fmt.Println(hash, metadata.Checksum)
+		m, err := s.metadataFromFile(o)
+		if err != nil {
+			return err
+		}
+		if hash != m.Checksum {
+			fmt.Println(hash, m.Checksum)
 			return ErrRetrieveFailureHashMismatch
 		}
 

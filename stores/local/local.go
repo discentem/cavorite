@@ -12,22 +12,19 @@ import (
 	"path"
 
 	"github.com/discentem/pantri_but_go/metadata"
+	"github.com/discentem/pantri_but_go/stores"
 )
 
 type Store struct {
 	gitRepo string
 	pantri  string
-	opts    StoreOpts
+	opts    stores.Options
 }
 
-type StoreOpts struct {
-	removeFromRepo *bool
-}
-
-func NewWithOptions(gitRepo, pantri string, o StoreOpts) (*Store, error) {
-	if o.removeFromRepo == nil {
+func NewWithOptions(gitRepo, pantri string, o stores.Options) (*Store, error) {
+	if o.RemoveFromRepo == nil {
 		b := false
-		o.removeFromRepo = &b
+		o.RemoveFromRepo = &b
 	}
 	s := &Store{
 		gitRepo: gitRepo,
@@ -42,8 +39,8 @@ func NewWithOptions(gitRepo, pantri string, o StoreOpts) (*Store, error) {
 }
 
 func New(gitRepo, pantri string, removeFromRepo *bool) (*Store, error) {
-	return NewWithOptions(gitRepo, pantri, StoreOpts{
-		removeFromRepo: removeFromRepo,
+	return NewWithOptions(gitRepo, pantri, stores.Options{
+		RemoveFromRepo: removeFromRepo,
 	})
 }
 
@@ -107,7 +104,7 @@ func (s *Store) Upload(objects []string) error {
 			return err
 		}
 
-		if *s.opts.removeFromRepo {
+		if *s.opts.RemoveFromRepo {
 			if err := os.Remove(path.Join(s.gitRepo, o)); err != nil {
 				return err
 			}

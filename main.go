@@ -1,12 +1,13 @@
 package main
 
 import (
-	"flag"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 
 	localstore "github.com/discentem/pantri_but_go/stores/local"
+	"github.com/urfave/cli/v2"
 )
 
 type store interface {
@@ -19,42 +20,81 @@ var (
 )
 
 func main() {
-	var (
-		obj      = flag.String("object", "", "path to object")
-		remove   = flag.Bool("remove", false, "remove objects from repo dir")
-		upload   = flag.Bool("upload", false, "upload objects to pantri")
-		retrieve = flag.Bool("retrieve", false, "retrieve objects from pantri")
-	)
-	// Make sure we are in a repo with a config
-	_, err := os.Stat(".config.yaml")
-	if os.IsNotExist(err) {
-		log.Fatal("Cannot find .config.yaml, aborting...")
+	flags := []cli.Flag{
+		&cli.StringFlag{
+			Name:    "backend",
+			Value:   "local",
+			Aliases: []string{"b"},
+			Usage:   "Specify the storage backend to use",
+			EnvVars: []string{"BACKEND"},
+		},
+		&cli.BoolFlag{
+			Name:  "remove",
+			Value: false,
+			Usage: "Remove the file from local repo if present",
+		},
+		// Debug is not currently being used. Remove this line once we add logging
+		&cli.BoolFlag{
+			Name:  "debug",
+			Value: false,
+			Usage: "Set debug to true for enhanced logging",
+		},
+	}
+	app := &cli.App{
+		Flags: flags,
+		Commands: []*cli.Command{
+			{
+				Name:    "upload",
+				Aliases: []string{"u"},
+				Usage:   "Upload the specified file",
+				Action: func(c *cli.Context) error {
+					if !c.Args().Present() {
+						return errors.New("You must pass the path of an object to upload")
+					}
+					remove := c.Bool("remove")
+					ls, err := localstore.New("repo", "pantri", &remove)
+					if err != nil {
+						return err
+					}
+					s := store(ls)
+					log.Printf("Uploading %s", c.Args().Slice())
+					s.Upload(c.Args().Slice())
+					return err
+				},
+			},
+			{
+				Name:    "retrieve",
+				Aliases: []string{"r"},
+				Usage:   "Retrieve the specified file",
+				Action: func(c *cli.Context) error {
+					if !c.Args().Present() {
+						return errors.New("You must pass the path of an object to retrieve")
+					}
+					remove := c.Bool("remove")
+					ls, err := localstore.New("repo", "pantri", &remove)
+					if err != nil {
+						return err
+					}
+					s := store(ls)
+					log.Printf("Retrieving %s", c.Args().Slice())
+					s.Retrieve(c.Args().Slice())
+					return err
+				},
+			},
+			{
+				Name:    "delete",
+				Aliases: []string{"d"},
+				Usage:   "Delete the specified file",
+				Action: func(c *cli.Context) error {
+					log.Fatal("Delete is not implemented yet.")
+					return nil
+				},
+			},
+		},
 	}
 
-	flag.Parse()
-	if !*upload && !*retrieve {
-		log.Fatal("one of {upload, retrieve} must be passed")
-	}
-
-	if *obj == "" {
-		log.Fatal(ErrObjectEmpty)
-	}
-
-	ls, err := localstore.New("repo", "pantri", remove)
+	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
-	s := store(ls)
-	objs := []string{*obj}
-
-	if *retrieve {
-		if err := s.Retrieve(objs); err != nil {
-			log.Fatal(err)
-		}
-	} else if *upload {
-		if err := s.Upload(objs); err != nil {
-			log.Fatal(err)
-		}
-	}
-
 }

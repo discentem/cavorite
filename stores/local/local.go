@@ -122,7 +122,7 @@ func (s *Store) Upload(objects []string) error {
 		}
 
 		if *s.opts.RemoveFromRepo {
-			if err := os.Remove(path.Join(o)); err != nil {
+			if err := os.Remove(o); err != nil {
 				return err
 			}
 		}
@@ -135,7 +135,7 @@ var (
 )
 
 func (s *Store) metadataFromFile(obj string) (*metadata.ObjectMetaData, error) {
-	pfile, err := os.Open(path.Join(s.gitRepo, fmt.Sprintf("%s.pfile", obj)))
+	pfile, err := os.Open(fmt.Sprintf("%s.pfile", obj))
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func (s *Store) metadataFromFile(obj string) (*metadata.ObjectMetaData, error) {
 
 func (s *Store) Retrieve(objects []string) error {
 	for _, o := range objects {
-		f, err := os.Open(o)
+		f, err := os.Open(path.Join(s.pantri, o))
 		if err != nil {
 			return err
 		}
@@ -173,12 +173,10 @@ func (s *Store) Retrieve(objects []string) error {
 			fmt.Println(hash, m.Checksum)
 			return ErrRetrieveFailureHashMismatch
 		}
-
-		objp := path.Join(s.gitRepo, o)
 		if err != nil {
 			return err
 		}
-		if err := os.WriteFile(objp, b, 0644); err != nil {
+		if err := os.WriteFile(o, b, 0644); err != nil {
 			return err
 		}
 

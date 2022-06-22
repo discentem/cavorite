@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 
 	localstore "github.com/discentem/pantri_but_go/stores/local"
 )
@@ -24,6 +25,12 @@ func main() {
 		upload   = flag.Bool("upload", false, "upload objects to pantri")
 		retrieve = flag.Bool("retrieve", false, "retrieve objects from pantri")
 	)
+	// Make sure we are in a repo with a config
+	_, err := os.Stat(".config.yaml")
+	if os.IsNotExist(err) {
+		log.Fatal("Cannot find .config.yaml, aborting...")
+	}
+
 	flag.Parse()
 	if !*upload && !*retrieve {
 		log.Fatal("one of {upload, retrieve} must be passed")

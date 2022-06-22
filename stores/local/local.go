@@ -82,7 +82,7 @@ func (s *Store) generateMetadata(f os.File) (*metadata.ObjectMetaData, error) {
 func (s *Store) Upload(objects []string) error {
 	for _, o := range objects {
 		// open real object in repo
-		f, err := os.Open(path.Join(s.gitRepo, o))
+		f, err := os.Open(o)
 		if err != nil {
 			return err
 		}
@@ -95,7 +95,7 @@ func (s *Store) Upload(objects []string) error {
 		if err := os.WriteFile(objp, b, 0644); err != nil {
 			return err
 		}
-		mf, err := os.Open(objp)
+		mf, err := os.Create(objp)
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ func (s *Store) Upload(objects []string) error {
 			return err
 		}
 		// write json to pfile
-		mpath := path.Join(s.gitRepo, fmt.Sprintf("%s.pfile", o))
+		mpath := path.Join(fmt.Sprintf("%s.pfile", o))
 		if err := os.WriteFile(mpath, blob, 0644); err != nil {
 			return err
 		}

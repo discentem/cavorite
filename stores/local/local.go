@@ -92,6 +92,9 @@ func (s *Store) Upload(objects []string) error {
 		if err != nil {
 			return err
 		}
+		if err := os.MkdirAll(path.Dir(objp), os.ModePerm); err != nil {
+			return err
+		}
 		if err := os.WriteFile(objp, b, 0644); err != nil {
 			return err
 		}
@@ -119,7 +122,7 @@ func (s *Store) Upload(objects []string) error {
 		}
 
 		if *s.opts.RemoveFromRepo {
-			if err := os.Remove(path.Join(s.gitRepo, o)); err != nil {
+			if err := os.Remove(path.Join(o)); err != nil {
 				return err
 			}
 		}
@@ -149,7 +152,7 @@ func (s *Store) metadataFromFile(obj string) (*metadata.ObjectMetaData, error) {
 
 func (s *Store) Retrieve(objects []string) error {
 	for _, o := range objects {
-		f, err := os.Open(path.Join(s.pantri, o))
+		f, err := os.Open(o)
 		if err != nil {
 			return err
 		}

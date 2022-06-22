@@ -22,18 +22,18 @@ var (
 func main() {
 	flags := []cli.Flag{
 		&cli.StringFlag{
-			Name:     "backend",
-			Value:    "local",
-			Aliases:  []string{"b"},
-			Usage:    "Specify the storage backend to use",
-			FilePath: ".config",
-			EnvVars:  []string{"BACKEND"},
+			Name:    "backend",
+			Value:   "local",
+			Aliases: []string{"b"},
+			Usage:   "Specify the storage backend to use",
+			EnvVars: []string{"BACKEND"},
 		},
 		&cli.BoolFlag{
 			Name:  "remove",
 			Value: false,
 			Usage: "Remove the file from local repo if present",
 		},
+		// Debug is not currently being used. Remove this line once we add logging
 		&cli.BoolFlag{
 			Name:  "debug",
 			Value: false,
@@ -76,6 +76,7 @@ func main() {
 						return err
 					}
 					s := store(ls)
+					log.Printf("Retrieving %s", c.Args().Slice())
 					s.Retrieve(c.Args().Slice())
 					return err
 				},
@@ -85,6 +86,7 @@ func main() {
 				Aliases: []string{"d"},
 				Usage:   "Delete the specified file",
 				Action: func(c *cli.Context) error {
+					log.Fatal("Delete is not implemented yet.")
 					return nil
 				},
 			},

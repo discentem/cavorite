@@ -98,14 +98,8 @@ func (s *Store) Upload(objects []string) error {
 		if err := os.WriteFile(objp, b, 0644); err != nil {
 			return err
 		}
-		mf, err := os.Create(objp)
-		if err != nil {
-			return err
-		}
-		defer mf.Close()
-
 		// generate pantri metadata
-		m, err := s.generateMetadata(*mf)
+		m, err := s.generateMetadata(*f)
 		if err != nil {
 			return err
 		}

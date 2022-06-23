@@ -48,8 +48,8 @@ func main() {
 				Aliases: []string{"u"},
 				Usage:   "Upload the specified file",
 				Action: func(c *cli.Context) error {
-					if c.NArg() == 0 {
-						return errors.New("you must pass the path of an object to upload")
+					if !c.Args().Present() {
+						return errors.New("You must pass the path of an object to upload")
 					}
 					remove := c.Bool("remove")
 					ls, err := localstore.New("repo", "pantri", &remove)
@@ -67,8 +67,8 @@ func main() {
 				Aliases: []string{"r"},
 				Usage:   "Retrieve the specified file",
 				Action: func(c *cli.Context) error {
-					if c.NArg() == 0 {
-						return errors.New("you must pass the path of an object to retrieve")
+					if !c.Args().Present() {
+						return errors.New("You must pass the path of an object to retrieve")
 					}
 					remove := c.Bool("remove")
 					ls, err := localstore.New("repo", "pantri", &remove)

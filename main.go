@@ -86,8 +86,7 @@ func main() {
 				Aliases: []string{"d"},
 				Usage:   "Delete the specified file",
 				Action: func(c *cli.Context) error {
-					log.Fatal("Delete is not implemented yet.")
-					return nil
+					return errors.New("delete is not implemented yet")
 				},
 			},
 		},

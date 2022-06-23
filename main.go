@@ -58,8 +58,10 @@ func main() {
 					}
 					s := store(ls)
 					log.Printf("Uploading %s", c.Args().Slice())
-					s.Upload(c.Args().Slice())
-					return err
+					if err := s.Upload(c.Args().Slice()); err != nil {
+						return err
+					}
+					return nil
 				},
 			},
 			{
@@ -77,8 +79,10 @@ func main() {
 					}
 					s := store(ls)
 					log.Printf("Retrieving %s", c.Args().Slice())
-					s.Retrieve(c.Args().Slice())
-					return err
+					if err := s.Retrieve(c.Args().Slice()); err != nil {
+						return err
+					}
+					return nil
 				},
 			},
 			{

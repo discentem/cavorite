@@ -17,20 +17,20 @@ import (
 )
 
 type Store struct {
-	gitRepo string
-	pantri  string
-	opts    stores.Options
+	sourceRepo string
+	pantri     string
+	opts       stores.Options
 }
 
-func NewWithOptions(gitRepo, pantri string, o stores.Options) (*Store, error) {
+func NewWithOptions(sourceRepo, pantri string, o stores.Options) (*Store, error) {
 	if o.RemoveFromRepo == nil {
 		b := false
 		o.RemoveFromRepo = &b
 	}
 	s := &Store{
-		gitRepo: gitRepo,
-		pantri:  pantri,
-		opts:    o,
+		sourceRepo: sourceRepo,
+		pantri:     pantri,
+		opts:       o,
 	}
 	err := s.init()
 	if err != nil {
@@ -39,8 +39,8 @@ func NewWithOptions(gitRepo, pantri string, o stores.Options) (*Store, error) {
 	return s, nil
 }
 
-func New(gitRepo, pantri string, removeFromRepo *bool) (*Store, error) {
-	return NewWithOptions(gitRepo, pantri, stores.Options{
+func New(sourceRepo, pantri string, removeFromRepo *bool) (*Store, error) {
+	return NewWithOptions(sourceRepo, pantri, stores.Options{
 		RemoveFromRepo: removeFromRepo,
 	})
 }

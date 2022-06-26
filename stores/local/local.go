@@ -5,21 +5,24 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
+	"os/user"
 	"path"
+
+	"github.com/pkg/errors"
 
 	"github.com/discentem/pantri_but_go/metadata"
 	"github.com/discentem/pantri_but_go/stores"
 )
 
 type Store struct {
-	sourceRepo string
-	pantri     string
-	opts       stores.Options
+	SourceRepo string         `json:"source_repo"`
+	Pantri     string         `json:"pantri"`
+	Opts       stores.Options `json:"options"`
 }
 
 func NewWithOptions(sourceRepo, pantri string, o stores.Options) (*Store, error) {
@@ -27,25 +30,98 @@ func NewWithOptions(sourceRepo, pantri string, o stores.Options) (*Store, error)
 		b := false
 		o.RemoveFromRepo = &b
 	}
-	s := &Store{
-		sourceRepo: sourceRepo,
-		pantri:     pantri,
-		opts:       o,
+	if o.Type == nil {
+		t := "local"
+		o.Type = &t
 	}
-	err := s.init()
-	if err != nil {
+	s := &Store{
+		SourceRepo: sourceRepo,
+		Pantri:     pantri,
+		Opts:       o,
+	}
+	if err := s.init(); err != nil {
 		return nil, err
 	}
 	return s, nil
 }
 
-func New(sourceRepo, pantri string, removeFromRepo *bool) (*Store, error) {
+func New(sourceRepo, pantri string, createPantri, removeFromRepo *bool) (*Store, error) {
 	return NewWithOptions(sourceRepo, pantri, stores.Options{
 		RemoveFromRepo: removeFromRepo,
+		CreatePantri:   createPantri,
 	})
 }
 
+func Load() (*Store, error) {
+	usr, _ := user.Current()
+	dir := usr.HomeDir
+	b, err := ioutil.ReadFile(fmt.Sprintf("%s/.pantri/config", dir))
+	if err != nil {
+		return nil, err
+	}
+	var s *Store
+	if err := json.Unmarshal(b, &s); err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+func isDir(p string) (bool, error) {
+	info, err := os.Stat(p)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, errors.Wrapf(err, "directory error: %v\n", p)
+
+	}
+	return info.IsDir(), nil
+}
+
+func (s *Store) config() error {
+	b, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return err
+	}
+	usr, _ := user.Current()
+	dir := usr.HomeDir
+	if err := os.MkdirAll(fmt.Sprintf("%s/.pantri", dir), os.ModePerm); err != nil {
+		return err
+	}
+	cfile := fmt.Sprintf("%s/.pantri/config", dir)
+	if err := os.WriteFile(cfile, b, os.ModePerm); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Store) init() error {
+	if s.Opts.CreatePantri != nil {
+		if *s.Opts.CreatePantri {
+			d, err := isDir(s.Pantri)
+			if err != nil {
+				return err
+			}
+			if !d {
+				if err := os.MkdirAll(s.Pantri, os.ModePerm); err != nil {
+					return err
+				}
+				log.Printf("created %s", s.Pantri)
+			}
+		}
+	} else {
+		ok, err := isDir(s.Pantri)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return fmt.Errorf("%s does not exist but s.Opts.CreatPantri == false", s.Pantri)
+		}
+	}
+	if err := s.config(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -87,7 +163,7 @@ func (s *Store) Upload(objects []string) error {
 			return err
 		}
 		defer f.Close()
-		objp := path.Join(s.pantri, o)
+		objp := path.Join(s.Pantri, o)
 		b, err := ioutil.ReadAll(f)
 		if err != nil {
 			return err
@@ -116,7 +192,7 @@ func (s *Store) Upload(objects []string) error {
 			return err
 		}
 
-		if *s.opts.RemoveFromRepo {
+		if *s.Opts.RemoveFromRepo {
 			if err := os.Remove(o); err != nil {
 				return err
 			}
@@ -147,7 +223,7 @@ func (s *Store) metadataFromFile(obj string) (*metadata.ObjectMetaData, error) {
 
 func (s *Store) Retrieve(objects []string) error {
 	for _, o := range objects {
-		f, err := os.Open(path.Join(s.pantri, o))
+		f, err := os.Open(path.Join(s.Pantri, o))
 		if err != nil {
 			return err
 		}

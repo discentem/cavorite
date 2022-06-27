@@ -5,5 +5,5 @@ type PantriConfig struct {
 }
 
 type Options struct {
-	RemoveFromSourceRepo *bool
+	RemoveFromSourceRepo *bool `json:"remove_from_sourcerepo"`
 }

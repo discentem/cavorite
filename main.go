@@ -23,11 +23,6 @@ var (
 
 func main() {
 	flags := []cli.Flag{
-		&cli.BoolFlag{
-			Name:  "remove",
-			Value: false,
-			Usage: "Remove the file from local repo if present",
-		},
 		// Debug is not currently being used. Remove this line once we add logging
 		&cli.BoolFlag{
 			Name:  "debug",
@@ -64,6 +59,7 @@ func main() {
 						RemoveFromSourceRepo: &remove,
 					}
 					sourceRepo := c.String("source_repo")
+					// store agnostic initialization, specific initialization determined by backend
 					err := storesinit.Initalize(sourceRepo, backend, "pantri", opts)
 					if err != nil {
 						return err
@@ -75,6 +71,13 @@ func main() {
 				Name:    "upload",
 				Aliases: []string{"u"},
 				Usage:   "Upload the specified file",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "remove",
+						Value: true,
+						Usage: "Remove the file from local sourceRepo if present",
+					},
+				},
 				Action: func(c *cli.Context) error {
 					if c.NArg() == 0 {
 						return errors.New("you must pass the path of an object to upload")

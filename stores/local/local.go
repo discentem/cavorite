@@ -17,27 +17,35 @@ import (
 )
 
 type Store struct {
-	SourceRepo string         `json:"source_repo"`
-	Pantri     string         `json:"pantri"`
-	Opts       stores.Options `json:"options"`
+	Pantri string         `json:"pantri"`
+	Opts   stores.Options `json:"options"`
 }
 
+// PantriConfig represents a .pantri/config file for local
 type PantriConfig struct {
 	Type string `json:"type"`
 	Store
 }
 
+// MarshalJSON() flattens local.PantriConfig to
+/*
+{
+	"type": "local",
+	"pantri": "pantri",
+	"options": {
+		"remove_from_sourcerepo": false
+	}
+}
+*/
 func (c *PantriConfig) MarshalJSON() ([]byte, error) {
 	conf := struct {
-		Type       string         `json:"type"`
-		SourceRepo string         `json:"source_repo"`
-		Pantri     string         `json:"pantri"`
-		Opts       stores.Options `json:"options"`
+		Type   string         `json:"type"`
+		Pantri string         `json:"pantri"`
+		Opts   stores.Options `json:"options"`
 	}{
-		Type:       c.Type,
-		SourceRepo: c.Store.SourceRepo,
-		Pantri:     c.Store.Pantri,
-		Opts:       c.Store.Opts,
+		Type:   c.Type,
+		Pantri: c.Store.Pantri,
+		Opts:   c.Store.Opts,
 	}
 	return json.Marshal(conf)
 }
@@ -48,11 +56,10 @@ func NewWithOptions(sourceRepo, pantri string, o stores.Options) (*Store, error)
 		o.RemoveFromSourceRepo = &b
 	}
 	s := &Store{
-		SourceRepo: sourceRepo,
-		Pantri:     pantri,
-		Opts:       o,
+		Pantri: pantri,
+		Opts:   o,
 	}
-	err := s.init()
+	err := s.init(sourceRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +72,7 @@ func New(sourceRepo, pantri string, removeFromSourceRepo *bool) (*Store, error) 
 	})
 }
 
-func (s *Store) config() error {
+func (s *Store) config(sourceRepo string) error {
 	localStoreconfig := PantriConfig{
 		Type:  "local",
 		Store: *s,
@@ -74,7 +81,7 @@ func (s *Store) config() error {
 	if err != nil {
 		return err
 	}
-	dir := s.SourceRepo
+	dir := sourceRepo
 	if err := os.MkdirAll(fmt.Sprintf("%s/.pantri", dir), os.ModePerm); err != nil {
 		return err
 	}
@@ -86,8 +93,8 @@ func (s *Store) config() error {
 	return nil
 }
 
-func (s *Store) init() error {
-	if err := s.config(); err != nil {
+func (s *Store) init(sourceRepo string) error {
+	if err := s.config(sourceRepo); err != nil {
 		return err
 	}
 	return nil

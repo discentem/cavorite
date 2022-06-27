@@ -82,13 +82,13 @@ func (s *Store) generateMetadata(f os.File) (*metadata.ObjectMetaData, error) {
 func (s *Store) Upload(objects []string) error {
 	for _, o := range objects {
 		// open real object in repo
-		f, err := os.Open(o)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
+		// f, err := os.Open(o)
+		// if err != nil {
+		// 	return err
+		// }
+		// defer f.Close()
 		objp := path.Join(s.pantri, o)
-		b, err := ioutil.ReadAll(f)
+		b, err := os.ReadFile(o)
 		if err != nil {
 			return err
 		}
@@ -96,6 +96,11 @@ func (s *Store) Upload(objects []string) error {
 			return err
 		}
 		if err := os.WriteFile(objp, b, 0644); err != nil {
+			return err
+		}
+
+		f, err := os.Open(o)
+		if err != nil {
 			return err
 		}
 

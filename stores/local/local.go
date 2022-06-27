@@ -81,12 +81,6 @@ func (s *Store) generateMetadata(f os.File) (*metadata.ObjectMetaData, error) {
 
 func (s *Store) Upload(objects []string) error {
 	for _, o := range objects {
-		// open real object in repo
-		// f, err := os.Open(o)
-		// if err != nil {
-		// 	return err
-		// }
-		// defer f.Close()
 		objp := path.Join(s.pantri, o)
 		b, err := os.ReadFile(o)
 		if err != nil {

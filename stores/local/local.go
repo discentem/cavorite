@@ -72,6 +72,13 @@ func New(sourceRepo, pantri string, removeFromSourceRepo *bool) (*Store, error) 
 	})
 }
 
+func (s *Store) init(sourceRepo string) error {
+	if err := s.config(sourceRepo); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Store) config(sourceRepo string) error {
 	localStoreconfig := PantriConfig{
 		Type:  "local",
@@ -90,13 +97,6 @@ func (s *Store) config(sourceRepo string) error {
 		return err
 	}
 
-	return nil
-}
-
-func (s *Store) init(sourceRepo string) error {
-	if err := s.config(sourceRepo); err != nil {
-		return err
-	}
 	return nil
 }
 

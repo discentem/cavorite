@@ -1,9 +1,10 @@
 package stores
 
-type PantriConfig struct {
-	Type string `json:"type"`
-}
-
 type Options struct {
 	RemoveFromSourceRepo *bool `json:"remove_from_sourcerepo"`
+}
+
+type Store interface {
+	Upload(objects []string) error
+	Retrieve(objects []string) error
 }

@@ -8,14 +8,8 @@ import (
 
 	"github.com/discentem/pantri_but_go/stores"
 	storesinit "github.com/discentem/pantri_but_go/stores/initialize"
-	localstore "github.com/discentem/pantri_but_go/stores/local"
 	"github.com/urfave/cli/v2"
 )
-
-type store interface {
-	Upload(objects []string) error
-	Retrieve(objects []string) error
-}
 
 var (
 	ErrObjectEmpty = fmt.Errorf("object can't be %q", "")
@@ -28,6 +22,12 @@ func main() {
 			Name:  "debug",
 			Value: false,
 			Usage: "Set debug to true for enhanced logging",
+		},
+		&cli.StringFlag{
+			Name:    "source_repo",
+			Value:   "repo",
+			Aliases: []string{"sr"},
+			Usage:   "path to source repo",
 		},
 	}
 	app := &cli.App{
@@ -45,11 +45,10 @@ func main() {
 						Usage:   "Specify the storage backend to use",
 						EnvVars: []string{"BACKEND"},
 					},
-					&cli.StringFlag{
-						Name:    "source_repo",
-						Value:   "repo",
-						Aliases: []string{"sr"},
-						Usage:   "path to source repo",
+					&cli.BoolFlag{
+						Name:  "remove",
+						Value: true,
+						Usage: "Remove the file from local sourceRepo if present",
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -71,23 +70,15 @@ func main() {
 				Name:    "upload",
 				Aliases: []string{"u"},
 				Usage:   "Upload the specified file",
-				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:  "remove",
-						Value: true,
-						Usage: "Remove the file from local sourceRepo if present",
-					},
-				},
 				Action: func(c *cli.Context) error {
 					if c.NArg() == 0 {
 						return errors.New("you must pass the path of an object to upload")
 					}
-					remove := c.Bool("remove")
-					ls, err := localstore.New("repo", "pantri", &remove)
+					sourceRepo := c.String("source_repo")
+					s, err := storesinit.Load(sourceRepo)
 					if err != nil {
 						return err
 					}
-					s := store(ls)
 					log.Printf("Uploading %s", c.Args().Slice())
 					if err := s.Upload(c.Args().Slice()); err != nil {
 						return err
@@ -103,12 +94,11 @@ func main() {
 					if c.NArg() == 0 {
 						return errors.New("you must pass the path of an object to retrieve")
 					}
-					remove := c.Bool("remove")
-					ls, err := localstore.New("repo", "pantri", &remove)
+					sourceRepo := c.String("source_repo")
+					s, err := storesinit.Load(sourceRepo)
 					if err != nil {
 						return err
 					}
-					s := store(ls)
 					log.Printf("Retrieving %s", c.Args().Slice())
 					if err := s.Retrieve(c.Args().Slice()); err != nil {
 						return err

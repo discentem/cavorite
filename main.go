@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
+	pantri "github.com/discentem/pantri_but_go/config/loader"
 	"github.com/discentem/pantri_but_go/stores"
-	storesinit "github.com/discentem/pantri_but_go/stores/initialize"
 	"github.com/urfave/cli/v2"
 )
 
@@ -24,10 +24,10 @@ func main() {
 			Usage: "Set debug to true for enhanced logging",
 		},
 		&cli.StringFlag{
-			Name:    "source_repo",
-			Value:   "repo",
-			Aliases: []string{"sr"},
-			Usage:   "path to source repo",
+			Name:     "source_repo",
+			Required: true,
+			Aliases:  []string{},
+			Usage:    "path to source repo",
 		},
 	}
 	app := &cli.App{
@@ -45,10 +45,10 @@ func main() {
 						Usage:   "Specify the storage backend to use",
 						EnvVars: []string{"BACKEND"},
 					},
-					&cli.BoolFlag{
-						Name:  "remove",
-						Value: true,
-						Usage: "Remove the file from local sourceRepo if present",
+					&cli.StringFlag{
+						Name:     "pantri_address",
+						Required: true,
+						Usage:    "path to pantri storage",
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -58,8 +58,9 @@ func main() {
 						RemoveFromSourceRepo: &remove,
 					}
 					sourceRepo := c.String("source_repo")
+					pantriAddress := c.String("pantri_address")
 					// store agnostic initialization, specific initialization determined by backend
-					err := storesinit.Initalize(sourceRepo, backend, "pantri", opts)
+					err := pantri.Initalize(sourceRepo, backend, pantriAddress, opts)
 					if err != nil {
 						return err
 					}
@@ -70,17 +71,25 @@ func main() {
 				Name:    "upload",
 				Aliases: []string{"u"},
 				Usage:   "Upload the specified file",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "remove",
+						Value: true,
+						Usage: "Remove the file from local sourceRepo if present",
+					},
+				},
 				Action: func(c *cli.Context) error {
 					if c.NArg() == 0 {
 						return errors.New("you must pass the path of an object to upload")
 					}
 					sourceRepo := c.String("source_repo")
-					s, err := storesinit.Load(sourceRepo)
+					s, err := pantri.Load(sourceRepo)
 					if err != nil {
 						return err
 					}
+					// TODO(discentem) improve log message to include pantriAddress
 					log.Printf("Uploading %s", c.Args().Slice())
-					if err := s.Upload(c.Args().Slice()); err != nil {
+					if err := s.Upload(sourceRepo, c.Args().Slice()...); err != nil {
 						return err
 					}
 					return nil
@@ -95,12 +104,12 @@ func main() {
 						return errors.New("you must pass the path of an object to retrieve")
 					}
 					sourceRepo := c.String("source_repo")
-					s, err := storesinit.Load(sourceRepo)
+					s, err := pantri.Load(sourceRepo)
 					if err != nil {
 						return err
 					}
 					log.Printf("Retrieving %s", c.Args().Slice())
-					if err := s.Retrieve(c.Args().Slice()); err != nil {
+					if err := s.Retrieve(sourceRepo, c.Args().Slice()...); err != nil {
 						return err
 					}
 					return nil

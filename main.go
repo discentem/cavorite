@@ -47,7 +47,7 @@ func main() {
 					},
 					&cli.StringFlag{
 						Name:    "source_repo",
-						Value:   "repo",
+						Value:   "~/fake_pantri_repo",
 						Aliases: []string{"sr"},
 						Usage:   "path to source repo",
 					},
@@ -83,7 +83,9 @@ func main() {
 						return errors.New("you must pass the path of an object to upload")
 					}
 					remove := c.Bool("remove")
-					ls, err := localstore.New("repo", "pantri", &remove)
+					ls, err := localstore.New("repo", "pantri", stores.Options{
+						RemoveFromSourceRepo: &remove,
+					})
 					if err != nil {
 						return err
 					}
@@ -104,7 +106,9 @@ func main() {
 						return errors.New("you must pass the path of an object to retrieve")
 					}
 					remove := c.Bool("remove")
-					ls, err := localstore.New("repo", "pantri", &remove)
+					ls, err := localstore.New("repo", "pantri", stores.Options{
+						RemoveFromSourceRepo: &remove,
+					})
 					if err != nil {
 						return err
 					}

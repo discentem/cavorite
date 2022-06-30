@@ -11,7 +11,7 @@ func Initalize(sourceRepo, backend, address string, opts stores.Options) error {
 	if backend != "local" {
 		return fmt.Errorf("%s is not supported. only %q is currently supported", backend, "local")
 	}
-	_, err := localstore.NewWithOptions(sourceRepo, address, opts)
+	_, err := localstore.New(sourceRepo, address, opts)
 	if err != nil {
 		return err
 	}

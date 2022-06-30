@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/discentem/pantri_but_go/stores"
+	storesinit "github.com/discentem/pantri_but_go/stores/initialize"
 	localstore "github.com/discentem/pantri_but_go/stores/local"
 	"github.com/urfave/cli/v2"
 )
@@ -21,18 +23,6 @@ var (
 
 func main() {
 	flags := []cli.Flag{
-		&cli.StringFlag{
-			Name:    "backend",
-			Value:   "local",
-			Aliases: []string{"b"},
-			Usage:   "Specify the storage backend to use",
-			EnvVars: []string{"BACKEND"},
-		},
-		&cli.BoolFlag{
-			Name:  "remove",
-			Value: false,
-			Usage: "Remove the file from local repo if present",
-		},
 		// Debug is not currently being used. Remove this line once we add logging
 		&cli.BoolFlag{
 			Name:  "debug",
@@ -44,9 +34,50 @@ func main() {
 		Flags: flags,
 		Commands: []*cli.Command{
 			{
+				Name:    "init",
+				Aliases: []string{},
+				Usage:   "Initalize pantri.",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "backend",
+						Value:   "local",
+						Aliases: []string{"b"},
+						Usage:   "Specify the storage backend to use",
+						EnvVars: []string{"BACKEND"},
+					},
+					&cli.StringFlag{
+						Name:    "source_repo",
+						Value:   "repo",
+						Aliases: []string{"sr"},
+						Usage:   "path to source repo",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					remove := c.Bool("remove")
+					backend := c.String("backend")
+					opts := stores.Options{
+						RemoveFromSourceRepo: &remove,
+					}
+					sourceRepo := c.String("source_repo")
+					// store agnostic initialization, specific initialization determined by backend
+					err := storesinit.Initalize(sourceRepo, backend, "pantri", opts)
+					if err != nil {
+						return err
+					}
+					return nil
+				},
+			},
+			{
 				Name:    "upload",
 				Aliases: []string{"u"},
 				Usage:   "Upload the specified file",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "remove",
+						Value: true,
+						Usage: "Remove the file from local sourceRepo if present",
+					},
+				},
 				Action: func(c *cli.Context) error {
 					if c.NArg() == 0 {
 						return errors.New("you must pass the path of an object to upload")

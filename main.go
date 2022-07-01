@@ -32,6 +32,7 @@ func main() {
 	}
 	app := &cli.App{
 		Flags: flags,
+		Usage: `pantri: but in go!`,
 		Commands: []*cli.Command{
 			{
 				Name:    "init",

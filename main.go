@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	pantri "github.com/discentem/pantri_but_go/config/loader"
+	pantri "github.com/discentem/pantri_but_go/pantri/loader"
 	"github.com/discentem/pantri_but_go/stores"
 	"github.com/urfave/cli/v2"
 )

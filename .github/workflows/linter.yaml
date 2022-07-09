@@ -1,0 +1,25 @@
+---
+name: Lint project
+
+on:
+  pull_request:
+  push:
+  # Manually triggered
+  workflow_dispatch:
+
+jobs:
+  run-linting:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Lint code base
+        uses: github/super-linter@v4.9.4
+        env:
+          VALIDATE_ALL_CODEBASE: false
+          DEFAULT_BRANCH: master
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

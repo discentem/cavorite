@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -80,6 +81,7 @@ func (s *Store) Upload(sourceRepo string, objects ...string) error {
 	))
 
 	uploader := s3manager.NewUploader(sess)
+	uploader.Concurrency = 3
 
 	for _, o := range objects {
 		f, err := os.Open(o)

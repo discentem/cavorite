@@ -2,7 +2,6 @@ package local
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -113,10 +112,6 @@ func (s *Store) Upload(sourceRepo string, objects ...string) error {
 	return nil
 }
 
-var (
-	ErrRetrieveFailureHashMismatch = errors.New("hashes don't match, Retrieve aborted")
-)
-
 func (s *Store) Retrieve(sourceRepo string, objects ...string) error {
 	for _, o := range objects {
 		f, err := os.Open(path.Join(s.PantriAddress, o))
@@ -138,7 +133,7 @@ func (s *Store) Retrieve(sourceRepo string, objects ...string) error {
 		}
 		if hash != m.Checksum {
 			fmt.Println(hash, m.Checksum)
-			return ErrRetrieveFailureHashMismatch
+			return stores.ErrRetrieveFailureHashMismatch
 		}
 		op := path.Join(sourceRepo, o)
 		if err := os.WriteFile(op, b, 0644); err != nil {

@@ -1,0 +1,11 @@
+on: [pull_request]
+jobs:
+  ensure_compile_and_run:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: copy dockerfile
+        # awful hack because COPY ../ doesn't work in Dockerfile
+        run: cp ./_ci/compile_and_run/Dockerfile ./Dockerfile
+      - name: compile and run
+        uses: ./.github/workflows/actions/ensure_compile_and_run/

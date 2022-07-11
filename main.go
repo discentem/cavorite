@@ -6,16 +6,10 @@ import (
 	"log"
 	"os"
 
+	pantri "github.com/discentem/pantri_but_go/config/loader"
 	"github.com/discentem/pantri_but_go/stores"
-	storesinit "github.com/discentem/pantri_but_go/stores/initialize"
-	localstore "github.com/discentem/pantri_but_go/stores/local"
 	"github.com/urfave/cli/v2"
 )
-
-type store interface {
-	Upload(objects []string) error
-	Retrieve(objects []string) error
-}
 
 var (
 	ErrObjectEmpty = fmt.Errorf("object can't be %q", "")
@@ -28,6 +22,12 @@ func main() {
 			Name:  "debug",
 			Value: false,
 			Usage: "Set debug to true for enhanced logging",
+		},
+		&cli.StringFlag{
+			Name:     "source_repo",
+			Required: true,
+			Aliases:  []string{},
+			Usage:    "path to source repo",
 		},
 	}
 	app := &cli.App{
@@ -46,10 +46,9 @@ func main() {
 						EnvVars: []string{"BACKEND"},
 					},
 					&cli.StringFlag{
-						Name:    "source_repo",
-						Value:   "~/fake_pantri_repo",
-						Aliases: []string{"sr"},
-						Usage:   "path to source repo",
+						Name:     "pantri_address",
+						Required: true,
+						Usage:    "path to pantri storage",
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -59,8 +58,9 @@ func main() {
 						RemoveFromSourceRepo: &remove,
 					}
 					sourceRepo := c.String("source_repo")
+					pantriAddress := c.String("pantri_address")
 					// store agnostic initialization, specific initialization determined by backend
-					err := storesinit.Initalize(sourceRepo, backend, "pantri", opts)
+					err := pantri.Initalize(sourceRepo, backend, pantriAddress, opts)
 					if err != nil {
 						return err
 					}
@@ -82,16 +82,14 @@ func main() {
 					if c.NArg() == 0 {
 						return errors.New("you must pass the path of an object to upload")
 					}
-					remove := c.Bool("remove")
-					ls, err := localstore.New("repo", "pantri", stores.Options{
-						RemoveFromSourceRepo: &remove,
-					})
+					sourceRepo := c.String("source_repo")
+					s, err := pantri.Load(sourceRepo)
 					if err != nil {
 						return err
 					}
-					s := store(ls)
+					// TODO(discentem) improve log message to include pantriAddress
 					log.Printf("Uploading %s", c.Args().Slice())
-					if err := s.Upload(c.Args().Slice()); err != nil {
+					if err := s.Upload(sourceRepo, c.Args().Slice()...); err != nil {
 						return err
 					}
 					return nil
@@ -105,16 +103,13 @@ func main() {
 					if c.NArg() == 0 {
 						return errors.New("you must pass the path of an object to retrieve")
 					}
-					remove := c.Bool("remove")
-					ls, err := localstore.New("repo", "pantri", stores.Options{
-						RemoveFromSourceRepo: &remove,
-					})
+					sourceRepo := c.String("source_repo")
+					s, err := pantri.Load(sourceRepo)
 					if err != nil {
 						return err
 					}
-					s := store(ls)
 					log.Printf("Retrieving %s", c.Args().Slice())
-					if err := s.Retrieve(c.Args().Slice()); err != nil {
+					if err := s.Retrieve(sourceRepo, c.Args().Slice()...); err != nil {
 						return err
 					}
 					return nil

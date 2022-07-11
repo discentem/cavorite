@@ -15,19 +15,34 @@ import (
 	pantriconfig "github.com/discentem/pantri_but_go/config"
 	"github.com/discentem/pantri_but_go/metadata"
 	"github.com/discentem/pantri_but_go/stores"
+	"github.com/mitchellh/go-homedir"
 )
 
 type Store struct {
-	PantriAddress string         `json:"pantri"`
-	Opts          stores.Options `json:"options"`
+	PantriAddress string         `mapstructure:"pantri_address"`
+	Opts          stores.Options `mapstructure:"options"`
 }
 
 func (s *Store) init(sourceRepo string) error {
+	epa, err := homedir.Expand(s.PantriAddress)
+	if err != nil {
+		return err
+	}
+
 	c := pantriconfig.Config{
 		Type:          "local",
-		PantriAddress: s.PantriAddress,
+		PantriAddress: epa,
 		Opts:          s.Opts,
+		Validate: func() error {
+			// Ensure s.PantriAddress exists before c.WriteToDisk()
+			if _, err := os.Stat(s.PantriAddress); err != nil {
+				fmt.Println(err)
+				return fmt.Errorf("specified pantri_address %q does not exist, so we can't make it a pantri repo", epa)
+			}
+			return nil
+		},
 	}
+
 	return c.WriteToDisk(sourceRepo)
 }
 
@@ -77,7 +92,7 @@ func (s *Store) generateMetadata(f os.File) (*metadata.ObjectMetaData, error) {
 	return m, nil
 }
 
-func (s *Store) Upload(objects []string) error {
+func (s *Store) Upload(sourceRepo string, objects ...string) error {
 	for _, o := range objects {
 		objp := path.Join(s.PantriAddress, o)
 		b, err := os.ReadFile(o)
@@ -101,16 +116,20 @@ func (s *Store) Upload(objects []string) error {
 		if err != nil {
 			return err
 		}
-
 		// convert to json
 		blob, err := json.MarshalIndent(m, "", " ")
 		if err != nil {
 			return err
 		}
 		// write json to pfile
-		mpath := path.Join(fmt.Sprintf("%s.pfile", o))
-		if err := os.WriteFile(mpath, blob, 0644); err != nil {
-			return err
+		pfilePaths := []string{
+			path.Join(s.PantriAddress, fmt.Sprintf("%s.pfile", o)),
+			path.Join(sourceRepo, fmt.Sprintf("%s.pfile", o)),
+		}
+		for _, p := range pfilePaths {
+			if err := os.WriteFile(p, blob, 0644); err != nil {
+				return err
+			}
 		}
 		if s.Opts.RemoveFromSourceRepo != nil {
 			if *s.Opts.RemoveFromSourceRepo {
@@ -143,7 +162,7 @@ func (s *Store) metadataFromFile(obj string) (*metadata.ObjectMetaData, error) {
 	return metadata, nil
 }
 
-func (s *Store) Retrieve(objects []string) error {
+func (s *Store) Retrieve(sourceRepo string, objects ...string) error {
 	for _, o := range objects {
 		f, err := os.Open(path.Join(s.PantriAddress, o))
 		if err != nil {
@@ -166,7 +185,8 @@ func (s *Store) Retrieve(objects []string) error {
 			fmt.Println(hash, m.Checksum)
 			return ErrRetrieveFailureHashMismatch
 		}
-		if err := os.WriteFile(o, b, 0644); err != nil {
+		op := path.Join(sourceRepo, o)
+		if err := os.WriteFile(op, b, 0644); err != nil {
 			return err
 		}
 

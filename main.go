@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	defaultStore   = "local"
 	ErrObjectEmpty = fmt.Errorf("object can't be %q", "")
 )
 
@@ -26,12 +27,13 @@ func main() {
 		&cli.StringFlag{
 			Name:     "source_repo",
 			Required: true,
-			Aliases:  []string{},
+			Aliases:  []string{"sr"},
 			Usage:    "path to source repo",
 		},
 	}
 	app := &cli.App{
 		Flags: flags,
+		Usage: `pantri: but in go!`,
 		Commands: []*cli.Command{
 			{
 				Name:    "init",
@@ -39,28 +41,30 @@ func main() {
 				Usage:   "Initalize pantri.",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:    "backend",
-						Value:   "local",
-						Aliases: []string{"b"},
-						Usage:   "Specify the storage backend to use",
-						EnvVars: []string{"BACKEND"},
-					},
-					&cli.StringFlag{
 						Name:     "pantri_address",
+						Aliases:  []string{"p", "pa"},
 						Required: true,
 						Usage:    "path to pantri storage",
 					},
 				},
 				Action: func(c *cli.Context) error {
 					remove := c.Bool("remove")
-					backend := c.String("backend")
+					var backend string
+					if c.NArg() == 0 {
+						log.Printf("defaulting to %s for pantri storage", defaultStore)
+						backend = defaultStore
+					} else if c.NArg() == 1 {
+						backend = c.Args().First()
+					} else {
+						return errors.New("specifying multiple backends not allowed, try again")
+					}
 					opts := stores.Options{
 						RemoveFromSourceRepo: &remove,
 					}
 					sourceRepo := c.String("source_repo")
 					pantriAddress := c.String("pantri_address")
 					// store agnostic initialization, specific initialization determined by backend
-					err := pantri.Initalize(sourceRepo, backend, pantriAddress, opts)
+					err := pantri.Initialize(sourceRepo, backend, pantriAddress, opts)
 					if err != nil {
 						return err
 					}
@@ -108,6 +112,7 @@ func main() {
 					if err != nil {
 						return err
 					}
+					// TODO(discentem) improve log message to include pantriAddress
 					log.Printf("Retrieving %s", c.Args().Slice())
 					if err := s.Retrieve(sourceRepo, c.Args().Slice()...); err != nil {
 						return err

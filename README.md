@@ -1,4 +1,8 @@
-## Man page
+## What is this? 
+
+It's like [pantri](https://github.com/facebook/IT-CPE/tree/main/pantri) but in go!
+
+## Usage
 
 ```shell
 

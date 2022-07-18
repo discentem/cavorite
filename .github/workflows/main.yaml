@@ -9,3 +9,12 @@ jobs:
         run: cp ./_ci/compile_and_run/Dockerfile ./Dockerfile
       - name: compile and run
         uses: ./.github/workflows/actions/ensure_compile_and_run/
+  lint:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: copy dockerfile
+        # awful hack because COPY ../ doesn't work in Dockerfile
+        run: cp ./_ci/lint/Dockerfile ./Dockerfile
+      - name: lint
+        uses: ./.github/workflows/actions/lint/

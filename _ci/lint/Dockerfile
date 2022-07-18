@@ -1,5 +1,7 @@
-FROM golangci/golangci-lint:v1.46.2
+FROM golangci/golangci-lint
+
+WORKDIR /app
 
 COPY . .
 
-ENTRYPOINT ["golangci-lint", "run"]
+ENTRYPOINT golangci-lint run 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"log"
 	"os"
@@ -44,6 +45,13 @@ func main() {
 						Required: true,
 						Usage:    "path to pantri storage",
 					},
+					&cli.StringFlag{
+						Name:     "metadata_file_extension",
+						Required: false,
+						Aliases:  []string{"ext"},
+						Usage:    "extension for object metadata files",
+						Value:    "pfile",
+					},
 				},
 				Action: func(c *cli.Context) error {
 					remove := c.Bool("remove")
@@ -56,13 +64,15 @@ func main() {
 					} else {
 						return errors.New("specifying multiple backends not allowed, try again")
 					}
+					fileExt := c.String("metadata_file_extension")
 					opts := stores.Options{
-						RemoveFromSourceRepo: &remove,
+						RemoveFromSourceRepo:  &remove,
+						MetaDataFileExtension: fileExt,
 					}
 					sourceRepo := c.String("source_repo")
 					pantriAddress := c.String("pantri_address")
 					// store agnostic initialization, specific initialization determined by backend
-					err := pantri.Initialize(sourceRepo, backend, pantriAddress, opts)
+					err := pantri.Initialize(context.Background(), sourceRepo, backend, pantriAddress, opts)
 					if err != nil {
 						return err
 					}
@@ -91,7 +101,7 @@ func main() {
 					}
 					// TODO(discentem) improve log message to include pantriAddress
 					log.Printf("Uploading %s", c.Args().Slice())
-					if err := s.Upload(sourceRepo, c.Args().Slice()...); err != nil {
+					if err := s.Upload(context.Background(), sourceRepo, c.Args().Slice()...); err != nil {
 						return err
 					}
 					return nil
@@ -112,7 +122,7 @@ func main() {
 					}
 					// TODO(discentem) improve log message to include pantriAddress
 					log.Printf("Retrieving %s", c.Args().Slice())
-					if err := s.Retrieve(sourceRepo, c.Args().Slice()...); err != nil {
+					if err := s.Retrieve(context.Background(), sourceRepo, c.Args().Slice()...); err != nil {
 						return err
 					}
 					return nil

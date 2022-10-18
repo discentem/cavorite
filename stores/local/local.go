@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -49,6 +50,10 @@ func New(sourceRepo, pantriAddress string, o stores.Options) (*Store, error) {
 		b := false
 		o.RemoveFromSourceRepo = &b
 	}
+	if o.MetaDataFileExtension == "" {
+		e := ".pfile"
+		o.MetaDataFileExtension = e
+	}
 	s := &Store{
 		PantriAddress: pantriAddress,
 		Opts:          o,
@@ -69,7 +74,7 @@ func Load(m map[string]interface{}) (stores.Store, error) {
 	return stores.Store(s), nil
 }
 
-func (s *Store) Upload(sourceRepo string, objects ...string) error {
+func (s *Store) Upload(_ context.Context, sourceRepo string, objects ...string) error {
 	for _, o := range objects {
 		objp := path.Join(s.PantriAddress, o)
 		b, err := os.ReadFile(o)
@@ -94,10 +99,10 @@ func (s *Store) Upload(sourceRepo string, objects ...string) error {
 		}
 		// write json to pfile
 		pfilePaths := []string{
-			path.Join(s.PantriAddress, fmt.Sprintf("%s.pfile", o)),
-			path.Join(sourceRepo, fmt.Sprintf("%s.pfile", o)),
+			path.Join(s.PantriAddress, fmt.Sprintf("%s.%s", o, s.Opts.MetaDataFileExtension)),
+			path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Opts.MetaDataFileExtension)),
 		}
-		if err := os.MkdirAll(filepath.Dir(path.Join(sourceRepo, fmt.Sprintf("%s.pfile", o))), os.ModePerm); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Opts.MetaDataFileExtension))), os.ModePerm); err != nil {
 			return err
 		}
 		for _, p := range pfilePaths {
@@ -123,7 +128,7 @@ func (s *Store) Upload(sourceRepo string, objects ...string) error {
 	return nil
 }
 
-func (s *Store) Retrieve(sourceRepo string, objects ...string) error {
+func (s *Store) Retrieve(_ context.Context, sourceRepo string, objects ...string) error {
 	for _, o := range objects {
 		f, err := os.Open(path.Join(s.PantriAddress, o))
 		if err != nil {
@@ -138,7 +143,13 @@ func (s *Store) Retrieve(sourceRepo string, objects ...string) error {
 		if err != nil {
 			return err
 		}
-		m, err := metadata.ParsePfile(o)
+		var ext string
+		if s.Opts.MetaDataFileExtension == "" {
+			ext = ".pfile"
+		} else {
+			ext = s.Opts.MetaDataFileExtension
+		}
+		m, err := metadata.ParsePfile(o, ext)
 		if err != nil {
 			return err
 		}

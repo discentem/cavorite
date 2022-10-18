@@ -2,7 +2,9 @@ package s3
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -11,10 +13,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+
+	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+
+	// "github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/discentem/pantri_but_go/metadata"
 	pantriconfig "github.com/discentem/pantri_but_go/pantri"
 	"github.com/discentem/pantri_but_go/stores"
@@ -26,45 +31,81 @@ type Store struct {
 	Opts          stores.Options `mapstructure:"options"`
 }
 
-func (s *Store) init(sourceRepo string) error {
+func getConfig(pantriAddress string) (*aws.Config, error) {
+	var cfg aws.Config
+	var err error
+	if strings.HasPrefix(pantriAddress, "s3://") {
+		// use auth that was configued by aws cli
+		cfg, err = config.LoadDefaultConfig(context.TODO())
+		if err != nil {
+			return nil, err
+		}
+		return &cfg, nil
+	}
+	if strings.HasPrefix(pantriAddress, "https://") || strings.HasPrefix(pantriAddress, "http://") {
+		// https://stackoverflow.com/questions/67575681/is-aws-go-sdk-v2-integrated-with-local-minio-server
+
+		// http://127.0.0.1:9000/test --> http://127.0.0.1:9000
+		server, _ := path.Split(pantriAddress)
+		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
+			return aws.Endpoint{
+				PartitionID:       "aws",
+				URL:               server,
+				SigningRegion:     "us-east-1",
+				HostnameImmutable: true,
+			}, nil
+		})
+
+		cfg, err := config.LoadDefaultConfig(context.Background(),
+			config.WithRegion("us-east-1"),
+			config.WithEndpointResolverWithOptions(resolver),
+		)
+		if err != nil {
+			return nil, err
+		}
+		return &cfg, nil
+	}
+	return nil, errors.New("pantriAddress did not contain s3://, http://, or https:// prefix")
+}
+
+func (s *Store) init(ctx context.Context, sourceRepo string) error {
 	c := pantriconfig.Config{
 		Type:          "s3",
 		PantriAddress: s.PantriAddress,
 		Opts:          s.Opts,
 		Validate: func() error {
-			// use auth that was configued by aws cli
-			sess := session.Must(session.NewSessionWithOptions(
-				session.Options{
-					// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-the-region
-					SharedConfigState: session.SharedConfigEnable,
-				},
-			))
-			uploader := s3manager.NewUploader(sess)
-			buck := strings.TrimPrefix(s.PantriAddress, "s3://")
-			_, err := uploader.S3.HeadBucket(&s3.HeadBucketInput{
-				Bucket: &buck,
-			})
+			cfg, err := getConfig(s.PantriAddress)
 			if err != nil {
-				log.Print("error from S3.HeadBucket")
 				return err
 			}
-			return nil
+			uploader := s3.NewFromConfig(*cfg)
+			// s3://test --> test
+			// http://stuff/test --> test
+			_, buck := path.Split(s.PantriAddress)
+			_, err = uploader.HeadBucket(ctx, &s3.HeadBucketInput{
+				Bucket: &buck,
+			})
+			return err
 		},
 	}
 
 	return c.WriteToDisk(sourceRepo)
 }
 
-func New(sourceRepo, pantriAddress string, o stores.Options) (*Store, error) {
+func New(ctx context.Context, sourceRepo, pantriAddress string, o stores.Options) (*Store, error) {
 	if o.RemoveFromSourceRepo == nil {
 		b := false
 		o.RemoveFromSourceRepo = &b
+	}
+	if o.MetaDataFileExtension == "" {
+		e := ".pfile"
+		o.MetaDataFileExtension = e
 	}
 	s := &Store{
 		PantriAddress: pantriAddress,
 		Opts:          o,
 	}
-	err := s.init(sourceRepo)
+	err := s.init(ctx, sourceRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -81,16 +122,12 @@ func Load(m map[string]interface{}) (stores.Store, error) {
 }
 
 // TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
-func (s *Store) Upload(sourceRepo string, objects ...string) error {
-	// use auth that was configued by aws cli
-	sess := session.Must(session.NewSessionWithOptions(
-		session.Options{
-			// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-the-region
-			SharedConfigState: session.SharedConfigEnable,
-		},
-	))
-
-	uploader := s3manager.NewUploader(sess)
+func (s *Store) Upload(ctx context.Context, sourceRepo string, objects ...string) error {
+	cfg, err := getConfig(s.PantriAddress)
+	if err != nil {
+		return err
+	}
+	uploader := s3manager.NewUploader(s3.NewFromConfig(*cfg))
 	uploader.Concurrency = 3
 
 	for _, o := range objects {
@@ -122,10 +159,10 @@ func (s *Store) Upload(sourceRepo string, objects ...string) error {
 		if err != nil {
 			return err
 		}
-		if err := os.MkdirAll(filepath.Dir(path.Join(sourceRepo, fmt.Sprintf("%s.pfile", o))), os.ModePerm); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Opts.MetaDataFileExtension))), os.ModePerm); err != nil {
 			return err
 		}
-		if err := os.WriteFile(path.Join(sourceRepo, fmt.Sprintf("%s.pfile", o)), blob, 0644); err != nil {
+		if err := os.WriteFile(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Opts.MetaDataFileExtension)), blob, 0644); err != nil {
 			return err
 		}
 
@@ -136,12 +173,13 @@ func (s *Store) Upload(sourceRepo string, objects ...string) error {
 				}
 			}
 		}
-		buck := strings.TrimPrefix(s.PantriAddress, "s3://")
-		out, err := uploader.Upload(&s3manager.UploadInput{
+		_, buck := path.Split(s.PantriAddress)
+		obj := s3.PutObjectInput{
 			Bucket: aws.String(buck),
 			Key:    &o,
 			Body:   bytes.NewReader(b),
-		})
+		}
+		out, err := uploader.Upload(ctx, &obj)
 		if err != nil {
 			fmt.Println(out)
 			return err
@@ -150,27 +188,29 @@ func (s *Store) Upload(sourceRepo string, objects ...string) error {
 	return nil
 }
 
-func (s *Store) Retrieve(sourceRepo string, objects ...string) error {
-	sess := session.Must(session.NewSessionWithOptions(
-		session.Options{
-			// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-the-region
-			SharedConfigState: session.SharedConfigEnable,
-		},
-	))
-	downloader := s3manager.NewDownloader(sess)
+func (s *Store) Retrieve(ctx context.Context, sourceRepo string, objects ...string) error {
+	cfg, err := getConfig(s.PantriAddress)
+	if err != nil {
+		return err
+	}
+	if cfg == nil {
+		return errors.New("s3.getConfig(s.PantriAddress) returned nil while trying to Retrieve")
+	}
+	downloader := s3manager.NewDownloader(s3.NewFromConfig(*cfg))
 	downloader.Concurrency = 3
 	for _, o := range objects {
-		f, err := os.Create(o)
+		retrievePath := filepath.Join(sourceRepo, o)
+		f, err := os.Create(retrievePath)
 		if err != nil {
 			fmt.Println(err)
 		}
 		defer f.Close()
-		buck := strings.TrimPrefix(s.PantriAddress, "s3://")
-		_, err = downloader.Download(f,
-			&s3.GetObjectInput{
-				Bucket: aws.String(buck),
-				Key:    aws.String(o),
-			})
+		_, buck := path.Split(s.PantriAddress)
+		obj := &s3.GetObjectInput{
+			Bucket: aws.String(buck),
+			Key:    aws.String(o),
+		}
+		_, err = downloader.Download(ctx, f, obj)
 		if err != nil {
 			return err
 		}
@@ -184,7 +224,15 @@ func (s *Store) Retrieve(sourceRepo string, objects ...string) error {
 		if err != nil {
 			return err
 		}
-		m, err := metadata.ParsePfile(o)
+		var ext string
+		if s.Opts.MetaDataFileExtension == "" {
+			ext = ".pfile"
+		} else {
+			ext = s.Opts.MetaDataFileExtension
+		}
+		pfilePath := filepath.Join(sourceRepo, o)
+
+		m, err := metadata.ParsePfile(pfilePath, ext)
 		if err != nil {
 			return err
 		}

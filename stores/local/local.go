@@ -8,8 +8,8 @@ import (
 	"path"
 	"path/filepath"
 
-	pantriconfig "github.com/discentem/pantri_but_go/config"
 	"github.com/discentem/pantri_but_go/metadata"
+	pantriconfig "github.com/discentem/pantri_but_go/pantri"
 	"github.com/discentem/pantri_but_go/stores"
 	"github.com/mitchellh/go-homedir"
 )

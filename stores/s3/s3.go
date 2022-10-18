@@ -15,8 +15,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	pantriconfig "github.com/discentem/pantri_but_go/config"
 	"github.com/discentem/pantri_but_go/metadata"
+	pantriconfig "github.com/discentem/pantri_but_go/pantri"
 	"github.com/discentem/pantri_but_go/stores"
 )
 
@@ -141,5 +141,51 @@ func (s *Store) Upload(sourceRepo string, objects ...string) error {
 }
 
 func (s *Store) Retrieve(sourceRepo string, objects ...string) error {
+	sess := session.Must(session.NewSessionWithOptions(
+		session.Options{
+			// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-the-region
+			SharedConfigState: session.SharedConfigEnable,
+		},
+	))
+	downloader := s3manager.NewDownloader(sess)
+	downloader.Concurrency = 3
+	for _, o := range objects {
+		f, err := os.Create(o)
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer f.Close()
+		buck := strings.TrimPrefix(s.PantriAddress, "s3://")
+		_, err = downloader.Download(f,
+			&s3.GetObjectInput{
+				Bucket: aws.String(buck),
+				Key:    aws.String(o),
+			})
+		if err != nil {
+			return err
+		}
+
+		b, err := ioutil.ReadAll(f)
+		if err != nil {
+			return err
+		}
+
+		hash, err := metadata.SHA256FromBytes(b)
+		if err != nil {
+			return err
+		}
+		m, err := metadata.ParsePfile(o)
+		if err != nil {
+			return err
+		}
+		if hash != m.Checksum {
+			fmt.Println(hash, m.Checksum)
+			return stores.ErrRetrieveFailureHashMismatch
+		}
+		op := path.Join(sourceRepo, o)
+		if err := os.WriteFile(op, b, 0644); err != nil {
+			return err
+		}
+	}
 	return nil
 }

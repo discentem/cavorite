@@ -18,6 +18,7 @@ import (
 	"github.com/discentem/pantri_but_go/metadata"
 	pantriconfig "github.com/discentem/pantri_but_go/pantri"
 	"github.com/discentem/pantri_but_go/stores"
+	"github.com/mitchellh/mapstructure"
 )
 
 type Store struct {
@@ -68,6 +69,15 @@ func New(sourceRepo, pantriAddress string, o stores.Options) (*Store, error) {
 		return nil, err
 	}
 	return s, nil
+}
+
+func Load(m map[string]interface{}) (stores.Store, error) {
+	log.Printf("type %q detected in pantri %q", m["type"], m["pantri_address"])
+	var s *Store
+	if err := mapstructure.Decode(m, &s); err != nil {
+		return nil, err
+	}
+	return stores.Store(s), nil
 }
 
 // TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated

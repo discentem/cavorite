@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"os"
 
@@ -12,8 +11,7 @@ import (
 )
 
 var (
-	defaultStore   = "local"
-	ErrObjectEmpty = fmt.Errorf("object can't be %q", "")
+	defaultStore = "local"
 )
 
 func main() {

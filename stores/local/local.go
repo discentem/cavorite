@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	pantriconfig "github.com/discentem/pantri_but_go/pantri"
 	"github.com/discentem/pantri_but_go/stores"
 	"github.com/mitchellh/go-homedir"
+	"github.com/mitchellh/mapstructure"
 )
 
 type Store struct {
@@ -56,6 +58,15 @@ func New(sourceRepo, pantriAddress string, o stores.Options) (*Store, error) {
 		return nil, err
 	}
 	return s, nil
+}
+
+func Load(m map[string]interface{}) (stores.Store, error) {
+	log.Printf("type %q detected in pantri %q", m["type"], m["pantri_address"])
+	var s *Store
+	if err := mapstructure.Decode(m, &s); err != nil {
+		return nil, err
+	}
+	return stores.Store(s), nil
 }
 
 func (s *Store) Upload(sourceRepo string, objects ...string) error {

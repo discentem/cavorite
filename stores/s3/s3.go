@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -18,8 +18,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
-
-	// "github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/discentem/pantri_but_go/metadata"
 	pantriconfig "github.com/discentem/pantri_but_go/pantri"
 	"github.com/discentem/pantri_but_go/stores"
@@ -135,19 +133,12 @@ func (s *Store) Upload(ctx context.Context, sourceRepo string, objects ...string
 		if err != nil {
 			return err
 		}
-		// TODO(discentem): probably inefficient, reading same file multiple times
-		var b []byte
-		fstat, err := f.Stat()
-		if err != nil {
-			return err
-		}
-		// get bytes of the file
-		b = make([]byte, fstat.Size())
-		_, err = f.Read(b)
-		if err != nil {
-			return err
-		}
 		defer f.Close()
+		// TODO(discentem): probably inefficient, reading entire file into memory
+		b, err := os.ReadFile(o)
+		if err != nil {
+			return err
+		}
 
 		// generate pantri metadata
 		m, err := metadata.GenerateFromFile(*f)
@@ -173,6 +164,7 @@ func (s *Store) Upload(ctx context.Context, sourceRepo string, objects ...string
 				}
 			}
 		}
+
 		_, buck := path.Split(s.PantriAddress)
 		obj := s3.PutObjectInput{
 			Bucket: aws.String(buck),
@@ -202,7 +194,7 @@ func (s *Store) Retrieve(ctx context.Context, sourceRepo string, objects ...stri
 		retrievePath := filepath.Join(sourceRepo, o)
 		f, err := os.Create(retrievePath)
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
 		defer f.Close()
 		_, buck := path.Split(s.PantriAddress)
@@ -214,13 +206,7 @@ func (s *Store) Retrieve(ctx context.Context, sourceRepo string, objects ...stri
 		if err != nil {
 			return err
 		}
-
-		b, err := ioutil.ReadAll(f)
-		if err != nil {
-			return err
-		}
-
-		hash, err := metadata.SHA256FromBytes(b)
+		hash, err := metadata.SHA256FromReader(f)
 		if err != nil {
 			return err
 		}
@@ -241,6 +227,10 @@ func (s *Store) Retrieve(ctx context.Context, sourceRepo string, objects ...stri
 			return stores.ErrRetrieveFailureHashMismatch
 		}
 		op := path.Join(sourceRepo, o)
+		b, err := io.ReadAll(f)
+		if err != nil {
+			return err
+		}
 		if err := os.WriteFile(op, b, 0644); err != nil {
 			return err
 		}

@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -18,24 +17,16 @@ type ObjectMetaData struct {
 	DateModified time.Time `json:"date_modified"`
 }
 
-func SHA256FromBytes(b []byte) (string, error) {
-	hash := sha256.New()
-	if _, err := io.Copy(hash, bytes.NewReader(b)); err != nil {
+func SHA256FromReader(r io.Reader) (string, error) {
+	h := sha256.New()
+	if _, err := io.Copy(h, r); err != nil {
 		return "", err
 	}
-	h := hex.EncodeToString(hash.Sum(nil))
-	return h, nil
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 func GenerateFromReader(name string, modTime time.Time, r io.Reader) (*ObjectMetaData, error) {
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
-	if err != nil {
-		return nil, err
-	}
-	hash, err := SHA256FromBytes(b)
+	hash, err := SHA256FromReader(r)
 	if err != nil {
 		return nil, err
 	}

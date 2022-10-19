@@ -26,12 +26,12 @@ GLOBAL OPTIONS:
 
 ### Minio (S3)
 
-1. Run minio server
+1. Run minio server.
    ```shell
    % docker run -p 9000:9000 -p 9001:9001 quay.io/minio/minio server /data --console-address ":9001"
    ```
 
-1. Create directories
+1. Create needed directories.
    ```shell
    % mkdir ~/pantri
    % mkdir ~/some_git_project
@@ -54,7 +54,7 @@ GLOBAL OPTIONS:
       }
    }%
    ```
-1. Upload a binary
+1. Upload a binary.
 
    ```shell
    % AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin ./pantri_but_go --source_repo ~/some_git_project upload ~/Downloads/googlechromebeta.dmg
@@ -74,12 +74,13 @@ GLOBAL OPTIONS:
    }% 
    ```
 
-1. Retrieve binaries
+1. Retrieve binaries from minio.
 
-   **Retrieve is currently broken**
-
-
-
+   ```shell
+   % AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin ./pantri_but_go --source_repo ~/some_git_project retrieve Users/brandon/Downloads/googlechromebeta.dmg
+   2022/10/18 21:57:53 type "s3" detected in pantri "http://127.0.0.1:9000/test"
+   2022/10/18 21:57:53 Retrieving [Users/brandon/Downloads/googlechromebeta.dmg]
+   ```
 
 ### Local Storage
 
@@ -123,4 +124,3 @@ GLOBAL OPTIONS:
    % ls ~/some_git_project 
    go1.18.3.darwin-arm64.pkg	go1.18.3.darwin-arm64.pkg.pfile
    ```
-

@@ -139,7 +139,7 @@ func (s *Store) Retrieve(_ context.Context, sourceRepo string, objects ...string
 			return err
 		}
 
-		hash, err := metadata.SHA256FromBytes(b)
+		hash, err := metadata.SHA256FromReader(f)
 		if err != nil {
 			return err
 		}

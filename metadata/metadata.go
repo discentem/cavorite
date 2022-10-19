@@ -54,8 +54,8 @@ func GenerateFromFile(f os.File) (*ObjectMetaData, error) {
 	return GenerateFromReader(fstat.Name(), fstat.ModTime(), &f)
 }
 
-func ParsePfile(obj string) (*ObjectMetaData, error) {
-	pfile, err := os.Open(fmt.Sprintf("%s.pfile", obj))
+func ParsePfile(obj, ext string) (*ObjectMetaData, error) {
+	pfile, err := os.Open(fmt.Sprintf("%s.%s", obj, ext))
 	if err != nil {
 		return nil, err
 	}

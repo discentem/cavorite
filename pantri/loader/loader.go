@@ -1,6 +1,7 @@
 package loader
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -15,7 +16,8 @@ import (
 	"github.com/mitchellh/go-homedir"
 )
 
-func Initialize(sourceRepo, backend, address string, opts stores.Options) error {
+func Initialize(ctx context.Context, sourceRepo, backend, address string, opts stores.Options) error {
+	fmt.Println("loader:backend", backend)
 	switch b := (backend); b {
 	case "local":
 		_, err := localstore.New(sourceRepo, address, opts)
@@ -23,7 +25,7 @@ func Initialize(sourceRepo, backend, address string, opts stores.Options) error 
 			return err
 		}
 	case "s3":
-		_, err := s3.New(sourceRepo, address, opts)
+		_, err := s3.New(ctx, sourceRepo, address, opts)
 		if err != nil {
 			return err
 		}

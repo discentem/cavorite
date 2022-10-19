@@ -116,11 +116,11 @@ GLOBAL OPTIONS:
    ```
 1. Retrieve binaries
 
-   **```shell
+   ```shell
    % ~/pantri_but_go/pantri_but_go --source_repo ~/some_git_project retrieve go1.18.3.darwin-arm64.pkg
    2022/07/01 00:49:17 type "local" detected in pantri "/Users/brandon/pantri"
    2022/07/01 00:49:17 Retrieving [go1.18.3.darwin-arm64.pkg]
    % ls ~/some_git_project 
    go1.18.3.darwin-arm64.pkg	go1.18.3.darwin-arm64.pkg.pfile
-   ```**
+   ```
 

@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/discentem/pantri_but_go/stores"
+	"github.com/google/logger"
 	"github.com/mitchellh/go-homedir"
 )
 
@@ -36,13 +36,13 @@ func (c *Config) WriteToDisk(sourceRepo string) error {
 	}
 	cfile := filepath.Join(esr, "/.pantri/config")
 	if _, err := os.Stat(esr); err != nil {
-		fmt.Println(err)
+		logger.Error(err)
 		return fmt.Errorf("%s does not exist, so we can't make it a pantri repo", esr)
 	}
 
 	if err := os.MkdirAll(filepath.Dir(cfile), os.ModePerm); err != nil {
 		return err
 	}
-	log.Printf("initializing pantri config at %s", cfile)
+	logger.Infof("initializing pantri config at %s", cfile)
 	return os.WriteFile(cfile, b, os.ModePerm)
 }

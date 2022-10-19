@@ -4,20 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
+	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/discentem/pantri_but_go/stores"
-	"github.com/discentem/pantri_but_go/stores/local"
 	localstore "github.com/discentem/pantri_but_go/stores/local"
 	"github.com/discentem/pantri_but_go/stores/s3"
+	"github.com/google/logger"
 	"github.com/mitchellh/go-homedir"
 )
 
 func Initialize(ctx context.Context, sourceRepo, backend, address string, opts stores.Options) error {
-	fmt.Println("loader:backend", backend)
 	switch b := (backend); b {
 	case "local":
 		_, err := localstore.New(sourceRepo, address, opts)
@@ -45,19 +43,19 @@ func Load(sourceRepo string) (stores.Store, error) {
 	}
 	if _, err := os.Stat(filepath.Dir(cfile)); err != nil {
 		if os.IsNotExist(err) {
-			log.Printf("%s has not be initialized as a pantri repo", sourceRepo)
+			logger.Infof("%s has not be initialized as a pantri repo", sourceRepo)
 			return nil, err
 		}
 	}
 	f, err := os.Open(cfile)
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Printf("%s has not be initialized as a pantri repo", sourceRepo)
+			logger.Infof("%s has not be initialized as a pantri repo", sourceRepo)
 			return nil, err
 		}
 		return nil, err
 	}
-	b, err := ioutil.ReadAll(f)
+	b, err := io.ReadAll(f)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +65,7 @@ func Load(sourceRepo string) (stores.Store, error) {
 	}
 	switch t := (m["type"]); t {
 	case "local":
-		return local.Load(m)
+		return localstore.Load(m)
 	case "s3":
 		return s3.Load(m)
 	default:

@@ -4,8 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 	"github.com/discentem/pantri_but_go/metadata"
 	pantriconfig "github.com/discentem/pantri_but_go/pantri"
 	"github.com/discentem/pantri_but_go/stores"
+	"github.com/google/logger"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 )
@@ -66,7 +66,7 @@ func New(sourceRepo, pantriAddress string, o stores.Options) (*Store, error) {
 }
 
 func Load(m map[string]interface{}) (stores.Store, error) {
-	log.Printf("type %q detected in pantri %q", m["type"], m["pantri_address"])
+	logger.Infof("type %q detected in pantri %q", m["type"], m["pantri_address"])
 	var s *Store
 	if err := mapstructure.Decode(m, &s); err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func (s *Store) Retrieve(_ context.Context, sourceRepo string, objects ...string
 		if err != nil {
 			return err
 		}
-		b, err := ioutil.ReadAll(f)
+		b, err := io.ReadAll(f)
 		if err != nil {
 			return err
 		}

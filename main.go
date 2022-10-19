@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"errors"
+	"io"
 	"log"
 	"os"
+
+	"github.com/google/logger"
 
 	pantri "github.com/discentem/pantri_but_go/pantri/loader"
 	"github.com/discentem/pantri_but_go/stores"
@@ -15,7 +18,16 @@ var (
 	defaultStore = "local"
 )
 
+func setLoggerOpts(c *cli.Context) {
+	if c.Bool("vv") {
+		logger.SetLevel(2)
+	}
+	logger.SetFlags(log.LUTC)
+}
+
 func main() {
+	defer logger.Init("pantri_but_go", true, false, io.Discard).Close()
+
 	flags := []cli.Flag{
 		// Debug is not currently being used. Remove this line once we add logging
 		&cli.BoolFlag{
@@ -28,6 +40,12 @@ func main() {
 			Required: true,
 			Aliases:  []string{"sr"},
 			Usage:    "path to source repo",
+		},
+		&cli.BoolFlag{
+			Name:     "vv",
+			Required: false,
+			Value:    false,
+			Usage:    "displays logger.V(2).* messages",
 		},
 	}
 	app := &cli.App{
@@ -54,6 +72,8 @@ func main() {
 					},
 				},
 				Action: func(c *cli.Context) error {
+					setLoggerOpts(c)
+
 					remove := c.Bool("remove")
 					var backend string
 					if c.NArg() == 0 {
@@ -91,6 +111,8 @@ func main() {
 					},
 				},
 				Action: func(c *cli.Context) error {
+					setLoggerOpts(c)
+
 					if c.NArg() == 0 {
 						return errors.New("you must pass the path of an object to upload")
 					}
@@ -100,7 +122,7 @@ func main() {
 						return err
 					}
 					// TODO(discentem) improve log message to include pantriAddress
-					log.Printf("Uploading %s", c.Args().Slice())
+					logger.Infof("Uploading %s", c.Args().Slice())
 					if err := s.Upload(context.Background(), sourceRepo, c.Args().Slice()...); err != nil {
 						return err
 					}
@@ -112,6 +134,8 @@ func main() {
 				Aliases: []string{"r"},
 				Usage:   "Retrieve the specified file",
 				Action: func(c *cli.Context) error {
+					setLoggerOpts(c)
+
 					if c.NArg() == 0 {
 						return errors.New("you must pass the path of an object to retrieve")
 					}

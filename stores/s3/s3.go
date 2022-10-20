@@ -32,19 +32,17 @@ type Store struct {
 func getConfig(pantriAddress string) (*aws.Config, error) {
 	var cfg aws.Config
 	var err error
+
 	if strings.HasPrefix(pantriAddress, "s3://") {
-		// use auth that was configued by aws cli
 		cfg, err = config.LoadDefaultConfig(context.TODO())
 		if err != nil {
 			return nil, err
 		}
 		return &cfg, nil
-	}
-	if strings.HasPrefix(pantriAddress, "https://") || strings.HasPrefix(pantriAddress, "http://") {
-		// https://stackoverflow.com/questions/67575681/is-aws-go-sdk-v2-integrated-with-local-minio-server
-
-		// http://127.0.0.1:9000/test --> http://127.0.0.1:9000
+	} else if strings.HasPrefix(pantriAddress, "https://") || strings.HasPrefix(pantriAddress, "http://") {
+		// e.g. http://127.0.0.1:9000/test becomes http://127.0.0.1:9000
 		server, _ := path.Split(pantriAddress)
+		// https://stackoverflow.com/questions/67575681/is-aws-go-sdk-v2-integrated-with-local-minio-server
 		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
 			return aws.Endpoint{
 				PartitionID:       "aws",
@@ -145,6 +143,7 @@ func (s *Store) Upload(ctx context.Context, sourceRepo string, objects ...string
 		if err != nil {
 			return err
 		}
+		logger.V(2).Infof("%s has a checksum of %q", o, m.Checksum)
 		// convert to json
 		blob, err := json.MarshalIndent(m, "", " ")
 		if err != nil {
@@ -173,7 +172,7 @@ func (s *Store) Upload(ctx context.Context, sourceRepo string, objects ...string
 		}
 		out, err := uploader.Upload(ctx, &obj)
 		if err != nil {
-			fmt.Println(out)
+			logger.Error(out)
 			return err
 		}
 	}

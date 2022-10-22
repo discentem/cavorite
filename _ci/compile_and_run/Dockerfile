@@ -10,7 +10,7 @@ COPY . .
 
 # RUN cat pwd.txt
 
-RUN ls ${GITHUB_WORKSPACE}
+RUN ls "$GITHUB_WORKSPACE"
 
 RUN cd $GITHUB_WORKSPACE && CGO_ENABLED=0 && go build -o /usr/bin/pantri_but_go
 

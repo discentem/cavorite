@@ -3,4 +3,4 @@ description: "Ensure the project builds and runs"
 runs:
   using: docker
   # .github/workflows/main.yaml copies the Dockerfile here
-  image: ../../../../Dockerfile
+  image: ../../../_ci/compile_and_run/Dockerfile

@@ -5,7 +5,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: compile and run
-        working-directory: ${{env.GITHUB_WORKSPACE}}
         uses: ./.github/workflows/actions/ensure_compile_and_run/
   lint:
     runs-on: ubuntu-20.04

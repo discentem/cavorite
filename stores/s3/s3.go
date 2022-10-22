@@ -170,9 +170,9 @@ func (s *Store) Upload(ctx context.Context, sourceRepo string, objects ...string
 			Key:    &o,
 			Body:   bytes.NewReader(b),
 		}
-		out, err := uploader.Upload(ctx, &obj)
+		_, err = uploader.Upload(ctx, &obj)
 		if err != nil {
-			logger.Error(out)
+			logger.Error("uploader.Upload returned an error")
 			return err
 		}
 	}

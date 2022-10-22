@@ -4,4 +4,4 @@ WORKDIR /app
 
 COPY . .
 
-ENTRYPOINT golangci-lint run 
+ENTRYPOINT cd $GITHUB_WORKSPACE && golangci-lint run 

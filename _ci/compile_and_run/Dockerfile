@@ -10,7 +10,7 @@ COPY . .
 
 # RUN cat pwd.txt
 
-RUN CGO_ENABLED=0 go build -o /usr/bin/pantri_but_go
+RUN cd $GITHUB_WORKSPACE && CGO_ENABLED=0 && go build -o /usr/bin/pantri_but_go
 
 FROM golang:1.18-alpine as RUNPANTRI
 

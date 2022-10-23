@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"time"
 )
@@ -50,7 +49,7 @@ func ParsePfile(obj, ext string) (*ObjectMetaData, error) {
 	if err != nil {
 		return nil, err
 	}
-	b, err := ioutil.ReadAll(pfile)
+	b, err := io.ReadAll(pfile)
 	if err != nil {
 		return nil, err
 	}

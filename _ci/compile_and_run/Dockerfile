@@ -1,5 +1,4 @@
 FROM golang:1.18-alpine as GOBUILD
-# FROM ubuntu:latest as GOBUILD
 
 # This avoids an error about gopath
 WORKDIR /app

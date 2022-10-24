@@ -10,6 +10,21 @@ jobs:
         run: cp ./_ci/compile_and_run/Dockerfile ./Dockerfile
       - name: compile and run
         uses: ./.github/workflows/actions/ensure_compile_and_run/
+  integration_tests:
+    runs-on: ubuntu-20.04
+    env:
+          MINIO_HOST: minio
+          MINIO_PORT: 9001
+          AWS_ACCESS_KEY_ID: minioadmin
+          AWS_SECRET_ACCESS_KEY: minioadmin
+    steps:
+      - uses: actions/checkout@v3
+      - name: copy dockerfile
+        # awful hack because COPY ../ doesn't work in Dockerfile
+        # https://github.com/actions/runner/issues/2017
+        run: cp ./_ci/integration_tests/Dockerfile ./Dockerfile
+      - name: integration tests
+        uses: ./.github/workflows/actions/integration_tests/
   lint:
     runs-on: ubuntu-20.04
     steps:

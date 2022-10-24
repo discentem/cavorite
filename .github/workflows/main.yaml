@@ -9,7 +9,8 @@ jobs:
         # https://github.com/actions/runner/issues/2017
         run: cp ./_ci/compile_and_run/Dockerfile ./Dockerfile
       - name: compile and run
-        uses: ./.github/workflows/actions/ensure_compile_and_run/
+        run-name: compile and run
+        uses: ./.github/workflows/actions/generic/
   lint:
     runs-on: ubuntu-20.04
     steps:

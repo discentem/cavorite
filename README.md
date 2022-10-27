@@ -1,6 +1,6 @@
 ## What is this? 
 
-Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri. A re-write in go. 
+Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri. A re-write in go with support for s3, minio and other storage systems. 
 
 ## Man page
 

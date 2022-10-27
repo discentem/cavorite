@@ -1,3 +1,7 @@
+## What is this? 
+
+Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri. A re-write in go. 
+
 ## Man page
 
 ```shell

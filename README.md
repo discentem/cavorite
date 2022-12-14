@@ -1,3 +1,7 @@
+## **Disclaimer**
+
+This is not production ready or even a code complete project. 
+
 ## What is this? 
 
 Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri. A re-write in go with support for s3, minio and eventually other storage systems. 

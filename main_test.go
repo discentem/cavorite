@@ -3,52 +3,18 @@ package main
 import (
 	"bytes"
 	"context"
-	"errors"
 	"flag"
 	"log"
 	"path"
 	"strings"
+	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+
+	pantris3 "github.com/discentem/pantri_but_go/stores/s3"
 )
-
-func getConfig(bucketAddress string) (*aws.Config, error) {
-	var cfg aws.Config
-	var err error
-
-	if strings.HasPrefix(bucketAddress, "s3://") {
-		cfg, err = config.LoadDefaultConfig(context.TODO())
-		if err != nil {
-			return nil, err
-		}
-		return &cfg, nil
-	} else if strings.HasPrefix(bucketAddress, "https://") || strings.HasPrefix(bucketAddress, "http://") {
-		// e.g. http://127.0.0.1:9000/test becomes http://127.0.0.1:9000
-		server, _ := path.Split(bucketAddress)
-		// https://stackoverflow.com/questions/67575681/is-aws-go-sdk-v2-integrated-with-local-minio-server
-		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				PartitionID:       "aws",
-				URL:               server,
-				SigningRegion:     "us-east-1",
-				HostnameImmutable: true,
-			}, nil
-		})
-
-		cfg, err := config.LoadDefaultConfig(context.Background(),
-			config.WithRegion("us-east-1"),
-			config.WithEndpointResolverWithOptions(resolver),
-		)
-		if err != nil {
-			return nil, err
-		}
-		return &cfg, nil
-	}
-	return nil, errors.New("bucketAddress did not contain s3://, http://, or https:// prefix")
-}
 
 type s3Client struct {
 	*s3.Client
@@ -65,14 +31,15 @@ func (c s3Client) createBucket(ctx context.Context, bucketAddress string) error 
 	return err
 }
 
-func upload(ctx context.Context, serverName, bucketName, key string, b []byte) error {
-	cfg, err := getConfig(serverName)
+func upload(ctx context.Context, bucketAddress, key string, b []byte) error {
+	cfg, err := pantris3.GetConfig(bucketAddress)
 	if err != nil {
 		return err
 	}
 	uploader := s3manager.NewUploader(s3.NewFromConfig(*cfg))
 	uploader.Concurrency = 3
 
+	_, bucketName := path.Split(bucketAddress)
 	_, err = uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(key),
@@ -103,7 +70,7 @@ func (c s3Client) listObjects(bucketName string) error {
 }
 
 func NewClient(bucketAddress string) (*s3Client, error) {
-	cfg, err := getConfig(bucketAddress)
+	cfg, err := pantris3.GetConfig(bucketAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -112,23 +79,40 @@ func NewClient(bucketAddress string) (*s3Client, error) {
 	}, nil
 }
 
-func main() {
+func TestMain(T *testing.T) {
 	ctx := context.Background()
 
 	serverAddress := flag.String("bucket_address", "http://127.0.0.1:9000/test", "address to bucket")
+	// sourceRepo := flag.String("source_repo", "./_ci/integration_tests/artifacts/fake_git_repo", "path to source repo")
+	flag.Parse()
 	s3c, err := NewClient(*serverAddress)
 	if err != nil {
-		log.Fatal(err)
+		T.Fatal(err)
 	}
 	_, bucket := path.Split(*serverAddress)
 	if err := s3c.createBucket(ctx, bucket); err != nil {
 		if !strings.Contains(err.Error(), "BucketAlreadyOwnedByYou") {
-			log.Fatal(err)
+			T.Fatal(err)
 		}
 	}
-	b := []byte("blah")
-	if err := upload(ctx, *serverAddress, bucket, "thing", b); err != nil {
-		log.Fatal(err)
-	}
+
+	main()
+	// cmd := exec.Command(
+	// 	*binPath,
+	// 	"--source_repo",
+	// 	*sourceRepo,
+	// 	"init",
+	// 	"--pantri_address",
+	// 	*serverAddress,
+	// 	"s3",
+	// )
+	// cmd.Env = os.Environ()
+	// cmd.Env = append(cmd.Env, "AWS_ACCESS_KEY_ID=minioadmin")
+	// cmd.Env = append(cmd.Env, "AWS_SECRET_ACCESS_KEY=minioadmin")
+	// stdout, err := cmd.Output()
+	// if err != nil {
+	// 	log.Print(err)
+	// }
+	// log.Print(string(stdout))
 
 }

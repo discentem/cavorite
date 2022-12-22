@@ -13,8 +13,6 @@ jobs:
   integration_tests:
     runs-on: ubuntu-20.04
     env:
-          MINIO_HOST: minio
-          MINIO_PORT: 9001
           AWS_ACCESS_KEY_ID: minioadmin
           AWS_SECRET_ACCESS_KEY: minioadmin
     steps:

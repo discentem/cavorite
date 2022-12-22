@@ -29,7 +29,7 @@ type Store struct {
 	Opts          stores.Options `mapstructure:"options"`
 }
 
-func getConfig(pantriAddress string) (*aws.Config, error) {
+func GetConfig(pantriAddress string) (*aws.Config, error) {
 	var cfg aws.Config
 	var err error
 
@@ -70,7 +70,7 @@ func (s *Store) init(ctx context.Context, sourceRepo string) error {
 		PantriAddress: s.PantriAddress,
 		Opts:          s.Opts,
 		Validate: func() error {
-			cfg, err := getConfig(s.PantriAddress)
+			cfg, err := GetConfig(s.PantriAddress)
 			if err != nil {
 				return err
 			}
@@ -119,7 +119,7 @@ func Load(m map[string]interface{}) (stores.Store, error) {
 
 // TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
 func (s *Store) Upload(ctx context.Context, sourceRepo string, objects ...string) error {
-	cfg, err := getConfig(s.PantriAddress)
+	cfg, err := GetConfig(s.PantriAddress)
 	if err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func (s *Store) Upload(ctx context.Context, sourceRepo string, objects ...string
 }
 
 func (s *Store) Retrieve(ctx context.Context, sourceRepo string, objects ...string) error {
-	cfg, err := getConfig(s.PantriAddress)
+	cfg, err := GetConfig(s.PantriAddress)
 	if err != nil {
 		return err
 	}

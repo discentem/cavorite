@@ -3,16 +3,17 @@ package loader
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
+
 	"os"
 	"path/filepath"
 
 	"github.com/discentem/pantri_but_go/stores"
 	localstore "github.com/discentem/pantri_but_go/stores/local"
 	"github.com/discentem/pantri_but_go/stores/s3"
-	"github.com/google/logger"
 	"github.com/mitchellh/go-homedir"
+	"github.com/spf13/afero"
 )
 
 func Initialize(ctx context.Context, sourceRepo, backend, address string, opts stores.Options) error {
@@ -34,28 +35,52 @@ func Initialize(ctx context.Context, sourceRepo, backend, address string, opts s
 
 }
 
-func Load(sourceRepo string) (stores.Store, error) {
-	cfile, err := homedir.Expand(
+var (
+	ErrConfigNotExist    = errors.New("because the config file does not exist")
+	ErrConfigDirNotExist = errors.New("the config directory does not exist")
+)
+
+type dirExpander func(string) (string, error)
+
+// expander can be overwritten with fakes for tests
+var expander dirExpander = homedir.Expand
+
+func readConfig(fsys afero.Fs, sourceRepo string) ([]byte, error) {
+	cfile, err := expander(
 		fmt.Sprintf("%s/.pantri/config", sourceRepo),
 	)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := os.Stat(filepath.Dir(cfile)); err != nil {
+
+	if _, err := fsys.Stat(filepath.Dir(cfile)); err != nil {
 		if os.IsNotExist(err) {
-			logger.Infof("%s has not be initialized as a pantri repo", sourceRepo)
-			return nil, err
-		}
-	}
-	f, err := os.Open(cfile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			logger.Infof("%s has not be initialized as a pantri repo", sourceRepo)
-			return nil, err
+			return nil, fmt.Errorf(
+				"%s has not be initialized as a pantri repo: %w: %s",
+				sourceRepo,
+				ErrConfigDirNotExist,
+				filepath.Dir(cfile),
+			)
 		}
 		return nil, err
 	}
-	b, err := io.ReadAll(f)
+	f, err := fsys.Open(cfile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf(
+				"%s has not be initialized as a pantri repo: %w: %s",
+				sourceRepo,
+				ErrConfigNotExist,
+				cfile,
+			)
+		}
+		return nil, err
+	}
+	return afero.ReadAll(f)
+}
+
+func Load(fsys afero.Fs, sourceRepo string) (stores.Store, error) {
+	b, err := readConfig(fsys, sourceRepo)
 	if err != nil {
 		return nil, err
 	}

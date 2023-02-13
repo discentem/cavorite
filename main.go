@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/google/logger"
+	"github.com/spf13/afero"
 
 	pantri "github.com/discentem/pantri_but_go/pantri/loader"
 	"github.com/discentem/pantri_but_go/stores"
@@ -117,7 +118,7 @@ func main() {
 						return errors.New("you must pass the path of an object to upload")
 					}
 					sourceRepo := c.String("source_repo")
-					s, err := pantri.Load(sourceRepo)
+					s, err := pantri.Load(afero.NewOsFs(), sourceRepo)
 					if err != nil {
 						return err
 					}
@@ -140,7 +141,7 @@ func main() {
 						return errors.New("you must pass the path of an object to retrieve")
 					}
 					sourceRepo := c.String("source_repo")
-					s, err := pantri.Load(sourceRepo)
+					s, err := pantri.Load(afero.NewOsFs(), sourceRepo)
 					if err != nil {
 						return err
 					}

@@ -10,6 +10,7 @@ import (
 	"github.com/discentem/pantri_but_go/stores"
 	"github.com/google/logger"
 	"github.com/mitchellh/go-homedir"
+	"github.com/spf13/afero"
 )
 
 type Config struct {
@@ -19,24 +20,45 @@ type Config struct {
 	Validate      func() error   `json:"-"`
 }
 
-func (c *Config) WriteToDisk(sourceRepo string) error {
+type dirExpanderer func(string) (string, error)
+type jsonMarshalIndenterer func(v any, prefix string, indent string) ([]byte, error)
+
+// dirExpander can be overwritten for tests
+var dirExpander dirExpanderer = homedir.Expand
+
+// jsonMarshalIndenter can be overwritten for tests
+var jsonMarshalIndenter jsonMarshalIndenterer = json.MarshalIndent
+
+var ErrValidateNil = errors.New("pantri config must have a Validate() function")
+var ErrValidate = errors.New("validate() failed")
+var ErrJsonMarshal = errors.New("jsonMarshalIndenter failed")
+var ErrDirExpander = errors.New("dirExpander failed")
+
+func (c *Config) WriteToDisk(fsys afero.Fs, sourceRepo string) error {
 	if c.Validate == nil {
-		return errors.New("pantri config must have a Validate() function")
+		return ErrValidateNil
 	}
 	if err := c.Validate(); err != nil {
-		return err
+		return fmt.Errorf("%w: %v", ErrValidate, err)
 	}
-	b, err := json.MarshalIndent(c, "", " ")
+	b, err := jsonMarshalIndenter(c, "", " ")
 	if err != nil {
-		return err
+		return fmt.Errorf(
+			"%w: %v",
+			ErrJsonMarshal,
+			err,
+		)
 	}
-	esr, err := homedir.Expand(sourceRepo)
+	esr, err := dirExpander(sourceRepo)
 	if err != nil {
-		return err
+		return fmt.Errorf(
+			"%w: %v",
+			ErrDirExpander,
+			err,
+		)
 	}
-	cfile := filepath.Join(esr, "/.pantri/config")
+	cfile := filepath.Join(esr, ".pantri/config")
 	if _, err := os.Stat(esr); err != nil {
-		logger.Error(err)
 		return fmt.Errorf("%s does not exist, so we can't make it a pantri repo", esr)
 	}
 

@@ -16,6 +16,10 @@ import (
 	"github.com/spf13/afero"
 )
 
+var (
+	ErrUnsupportedStore = errors.New("not a supported store type")
+)
+
 func Initialize(ctx context.Context, sourceRepo, backend, address string, opts stores.Options) error {
 	switch b := (backend); b {
 	case "local":
@@ -29,7 +33,7 @@ func Initialize(ctx context.Context, sourceRepo, backend, address string, opts s
 			return err
 		}
 	default:
-		return fmt.Errorf("%s is not a supported store type", b)
+		return fmt.Errorf("%s: %w", b, ErrUnsupportedStore)
 	}
 	return nil
 

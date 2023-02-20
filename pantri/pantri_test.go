@@ -36,9 +36,35 @@ func TestDirExpanderFails(t *testing.T) {
 	assert.ErrorIs(t, err, ErrDirExpander)
 }
 
-// func TestSuccessfulWrite(t *testing.T) {
-// 	t.Run("")
-// }
+func TestSuccessfulWrite(t *testing.T) {
+	conf := Config{
+		Type:          "blah",
+		PantriAddress: "blahaddress",
+		Validate:      func() error { return nil },
+	}
+	// override back to a dirExpander that will succeed, as opposed to previous test
+	dirExpander = func(path string) (string, error) {
+		return path, nil
+	}
+	fsys := afero.NewMemMapFs()
+	err := conf.Write(fsys, ".")
+	assert.NoError(t, err)
+	f, err := fsys.Open(".pantri/config")
+	assert.NoError(t, err)
+	b, err := afero.ReadAll(f)
+	assert.NoError(t, err)
+
+	expected := `{
+ "type": "blah",
+ "pantri_address": "blahaddress",
+ "options": {
+  "metadata_file_extension": "",
+  "remove_from_sourcerepo": null
+ }
+}`
+	assert.Equal(t, expected, string(b))
+
+}
 
 func TestWrite(t *testing.T) {
 	t.Run("fail if validate() nil", TestValidateFuncNil)
@@ -46,4 +72,5 @@ func TestWrite(t *testing.T) {
 	t.Run("fail if dirExpander() fails",
 		TestDirExpanderFails,
 	)
+	t.Run("successful write", TestSuccessfulWrite)
 }

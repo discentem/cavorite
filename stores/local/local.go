@@ -15,6 +15,7 @@ import (
 	"github.com/google/logger"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/afero"
 )
 
 type Store struct {
@@ -22,7 +23,7 @@ type Store struct {
 	Opts          stores.Options `mapstructure:"options"`
 }
 
-func (s *Store) init(sourceRepo string) error {
+func (s *Store) init(fsys afero.Fs, sourceRepo string) error {
 	epa, err := homedir.Expand(s.PantriAddress)
 	if err != nil {
 		return err
@@ -42,10 +43,10 @@ func (s *Store) init(sourceRepo string) error {
 		},
 	}
 
-	return c.WriteToDisk(sourceRepo)
+	return c.Write(fsys, sourceRepo)
 }
 
-func New(sourceRepo, pantriAddress string, o stores.Options) (*Store, error) {
+func New(fsys afero.Fs, sourceRepo, pantriAddress string, o stores.Options) (*Store, error) {
 	if o.RemoveFromSourceRepo == nil {
 		b := false
 		o.RemoveFromSourceRepo = &b
@@ -58,7 +59,7 @@ func New(sourceRepo, pantriAddress string, o stores.Options) (*Store, error) {
 		PantriAddress: pantriAddress,
 		Opts:          o,
 	}
-	err := s.init(sourceRepo)
+	err := s.init(fsys, sourceRepo)
 	if err != nil {
 		return nil, err
 	}

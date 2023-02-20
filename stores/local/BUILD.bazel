@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "local",
+    srcs = ["local.go"],
+    importpath = "github.com/example/project/stores/local",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_google_logger//:go_default_library",
+        "@com_github_mitchellh_go_homedir//:go_default_library",
+        "@com_github_mitchellh_mapstructure//:go_default_library",
+        "@com_github_spf13_afero//:go_default_library",
+    ],
+)

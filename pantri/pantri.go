@@ -21,33 +21,24 @@ type Config struct {
 }
 
 type dirExpanderer func(string) (string, error)
-type jsonMarshalIndenterer func(v any, prefix string, indent string) ([]byte, error)
 
 // dirExpander can be overwritten for tests
 var dirExpander dirExpanderer = homedir.Expand
 
-// jsonMarshalIndenter can be overwritten for tests
-var jsonMarshalIndenter jsonMarshalIndenterer = json.MarshalIndent
-
 var ErrValidateNil = errors.New("pantri config must have a Validate() function")
 var ErrValidate = errors.New("validate() failed")
-var ErrJsonMarshal = errors.New("jsonMarshalIndenter failed")
 var ErrDirExpander = errors.New("dirExpander failed")
 
-func (c *Config) WriteToDisk(fsys afero.Fs, sourceRepo string) error {
+func (c *Config) Write(fsys afero.Fs, sourceRepo string) error {
 	if c.Validate == nil {
 		return ErrValidateNil
 	}
 	if err := c.Validate(); err != nil {
 		return fmt.Errorf("%w: %v", ErrValidate, err)
 	}
-	b, err := jsonMarshalIndenter(c, "", " ")
+	b, err := json.MarshalIndent(c, "", " ")
 	if err != nil {
-		return fmt.Errorf(
-			"%w: %v",
-			ErrJsonMarshal,
-			err,
-		)
+		return err
 	}
 	esr, err := dirExpander(sourceRepo)
 	if err != nil {

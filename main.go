@@ -93,7 +93,7 @@ func main() {
 					sourceRepo := c.String("source_repo")
 					pantriAddress := c.String("pantri_address")
 					// store agnostic initialization, specific initialization determined by backend
-					err := pantri.Initialize(context.Background(), sourceRepo, backend, pantriAddress, opts)
+					err := pantri.Initialize(context.Background(), afero.NewOsFs(), sourceRepo, backend, pantriAddress, opts)
 					if err != nil {
 						return err
 					}

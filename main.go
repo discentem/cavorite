@@ -11,7 +11,9 @@ import (
 	"github.com/spf13/afero"
 
 	pantri "github.com/discentem/pantri_but_go/pantri/loader"
+
 	"github.com/discentem/pantri_but_go/stores"
+
 	"github.com/urfave/cli/v2"
 )
 
@@ -93,7 +95,7 @@ func main() {
 					sourceRepo := c.String("source_repo")
 					pantriAddress := c.String("pantri_address")
 					// store agnostic initialization, specific initialization determined by backend
-					err := pantri.Initialize(context.Background(), sourceRepo, backend, pantriAddress, opts)
+					err := pantri.Initialize(context.Background(), afero.NewOsFs(), sourceRepo, backend, pantriAddress, opts)
 					if err != nil {
 						return err
 					}

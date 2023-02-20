@@ -1,0 +1,2 @@
+run --repo_env GOPRIVATE='github.com/discentem/pantri_but_go/'
+build --repo_env GOPRIVATE='github.com/discentem/pantri_but_go/'

@@ -50,13 +50,13 @@ func (c *Config) Write(fsys afero.Fs, sourceRepo string) error {
 		)
 	}
 	cfile := filepath.Join(esr, ".pantri/config")
-	if _, err := os.Stat(esr); err != nil {
+	if _, err := fsys.Stat(esr); err != nil {
 		return fmt.Errorf("%s does not exist, so we can't make it a pantri repo", esr)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(cfile), os.ModePerm); err != nil {
+	if err := fsys.MkdirAll(filepath.Dir(cfile), os.ModePerm); err != nil {
 		return err
 	}
 	logger.Infof("initializing pantri config at %s", cfile)
-	return os.WriteFile(cfile, b, os.ModePerm)
+	return afero.WriteFile(fsys, cfile, b, os.ModePerm)
 }

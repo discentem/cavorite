@@ -36,6 +36,10 @@ func TestDirExpanderFails(t *testing.T) {
 	assert.ErrorIs(t, err, ErrDirExpander)
 }
 
+// func TestSuccessfulWrite(t *testing.T) {
+// 	t.Run("")
+// }
+
 func TestWrite(t *testing.T) {
 	t.Run("fail if validate() nil", TestValidateFuncNil)
 	t.Run("fail if validate() fails", TestValidateFails)

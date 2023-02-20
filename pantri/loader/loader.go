@@ -10,8 +10,11 @@ import (
 	"path/filepath"
 
 	"github.com/discentem/pantri_but_go/stores"
+
 	localstore "github.com/discentem/pantri_but_go/stores/local"
+
 	"github.com/discentem/pantri_but_go/stores/s3"
+
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/afero"
 )

@@ -10,8 +10,10 @@ import (
 	"path/filepath"
 
 	"github.com/discentem/pantri_but_go/metadata"
-	pantriconfig "github.com/discentem/pantri_but_go/pantri"
 	"github.com/discentem/pantri_but_go/stores"
+
+	pantriconfig "github.com/discentem/pantri_but_go/pantri"
+
 	"github.com/google/logger"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"

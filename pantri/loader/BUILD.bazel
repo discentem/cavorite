@@ -3,11 +3,14 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "loader",
     srcs = ["loader.go"],
-    importpath = "github.com/example/project/pantri/loader",
+    importpath = "github.com/discentem/pantri_but_go/pantri/loader",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_mitchellh_go_homedir//:go_default_library",
-        "@com_github_spf13_afero//:go_default_library",
+        "//stores",
+        "//stores/local",
+        "//stores/s3",
+        "@com_github_mitchellh_go_homedir//:go-homedir",
+        "@com_github_spf13_afero//:afero",
     ],
 )
 
@@ -16,7 +19,7 @@ go_test(
     srcs = ["loader_test.go"],
     embed = [":loader"],
     deps = [
-        "@com_github_spf13_afero//:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
     ],
 )

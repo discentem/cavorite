@@ -1,3 +1,7 @@
+workspace(
+    name = "com_github_discentem_pantri_but_go",
+)
+
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
@@ -18,9 +22,8 @@ http_archive(
     ],
 )
 
-
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
 ############################################################
 # Define your own dependencies here using go_repository.
@@ -28,8 +31,16 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 # The first declaration of an external repository "wins".
 ############################################################
 
+load("//:repositories.bzl", "go_repositories")
+# gazelle:repository_macro repositories.bzl%go_repositories
+go_repositories()
+
 go_rules_dependencies()
 
 go_register_toolchains(version = "1.19.5")
 
-gazelle_dependencies()
+gazelle_dependencies(
+    # go_env = {
+    #     "GOPRIVATE": "github.com/discentem/pantri_but_go",
+    # },
+)

@@ -18,10 +18,12 @@ import (
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 
-	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/discentem/pantri_but_go/metadata"
-	pantriconfig "github.com/discentem/pantri_but_go/pantri"
 	"github.com/discentem/pantri_but_go/stores"
+
+	pantriconfig "github.com/discentem/pantri_but_go/pantri"
+
+	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/mitchellh/mapstructure"
 )
 

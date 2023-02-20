@@ -11,7 +11,9 @@ import (
 	"github.com/spf13/afero"
 
 	pantri "github.com/discentem/pantri_but_go/pantri/loader"
+
 	"github.com/discentem/pantri_but_go/stores"
+
 	"github.com/urfave/cli/v2"
 )
 

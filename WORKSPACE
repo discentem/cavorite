@@ -1,7 +1,3 @@
-workspace(
-    name = "com_github_discentem_pantri_but_go",
-)
-
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
@@ -39,8 +35,4 @@ go_rules_dependencies()
 
 go_register_toolchains(version = "1.19.5")
 
-gazelle_dependencies(
-    # go_env = {
-    #     "GOPRIVATE": "github.com/discentem/pantri_but_go",
-    # },
-)
+gazelle_dependencies()

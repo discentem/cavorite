@@ -1,5 +1,7 @@
 {
     "files.associations": {
         "*.pfile": "json"
-      },
+    },
+    "go.lintTool": "golangci-lint",
+    "go.lintFlags": ["--fast"]
 }

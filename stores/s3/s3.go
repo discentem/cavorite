@@ -16,11 +16,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/logger"
+	"github.com/spf13/afero"
+
+	"github.com/discentem/pantri_but_go/metadata"
+	"github.com/discentem/pantri_but_go/stores"
+
+	pantriconfig "github.com/discentem/pantri_but_go/pantri"
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
-	"github.com/discentem/pantri_but_go/metadata"
-	pantriconfig "github.com/discentem/pantri_but_go/pantri"
-	"github.com/discentem/pantri_but_go/stores"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -64,7 +67,7 @@ func getConfig(pantriAddress string) (*aws.Config, error) {
 	return nil, errors.New("pantriAddress did not contain s3://, http://, or https:// prefix")
 }
 
-func (s *Store) init(ctx context.Context, sourceRepo string) error {
+func (s *Store) init(ctx context.Context, fsys afero.Fs, sourceRepo string) error {
 	c := pantriconfig.Config{
 		Type:          "s3",
 		PantriAddress: s.PantriAddress,
@@ -85,10 +88,10 @@ func (s *Store) init(ctx context.Context, sourceRepo string) error {
 		},
 	}
 
-	return c.WriteToDisk(sourceRepo)
+	return c.Write(fsys, sourceRepo)
 }
 
-func New(ctx context.Context, sourceRepo, pantriAddress string, o stores.Options) (*Store, error) {
+func New(ctx context.Context, fsys afero.Fs, sourceRepo, pantriAddress string, o stores.Options) (*Store, error) {
 	if o.RemoveFromSourceRepo == nil {
 		b := false
 		o.RemoveFromSourceRepo = &b
@@ -101,7 +104,7 @@ func New(ctx context.Context, sourceRepo, pantriAddress string, o stores.Options
 		PantriAddress: pantriAddress,
 		Opts:          o,
 	}
-	err := s.init(ctx, sourceRepo)
+	err := s.init(ctx, fsys, sourceRepo)
 	if err != nil {
 		return nil, err
 	}

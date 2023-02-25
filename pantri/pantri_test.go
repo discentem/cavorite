@@ -1,7 +1,6 @@
 package config
 
 import (
-	"encoding/json"
 	"errors"
 	"testing"
 
@@ -13,7 +12,7 @@ func TestValidateFuncNil(t *testing.T) {
 	conf := Config{
 		Validate: nil,
 	}
-	err := conf.WriteToDisk(afero.NewMemMapFs(), "")
+	err := conf.Write(afero.NewMemMapFs(), "")
 	assert.ErrorIs(t, err, ErrValidateNil)
 }
 func TestValidateFails(t *testing.T) {
@@ -22,23 +21,8 @@ func TestValidateFails(t *testing.T) {
 			return errors.New("failed")
 		},
 	}
-	err := conf.WriteToDisk(afero.NewMemMapFs(), "")
+	err := conf.Write(afero.NewMemMapFs(), "")
 	assert.ErrorIs(t, err, ErrValidate)
-}
-
-func TestJsonMarshalIndenterFails(t *testing.T) {
-	conf := Config{
-		Validate: func() error { return nil },
-	}
-	// override marshaler with broken one
-	jsonMarshalIndenter = func(v any, prefix string, indent string) ([]byte, error) {
-		return nil, errors.New("borked")
-	}
-	err := conf.WriteToDisk(
-		afero.NewMemMapFs(),
-		"",
-	)
-	assert.ErrorIs(t, err, ErrJsonMarshal)
 }
 
 func TestDirExpanderFails(t *testing.T) {
@@ -48,20 +32,45 @@ func TestDirExpanderFails(t *testing.T) {
 	dirExpander = func(path string) (string, error) {
 		return "", errors.New("borked")
 	}
-	// TODO(discentem): this is shitty, one test should not break another
-	// reset jsonMarshalIndenter back after previous test
-	jsonMarshalIndenter = json.MarshalIndent
-	err := conf.WriteToDisk(afero.NewMemMapFs(), "")
+	err := conf.Write(afero.NewMemMapFs(), "")
 	assert.ErrorIs(t, err, ErrDirExpander)
 }
 
-func TestWriteToDisk(t *testing.T) {
+func TestSuccessfulWrite(t *testing.T) {
+	conf := Config{
+		Type:          "blah",
+		PantriAddress: "blahaddress",
+		Validate:      func() error { return nil },
+	}
+	// override back to a dirExpander that will succeed, as opposed to previous test
+	dirExpander = func(path string) (string, error) {
+		return path, nil
+	}
+	fsys := afero.NewMemMapFs()
+	err := conf.Write(fsys, ".")
+	assert.NoError(t, err)
+	f, err := fsys.Open(".pantri/config")
+	assert.NoError(t, err)
+	b, err := afero.ReadAll(f)
+	assert.NoError(t, err)
+
+	expected := `{
+ "type": "blah",
+ "pantri_address": "blahaddress",
+ "options": {
+  "metadata_file_extension": "",
+  "remove_from_sourcerepo": null
+ }
+}`
+	assert.Equal(t, expected, string(b))
+
+}
+
+func TestWrite(t *testing.T) {
 	t.Run("fail if validate() nil", TestValidateFuncNil)
 	t.Run("fail if validate() fails", TestValidateFails)
-	t.Run("fail if jsonMarshalIndenter errors",
-		TestJsonMarshalIndenterFails,
-	)
-	t.Run("fail if dirExpander errors",
+	t.Run("fail if dirExpander() fails",
 		TestDirExpanderFails,
 	)
+	t.Run("successful write", TestSuccessfulWrite)
 }

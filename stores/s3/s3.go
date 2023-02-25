@@ -121,7 +121,7 @@ func Load(m map[string]interface{}) (stores.Store, error) {
 }
 
 // TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
-func (s *Store) Upload(ctx context.Context, sourceRepo string, objects ...string) error {
+func (s *Store) Upload(ctx context.Context, fsys afero.Fs, sourceRepo string, objects ...string) error {
 	cfg, err := getConfig(s.PantriAddress)
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (s *Store) Upload(ctx context.Context, sourceRepo string, objects ...string
 	return nil
 }
 
-func (s *Store) Retrieve(ctx context.Context, sourceRepo string, objects ...string) error {
+func (s *Store) Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string, objects ...string) error {
 	cfg, err := getConfig(s.PantriAddress)
 	if err != nil {
 		return err
@@ -220,7 +220,7 @@ func (s *Store) Retrieve(ctx context.Context, sourceRepo string, objects ...stri
 		}
 		pfilePath := filepath.Join(sourceRepo, o)
 
-		m, err := metadata.ParsePfile(pfilePath, ext)
+		m, err := metadata.ParsePfile(fsys, pfilePath, ext)
 		if err != nil {
 			return err
 		}

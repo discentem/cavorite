@@ -15,12 +15,12 @@ go_library(
 
 go_test(
     name = "pantri_test",
+    size = "small",
+    timeout = "short",
     srcs = ["pantri_test.go"],
     embed = [":pantri"],
     deps = [
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",
     ],
-    size = "small",
-    timeout = "short",
 )

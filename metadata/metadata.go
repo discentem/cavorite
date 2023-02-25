@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"time"
+
+	"github.com/spf13/afero"
 )
 
 type ObjectMetaData struct {
@@ -45,18 +46,18 @@ func GenerateFromFile(f os.File) (*ObjectMetaData, error) {
 	return GenerateFromReader(fstat.Name(), fstat.ModTime(), &f)
 }
 
-func ParsePfile(obj, ext string) (*ObjectMetaData, error) {
-	pfile, err := os.Open(fmt.Sprintf("%s.%s", obj, ext))
+func ParsePfile(fsys afero.Fs, obj, ext string) (*ObjectMetaData, error) {
+	pfile, err := fsys.Open(fmt.Sprintf("%s.%s", obj, ext))
 	if err != nil {
 		return nil, err
 	}
-	b, err := ioutil.ReadAll(pfile)
+	b, err := io.ReadAll(pfile)
 	if err != nil {
 		return nil, err
 	}
-	var metadata *ObjectMetaData
+	var metadata ObjectMetaData
 	if err := json.Unmarshal(b, &metadata); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("json marshal failed: %w", err)
 	}
-	return metadata, nil
+	return &metadata, nil
 }

@@ -16,12 +16,12 @@ go_library(
 
 go_test(
     name = "loader_test",
+    size = "small",
+    timeout = "short",
     srcs = ["loader_test.go"],
     embed = [":loader"],
     deps = [
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",
     ],
-    size = "small",
-    timeout = "short",
 )

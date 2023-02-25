@@ -120,13 +120,14 @@ func main() {
 						return errors.New("you must pass the path of an object to upload")
 					}
 					sourceRepo := c.String("source_repo")
-					s, err := pantri.Load(afero.NewOsFs(), sourceRepo)
+					fsys := afero.NewOsFs()
+					s, err := pantri.Load(fsys, sourceRepo)
 					if err != nil {
 						return err
 					}
 					// TODO(discentem) improve log message to include pantriAddress
 					logger.Infof("Uploading %s", c.Args().Slice())
-					if err := s.Upload(context.Background(), sourceRepo, c.Args().Slice()...); err != nil {
+					if err := s.Upload(context.Background(), fsys, sourceRepo, c.Args().Slice()...); err != nil {
 						return err
 					}
 					return nil
@@ -143,13 +144,14 @@ func main() {
 						return errors.New("you must pass the path of an object to retrieve")
 					}
 					sourceRepo := c.String("source_repo")
-					s, err := pantri.Load(afero.NewOsFs(), sourceRepo)
+					fsys := afero.NewOsFs()
+					s, err := pantri.Load(fsys, sourceRepo)
 					if err != nil {
 						return err
 					}
 					// TODO(discentem) improve log message to include pantriAddress
 					log.Printf("Retrieving %s", c.Args().Slice())
-					if err := s.Retrieve(context.Background(), sourceRepo, c.Args().Slice()...); err != nil {
+					if err := s.Retrieve(context.Background(), fsys, sourceRepo, c.Args().Slice()...); err != nil {
 						return err
 					}
 					return nil

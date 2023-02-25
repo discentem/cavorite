@@ -77,7 +77,7 @@ func Load(m map[string]interface{}) (stores.Store, error) {
 	return stores.Store(s), nil
 }
 
-func (s *Store) Upload(_ context.Context, sourceRepo string, objects ...string) error {
+func (s *Store) Upload(_ context.Context, fsys afero.Fs, sourceRepo string, objects ...string) error {
 	for _, o := range objects {
 		objp := path.Join(s.PantriAddress, o)
 		b, err := os.ReadFile(o)
@@ -131,7 +131,7 @@ func (s *Store) Upload(_ context.Context, sourceRepo string, objects ...string) 
 	return nil
 }
 
-func (s *Store) Retrieve(_ context.Context, sourceRepo string, objects ...string) error {
+func (s *Store) Retrieve(_ context.Context, fsys afero.Fs, sourceRepo string, objects ...string) error {
 	for _, o := range objects {
 		f, err := os.Open(path.Join(s.PantriAddress, o))
 		if err != nil {
@@ -152,7 +152,7 @@ func (s *Store) Retrieve(_ context.Context, sourceRepo string, objects ...string
 		} else {
 			ext = s.Opts.MetaDataFileExtension
 		}
-		m, err := metadata.ParsePfile(o, ext)
+		m, err := metadata.ParsePfile(fsys, o, ext)
 		if err != nil {
 			return err
 		}

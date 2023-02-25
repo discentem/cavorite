@@ -1,8 +1,19 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "metadata",
     srcs = ["metadata.go"],
     importpath = "github.com/discentem/pantri_but_go/metadata",
     visibility = ["//visibility:public"],
+    deps = ["@com_github_spf13_afero//:afero"],
+)
+
+go_test(
+    name = "metadata_test",
+    srcs = ["metadata_test.go"],
+    embed = [":metadata"],
+    deps = [
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//assert",
+    ],
 )

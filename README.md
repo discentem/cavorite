@@ -41,7 +41,6 @@ GLOBAL OPTIONS:
 
 1. Create needed directories.
    ```shell
-   % mkdir ~/pantri
    % mkdir ~/some_git_project
    ```
 
@@ -50,9 +49,12 @@ GLOBAL OPTIONS:
 1. Initialize pantri. This assumes default Minio credentials. **You should change this credentials for a production deployment**.
 
    ```shell
-   % AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin ./pantri_but_go --source_repo ~/some_git_project init --pantri_address http://127.0.0.1:9000/test s3
+   AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin ./pantri_but_go --source_repo ~/some_git_project init --pantri_address http://127.0.0.1:9000/test s3
    2022/10/17 23:22:14 initializing pantri config at /Users/brandon/some_git_project/.pantri/config
-   % cat ~/some_git_project/.pantri/config 
+   ```
+
+   ```shell
+   cat ~/some_git_project/.pantri/config 
    {
       "type": "s3",
       "pantri_address": "http://127.0.0.1:9000/test",
@@ -62,10 +64,11 @@ GLOBAL OPTIONS:
       }
    }%
    ```
+
 1. Upload a binary.
 
    ```shell
-   % AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin ./pantri_but_go --source_repo ~/some_git_project upload ~/Downloads/googlechromebeta.dmg
+   AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin ./pantri_but_go --source_repo ~/some_git_project upload ~/Downloads/googlechromebeta.dmg
    ```
 
 1. Observe that the binary has been uploaded to Minio. Nagivate to http://127.0.0.1/buckets/test/browse to confirm.

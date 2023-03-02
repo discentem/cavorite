@@ -112,6 +112,11 @@ func main() {
 						Value: true,
 						Usage: "Remove the file from local sourceRepo if present",
 					},
+					&cli.StringFlag{
+						Name:     "destination",
+						Required: true,
+						Usage:    "The directory in source_repo to 'upload' the object to",
+					},
 				},
 				Action: func(c *cli.Context) error {
 					setLoggerOpts(c)
@@ -120,6 +125,7 @@ func main() {
 						return errors.New("you must pass the path of an object to upload")
 					}
 					sourceRepo := c.String("source_repo")
+					destination := c.String("destination")
 					fsys := afero.NewOsFs()
 					s, err := pantri.Load(fsys, sourceRepo)
 					if err != nil {
@@ -127,7 +133,7 @@ func main() {
 					}
 					// TODO(discentem) improve log message to include pantriAddress
 					logger.Infof("Uploading %s", c.Args().Slice())
-					if err := s.Upload(context.Background(), fsys, sourceRepo, c.Args().Slice()...); err != nil {
+					if err := s.Upload(context.Background(), fsys, sourceRepo, destination, c.Args().Slice()...); err != nil {
 						return err
 					}
 					return nil

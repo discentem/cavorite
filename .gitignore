@@ -3,3 +3,4 @@
 pantri_but_go
 .watchman*
 bazel-*
+.DS_Store

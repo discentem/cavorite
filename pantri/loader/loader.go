@@ -31,7 +31,7 @@ func Initialize(ctx context.Context, fsys afero.Fs, sourceRepo, backend, address
 			return err
 		}
 	case "s3":
-		_, err := s3.New(ctx, fsys, sourceRepo, address, opts)
+		_, err := s3.New(ctx, "us-east-1", fsys, sourceRepo, address, opts)
 		if err != nil {
 			return err
 		}

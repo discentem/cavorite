@@ -9,7 +9,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/discentem/pantri_but_go/metadata"
+	"github.com/discentem/pantri_but_go/internal/metadata"
 	"github.com/discentem/pantri_but_go/stores"
 
 	pantriconfig "github.com/discentem/pantri_but_go/pantri"
@@ -77,7 +77,7 @@ func Load(m map[string]interface{}) (stores.Store, error) {
 	return stores.Store(s), nil
 }
 
-func (s *Store) Upload(_ context.Context, fsys afero.Fs, sourceRepo string, objects ...string) error {
+func (s *Store) Upload(_ context.Context, fsys afero.Fs, sourceRepo string, destination string, objects ...string) error {
 	for _, o := range objects {
 		objp := path.Join(s.PantriAddress, o)
 		b, err := os.ReadFile(o)

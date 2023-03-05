@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -57,6 +58,13 @@ func (c *Config) Write(fsys afero.Fs, sourceRepo string) error {
 	if err := fsys.MkdirAll(filepath.Dir(cfile), os.ModePerm); err != nil {
 		return err
 	}
-	logger.Infof("initializing pantri config at %s", cfile)
+	_, err = fsys.Stat(cfile)
+	if errors.Is(err, fs.ErrNotExist) {
+		logger.Infof("initialized pantri config at %s", cfile)
+
+	} else {
+		logger.Infof("updating pantri config at %s", cfile)
+	}
 	return afero.WriteFile(fsys, cfile, b, os.ModePerm)
+
 }

@@ -17,7 +17,7 @@ func TestParsePFile(t *testing.T) {
 
 	modTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")
 	// fake file modified time
-	err = fsys.Chtimes(f.Name(), time.Time{}, modTime)
+	fsys.Chtimes(f.Name(), time.Time{}, modTime)
 	assert.NoError(t, err)
 
 	pfile := `{
@@ -27,7 +27,7 @@ func TestParsePFile(t *testing.T) {
 
 	_, err = f.Write([]byte(pfile))
 	assert.NoError(t, err)
-	expect := ObjectMetaData{
+	expect := Object{
 		Name:         "a",
 		Checksum:     "b",
 		DateModified: modTime,

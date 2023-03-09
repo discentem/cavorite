@@ -26,7 +26,7 @@ import (
 )
 
 type Store struct {
-	PantriAddress string         `mapstructure:"pantri_address"`
+	PantriAddress string         `mapstructure:"address"`
 	Opts          stores.Options `mapstructure:"options"`
 	awsRegion     string
 	s3Client      *s3.Client

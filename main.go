@@ -109,7 +109,7 @@ func main() {
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
 						Name:  "remove",
-						Value: true,
+						Value: false,
 						Usage: "Remove the file from local sourceRepo if present",
 					},
 				},

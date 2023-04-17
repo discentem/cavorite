@@ -8,7 +8,7 @@ import (
 )
 
 type Store interface {
-	Upload(ctx context.Context, fsys afero.Fs, sourceRepo string, objects ...string) error
+	Upload(ctx context.Context, fsys afero.Fs, sourceRepo string, destination string, objects ...string) error
 	Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string, objects ...string) error
 }
 type Options struct {

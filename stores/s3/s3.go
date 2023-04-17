@@ -1,13 +1,10 @@
 package s3
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -18,7 +15,7 @@ import (
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 
-	"github.com/discentem/pantri_but_go/metadata"
+	"github.com/discentem/pantri_but_go/internal/metadata"
 	"github.com/discentem/pantri_but_go/stores"
 
 	pantriconfig "github.com/discentem/pantri_but_go/pantri"
@@ -30,60 +27,63 @@ import (
 type Store struct {
 	PantriAddress string         `mapstructure:"pantri_address"`
 	Opts          stores.Options `mapstructure:"options"`
+	awsRegion     string
+	s3Client      *s3.Client
+	s3Uploader    *s3manager.Uploader
+	s3Downloader  *s3manager.Downloader
 }
 
-func getConfig(pantriAddress string) (*aws.Config, error) {
-	var cfg aws.Config
-	var err error
+func (s *Store) bucketName() *string {
+	_, buck := path.Split(s.PantriAddress)
+	return aws.String(buck)
+}
 
-	if strings.HasPrefix(pantriAddress, "s3://") {
-		cfg, err = config.LoadDefaultConfig(context.TODO())
-		if err != nil {
-			return nil, err
-		}
-		return &cfg, nil
-	} else if strings.HasPrefix(pantriAddress, "https://") || strings.HasPrefix(pantriAddress, "http://") {
-		// e.g. http://127.0.0.1:9000/test becomes http://127.0.0.1:9000
+func getConfig(ctx context.Context, awsRegion string, pantriAddress string) (*aws.Config, error) {
+	var cfg aws.Config
+
+	logger.V(2).Infof("pantriAddress: %s", pantriAddress)
+	if !strings.HasPrefix(pantriAddress, "s3://") && !strings.HasPrefix(pantriAddress, "https://") && !strings.HasPrefix(pantriAddress, "http://") {
+		return nil, errors.New("pantriAddress did not contain s3://, http://, or https:// prefix")
+	}
+
+	cfg, err := config.LoadDefaultConfig(
+		ctx,
+		config.WithRegion(awsRegion),
+	)
+	if err != nil {
+		return &cfg, err
+	}
+
+	if strings.HasPrefix(pantriAddress, "https://") || strings.HasPrefix(pantriAddress, "http://") {
 		server, _ := path.Split(pantriAddress)
 		// https://stackoverflow.com/questions/67575681/is-aws-go-sdk-v2-integrated-with-local-minio-server
 		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
 			return aws.Endpoint{
 				PartitionID:       "aws",
 				URL:               server,
-				SigningRegion:     "us-east-1",
+				SigningRegion:     awsRegion,
 				HostnameImmutable: true,
 			}, nil
 		})
-
-		cfg, err := config.LoadDefaultConfig(context.Background(),
-			config.WithRegion("us-east-1"),
-			config.WithEndpointResolverWithOptions(resolver),
-		)
-		if err != nil {
-			return nil, err
-		}
-		return &cfg, nil
+		cfg.EndpointResolverWithOptions = resolver
 	}
-	return nil, errors.New("pantriAddress did not contain s3://, http://, or https:// prefix")
+
+	return &cfg, nil
+
 }
 
-func (s *Store) init(ctx context.Context, fsys afero.Fs, sourceRepo string) error {
+func (s *Store) init(ctx context.Context, awsRegion string, fsys afero.Fs, sourceRepo string) error {
 	c := pantriconfig.Config{
 		Type:          "s3",
 		PantriAddress: s.PantriAddress,
 		Opts:          s.Opts,
 		Validate: func() error {
-			cfg, err := getConfig(s.PantriAddress)
-			if err != nil {
-				return err
-			}
-			uploader := s3.NewFromConfig(*cfg)
-			// s3://test --> test
-			// http://stuff/test --> test
-			_, buck := path.Split(s.PantriAddress)
-			_, err = uploader.HeadBucket(ctx, &s3.HeadBucketInput{
-				Bucket: &buck,
-			})
+			_, err := s.s3Client.HeadBucket(
+				ctx,
+				&s3.HeadBucketInput{
+					Bucket: s.bucketName(),
+				},
+			)
 			return err
 		},
 	}
@@ -91,23 +91,58 @@ func (s *Store) init(ctx context.Context, fsys afero.Fs, sourceRepo string) erro
 	return c.Write(fsys, sourceRepo)
 }
 
-func New(ctx context.Context, fsys afero.Fs, sourceRepo, pantriAddress string, o stores.Options) (*Store, error) {
-	if o.RemoveFromSourceRepo == nil {
+func New(ctx context.Context, awsRegion string, fsys afero.Fs, sourceRepo, pantriAddress string, opts stores.Options) (*Store, error) {
+	if opts.RemoveFromSourceRepo == nil {
 		b := false
-		o.RemoveFromSourceRepo = &b
+		opts.RemoveFromSourceRepo = &b
 	}
-	if o.MetaDataFileExtension == "" {
+	if opts.MetaDataFileExtension == "" {
 		e := ".pfile"
-		o.MetaDataFileExtension = e
+		opts.MetaDataFileExtension = e
 	}
-	s := &Store{
-		PantriAddress: pantriAddress,
-		Opts:          o,
-	}
-	err := s.init(ctx, fsys, sourceRepo)
+	cfg, err := getConfig(
+		ctx,
+		awsRegion,
+		pantriAddress,
+	)
 	if err != nil {
 		return nil, err
 	}
+
+	s3Client := s3.NewFromConfig(*cfg)
+	s3Uploader := s3manager.NewUploader(
+		s3Client,
+		func(u *s3manager.Uploader) {
+			u.PartSize = 64 * 1024 * 1024 // 64MB per part
+		},
+	)
+	s3Downloader := s3manager.NewDownloader(
+		s3Client,
+		func(d *s3manager.Downloader) {
+			d.Concurrency = 3
+		},
+	)
+
+	s := &Store{
+		PantriAddress: pantriAddress,
+		Opts:          opts,
+		awsRegion:     awsRegion,
+		s3Client:      s3Client,
+		s3Uploader:    s3Uploader,
+		s3Downloader:  s3Downloader,
+	}
+
+	err = s.init(
+		ctx,
+		awsRegion,
+		fsys,
+		sourceRepo,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return s, nil
 }
 
@@ -121,91 +156,108 @@ func Load(m map[string]interface{}) (stores.Store, error) {
 }
 
 // TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
-func (s *Store) Upload(ctx context.Context, fsys afero.Fs, sourceRepo string, objects ...string) error {
-	cfg, err := getConfig(s.PantriAddress)
-	if err != nil {
-		return err
-	}
-	uploader := s3manager.NewUploader(s3.NewFromConfig(*cfg))
-	uploader.Concurrency = 3
-
-	for _, o := range objects {
-		f, err := os.Open(o)
+func (s *Store) Upload(ctx context.Context, fsys afero.Fs, sourceRepo string, destination string, objects ...string) error {
+	for _, object := range objects {
+		logger.Info("starting upload")
+		logger.V(2).Info(object)
+		f, err := fsys.Open(object)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
-		// TODO(discentem): probably inefficient, reading entire file into memory
-		b, err := os.ReadFile(o)
+		fStat, err := f.Stat()
+		if err != nil {
+			return err
+		}
+		md, err := metadata.GenerateFromReader(
+			destination,
+			fStat.ModTime(),
+			f,
+		)
 		if err != nil {
 			return err
 		}
 
-		// generate pantri metadata
-		m, err := metadata.GenerateFromFile(*f)
+		logger.V(2).Infof("%s has a checksum of %q", object, md.Checksum)
+
+		// Write the metadata file to disk
+		err = metadata.WriteToFs(
+			fsys,
+			sourceRepo,
+			*md,
+			filepath.Base(destination),
+			s.Opts.MetaDataFileExtension,
+		)
 		if err != nil {
-			return err
-		}
-		logger.V(2).Infof("%s has a checksum of %q", o, m.Checksum)
-		// convert to json
-		blob, err := json.MarshalIndent(m, "", " ")
-		if err != nil {
-			return err
-		}
-		if err := os.MkdirAll(filepath.Dir(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Opts.MetaDataFileExtension))), os.ModePerm); err != nil {
-			return err
-		}
-		if err := os.WriteFile(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Opts.MetaDataFileExtension)), blob, 0644); err != nil {
 			return err
 		}
 
-		if s.Opts.RemoveFromSourceRepo != nil {
-			if *s.Opts.RemoveFromSourceRepo {
-				if err := os.Remove(o); err != nil {
-					return err
-				}
-			}
+		cfg, err := getConfig(ctx, s.awsRegion, s.PantriAddress)
+		if err != nil {
+			return err
+		}
+		s.s3Client = s3.NewFromConfig(*cfg)
+		s.s3Uploader = s3manager.NewUploader(
+			s.s3Client,
+			func(u *s3manager.Uploader) {
+				u.PartSize = 64 * 1024 * 1024 // 64MB per part
+			},
+		)
+		// Reset offset after writing metadata, before attempting upload. This prevents a 0 byte upload.
+		_, err = f.Seek(0, 0)
+		if err != nil {
+			return err
 		}
 
-		_, buck := path.Split(s.PantriAddress)
-		obj := s3.PutObjectInput{
-			Bucket: aws.String(buck),
-			Key:    &o,
-			Body:   bytes.NewReader(b),
-		}
-		out, err := uploader.Upload(ctx, &obj)
+		// Begin multipart upload
+		_, err = s.s3Uploader.Upload(
+			ctx,
+			&s3.PutObjectInput{
+				Bucket: s.bucketName(),
+				Key:    aws.String(filepath.Join(filepath.Dir(destination), filepath.Base(object))),
+				Body:   f,
+			},
+		)
+		logger.Infof("uploaded %s to %s", object, destination)
+		logger.V(2).Infof("uploaded %s to %s via multipart upload", object, destination)
 		if err != nil {
-			logger.Error(out)
 			return err
 		}
 	}
+
 	return nil
 }
 
-func (s *Store) Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string, objects ...string) error {
-	cfg, err := getConfig(s.PantriAddress)
+//lint:ignore U1000 func unused
+func keyFromPfile(fsys afero.Fs, path, ext string) (*string, error) {
+	m, err := metadata.ParsePfile(fsys, path, ".pfile")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if cfg == nil {
-		return errors.New("s3.getConfig(s.PantriAddress) returned nil while trying to Retrieve")
-	}
-	downloader := s3manager.NewDownloader(s3.NewFromConfig(*cfg))
-	downloader.Concurrency = 3
-	for _, o := range objects {
-		retrievePath := filepath.Join(sourceRepo, o)
-		f, err := os.Create(retrievePath)
+	return &m.Key, nil
+}
+
+func (s *Store) Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string, pfiles ...string) error {
+	for _, o := range pfiles {
+		retrievePath := strings.TrimSuffix(filepath.Join(sourceRepo, o), s.Opts.MetaDataFileExtension)
+		f, err := fsys.Create(retrievePath)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
-		_, buck := path.Split(s.PantriAddress)
 		obj := &s3.GetObjectInput{
-			Bucket: aws.String(buck),
+			Bucket: s.bucketName(),
 			Key:    aws.String(o),
 		}
-		_, err = downloader.Download(ctx, f, obj)
+		_, err = s.s3Downloader.Download(
+			ctx,
+			f,
+			obj,
+		)
 		if err != nil {
+			if rmvFerr := fsys.Remove(retrievePath); rmvFerr != nil {
+				return fmt.Errorf("failed to remove %s due %w after encountering download failure: %w", retrievePath, rmvFerr, err)
+			}
 			return err
 		}
 		hash, err := metadata.SHA256FromReader(f)
@@ -233,7 +285,7 @@ func (s *Store) Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string, 
 		if err != nil {
 			return err
 		}
-		if err := os.WriteFile(op, b, 0644); err != nil {
+		if err := afero.WriteFile(fsys, op, b, 0644); err != nil {
 			return err
 		}
 	}

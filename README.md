@@ -36,23 +36,46 @@ GLOBAL OPTIONS:
 
 1. Run minio server.
    ```shell
-   % docker run -p 9000:9000 -p 9001:9001 quay.io/minio/minio server /data --console-address ":9001"
+   make minio
    ```
 
 1. Create needed directories.
    ```shell
-   % mkdir ~/pantri
-   % mkdir ~/some_git_project
+   mkdir ~/some_git_project
    ```
 
 1. Create a bucket in web console: http://127.0.0.1:9001. Let's assume the bucket is called `test`.
 
-1. Initialize pantri. This assumes default Minio credentials. **You should change this credentials for a production deployment**.
+1. Build `pantri_but_go`
+
+   ```bash
+   make build
+   ```
+
+   This will output and copy-and-pastable command to set `PANTRI_BIN`. This will be convenient for the following steps.
+
+1. Set PANTRI_BIN environment variable. This should point to a built copy of pantri_but_go. For example:
+
+   ```bash
+   PANTRI_BIN=bazel-out/darwin_arm64-fastbuild/bin/pantri_but_go_/pantri_but_go
+   ```
+
+1. Initialize pantri. This assumes default Minio credentials. **You should change these credentials for a production deployment**.
 
    ```shell
-   % AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin ./pantri_but_go --source_repo ~/some_git_project init --pantri_address http://127.0.0.1:9000/test s3
+   AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin $PANTRI_BIN --source_repo ~/some_git_project init --pantri_address http://127.0.0.1:9000/test s3
+   ```
+   If successful you should see:
+   ```
    2022/10/17 23:22:14 initializing pantri config at /Users/brandon/some_git_project/.pantri/config
-   % cat ~/some_git_project/.pantri/config 
+   ```
+
+   Inspect the config:
+   ```shell
+   cat ~/some_git_project/.pantri/config 
+   ```
+
+   ```
    {
       "type": "s3",
       "pantri_address": "http://127.0.0.1:9000/test",
@@ -60,12 +83,17 @@ GLOBAL OPTIONS:
          "metadata_file_extension": ".pfile",
          "remove_from_sourcerepo": false
       }
-   }%
+   }
    ```
-1. Upload a binary.
+
+1. Upload a binary. 
+
+   `--destination` is the [s3 key](https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingObjects.html#:~:text=of%20the%20following%3A-,Key,-The%20name%20that) that the binary will be uploaded to. 
+
+   The first argument after all the flags (`~/Downloads/googlechromebeta.dmg`) is the path where the object you are uploading can be found on your filesystem.
 
    ```shell
-   % AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin ./pantri_but_go --source_repo ~/some_git_project upload ~/Downloads/googlechromebeta.dmg
+   AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin $PANTRI_BIN --source_repo ~/some_git_project upload --destination chrome/googlechromebeta.dmg ~/Downloads/googlechromebeta.dmg
    ```
 
 1. Observe that the binary has been uploaded to Minio. Nagivate to http://127.0.0.1/buckets/test/browse to confirm.
@@ -85,7 +113,7 @@ GLOBAL OPTIONS:
 1. Retrieve binaries from minio.
 
    ```shell
-   % AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin ./pantri_but_go --source_repo ~/some_git_project retrieve Users/brandon/Downloads/googlechromebeta.dmg
+   % AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin $PANTRI_BIN --source_repo ~/some_git_project retrieve Users/brandon/Downloads/googlechromebeta.dmg
    2022/10/18 21:57:53 type "s3" detected in pantri "http://127.0.0.1:9000/test"
    2022/10/18 21:57:53 Retrieving [Users/brandon/Downloads/googlechromebeta.dmg]
    ```
@@ -96,7 +124,7 @@ GLOBAL OPTIONS:
    ```shell
    % mkdir ~/pantri
    % mkdir ~/some_git_project
-   % ./pantri_but_go --source_repo ~/some_git_project init --pantri_address ~/pantri
+   % $PANTRI_BIN --source_repo ~/some_git_project init --pantri_address ~/pantri
    2022/07/01 00:47:27 initializing pantri config at /Users/brandon/some_git_project/.pantri/config
    % cat /Users/brandon/some_git_project/.pantri/config
    {
@@ -111,7 +139,7 @@ GLOBAL OPTIONS:
 
    ```shell
    % cd ~/Downloads 
-   % ~/pantri_but_go/pantri_but_go --source_repo ~/some_git_project upload go1.18.3.darwin-arm64.pkg          
+   % $PANTRI_BIN --source_repo ~/some_git_project upload go1.18.3.darwin-arm64.pkg          
    2022/07/01 00:48:25 type "local" detected in pantri "/Users/brandon/pantri"
    ```
 1. Observe binary "uploaded" to pantri and metadata (.pfile) stashed in git repo
@@ -126,7 +154,7 @@ GLOBAL OPTIONS:
 1. Retrieve binaries
 
    ```shell
-   % ~/pantri_but_go/pantri_but_go --source_repo ~/some_git_project retrieve go1.18.3.darwin-arm64.pkg
+   % $PANTRI_BIN --source_repo ~/some_git_project retrieve go1.18.3.darwin-arm64.pkg
    2022/07/01 00:49:17 type "local" detected in pantri "/Users/brandon/pantri"
    2022/07/01 00:49:17 Retrieving [go1.18.3.darwin-arm64.pkg]
    % ls ~/some_git_project 

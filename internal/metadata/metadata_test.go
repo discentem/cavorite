@@ -21,14 +21,14 @@ func TestParsePFile(t *testing.T) {
 	assert.NoError(t, err)
 
 	pfile := `{
-		"name":"a", 
+		"key":"a", 
 		"checksum":"b",
 		"date_modified":"2014-11-12T11:45:26.371Z"}`
 
 	_, err = f.Write([]byte(pfile))
 	assert.NoError(t, err)
-	expect := ObjectMetaData{
-		Name:         "a",
+	expect := Object{
+		Key:          "a",
 		Checksum:     "b",
 		DateModified: modTime,
 	}

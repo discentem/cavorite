@@ -27,7 +27,7 @@ func TestParsePFile(t *testing.T) {
 
 	_, err = f.Write([]byte(pfile))
 	assert.NoError(t, err)
-	expect := ObjectMetaData{
+	expect := Object{
 		Name:         "a",
 		Checksum:     "b",
 		DateModified: modTime,

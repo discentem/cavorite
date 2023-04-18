@@ -23,16 +23,16 @@ var (
 	ErrUnsupportedStore = errors.New("not a supported store type")
 )
 
-func Initialize(ctx context.Context, fsys afero.Fs, sourceRepo, backend, address string, opts stores.Options) (*stores.Store, error) {
+func Initialize(ctx context.Context, fsys afero.Fs, sourceRepo, backend, address string, opts stores.Options) error {
 	var s *stores.Store
 	switch b := (backend); b {
 	case "local":
-		s, err := localstore.New(fsys, sourceRepo, address, opts)
+		_, err = localstore.New(fsys, sourceRepo, address, opts)
 		if err != nil {
 			return nil, err
 		}
 	case "s3":
-		s, err := s3.New(ctx, "us-east-1", fsys, sourceRepo, address, opts)
+		_, err = s3.New(ctx, "us-east-1", fsys, sourceRepo, address, opts)
 		if err != nil {
 			return nil, err
 		}

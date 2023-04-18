@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/spf13/afero"
 
 	pantri "github.com/discentem/pantri_but_go/pantri/loader"
+	"github.com/discentem/pantri_but_go/stores/s3"
 
 	"github.com/discentem/pantri_but_go/stores"
 
@@ -28,6 +30,13 @@ func setLoggerOpts(c *cli.Context) {
 	logger.SetFlags(log.LUTC)
 }
 
+func getPrereqs(c *cli.Context) {
+	// backend - type == local/s3
+
+	// sourceRepo - string
+
+	// fsys afero.FS
+}
 func main() {
 	defer logger.Init("pantri_but_go", true, false, io.Discard).Close()
 
@@ -53,6 +62,29 @@ func main() {
 		},
 	}
 	app := &cli.App{
+		Before: func(cCtx *cli.Context) error {
+			var backend string
+			if c.NArg() == 0 {
+				log.Printf("defaulting to %s for pantri storage", defaultStore)
+				backend = defaultStore
+			} else if c.NArg() == 1 {
+				backend = c.Args().First()
+			} else {
+				return errors.New("specifying multiple backends not allowed, try again")
+			}
+			fileExt := c.String("metadata_file_extension")
+			opts := stores.Options{
+				RemoveFromSourceRepo:  &remove,
+				MetaDataFileExtension: fileExt,
+			}
+			sourceRepo := c.String("source_repo")
+			pantriAddress := c.String("pantri_address")
+			// store agnostic initialization, specific initialization determined by backend
+			return pantri.Initialize(context.Background(), afero.NewOsFs(), sourceRepo, backend, pantriAddress, opts)
+
+			fmt.Fprintf(cCtx.App.Writer, "BEFORE WAS RUN\n")
+			return nil
+		},
 		Flags: flags,
 		Usage: `pantri: but in go!`,
 		Commands: []*cli.Command{
@@ -148,6 +180,20 @@ func main() {
 					}
 					sourceRepo := c.String("source_repo")
 					fsys := afero.NewOsFs()
+
+					//example start - lets init a standardized --> pantri client
+					s3Client := s3.New()
+
+					s, err := pantri.InitWithS3(s3.New(ctx, "us-east-1", fsys, sourceRepo, address, opts))
+
+					s, err := pantri.InitWithLocalStore(localstore.New(fsys, sourceRepo, address, opts))
+
+					s.Retrieve()
+					s.Upload()
+
+					// example end
+
+					pantri.InitializeS3()
 					s, err := pantri.Load(fsys, sourceRepo)
 					if err != nil {
 						return err

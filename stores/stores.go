@@ -10,6 +10,7 @@ import (
 type Store interface {
 	Upload(ctx context.Context, fsys afero.Fs, sourceRepo string, destination string, objects ...string) error
 	Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string, objects ...string) error
+	Init(ctx context.Context)
 }
 type Options struct {
 	MetaDataFileExtension string `json:"metadata_file_extension" mapstructure:"metadata_file_extension"`

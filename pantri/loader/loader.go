@@ -23,22 +23,23 @@ var (
 	ErrUnsupportedStore = errors.New("not a supported store type")
 )
 
-func Initialize(ctx context.Context, fsys afero.Fs, sourceRepo, backend, address string, opts stores.Options) error {
+func Initialize(ctx context.Context, fsys afero.Fs, sourceRepo, backend, address string, opts stores.Options) (*stores.Store, error) {
+	var s *stores.Store
 	switch b := (backend); b {
 	case "local":
-		_, err := localstore.New(fsys, sourceRepo, address, opts)
+		s, err := localstore.New(fsys, sourceRepo, address, opts)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	case "s3":
-		_, err := s3.New(ctx, "us-east-1", fsys, sourceRepo, address, opts)
+		s, err := s3.New(ctx, "us-east-1", fsys, sourceRepo, address, opts)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	default:
-		return fmt.Errorf("%s: %w", b, ErrUnsupportedStore)
+		return nil, fmt.Errorf("%s: %w", b, ErrUnsupportedStore)
 	}
-	return nil
+	return s, nil
 
 }
 
@@ -86,7 +87,7 @@ func readConfig(fsys afero.Fs, sourceRepo string) ([]byte, error) {
 	return afero.ReadAll(f)
 }
 
-func Load(fsys afero.Fs, sourceRepo string) (stores.Store, error) {
+func Load(fsys afero.Fs, sourceRepo string, opts stores.Options) (stores.Store, error) {
 	b, err := readConfig(fsys, sourceRepo)
 	if err != nil {
 		return nil, err

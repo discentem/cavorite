@@ -100,11 +100,12 @@ GLOBAL OPTIONS:
 
 1. Confirm pantri metadata has been written.
    ```shell
-   % ls ~/some_git_project/Users/brandon/Downloads                           
-   googlechromebeta.dmg.pfile
    brandon@Brandons-MacBook-Pro pantri_but_go % cat ~/some_git_project/Users/brandon/Downloads/googlechromebeta.dmg.pfile
+   ```
+
+   ```
    {
-      "name": "googlechromebeta.dmg",
+      "name": "chrome/googlechromebeta.dmg",
       "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "date_modified": "2022-10-05T10:56:17.051936728-07:00"
    }% 

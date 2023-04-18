@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -157,6 +159,9 @@ func Load(m map[string]interface{}) (stores.Store, error) {
 
 // TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
 func (s *Store) Upload(ctx context.Context, fsys afero.Fs, sourceRepo string, destination string, objects ...string) error {
+	if err := initS3(s); err != nil {
+		return err
+	}
 	for _, object := range objects {
 		logger.Info("starting upload")
 		logger.V(2).Info(object)
@@ -238,18 +243,54 @@ func keyFromPfile(fsys afero.Fs, path, ext string) (*string, error) {
 }
 
 func (s *Store) Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string, pfiles ...string) error {
-	for _, o := range pfiles {
+	log.Println(pfiles)
+	log.Println(sourceRepo)
+	log.Printf("bucket name: %s", *s.bucketName())
+	for v, o := range pfiles {
+		fmt.Printf("%d, retrieve path: %s\n",
+			v,
+			strings.TrimSuffix(filepath.Join(sourceRepo, o), s.Opts.MetaDataFileExtension),
+		)
 		retrievePath := strings.TrimSuffix(filepath.Join(sourceRepo, o), s.Opts.MetaDataFileExtension)
-		f, err := fsys.Create(retrievePath)
+		f, err := os.Create(retrievePath)
+		// f = //fs.File
+		// f = os.File --> looking for this
 		if err != nil {
 			return err
 		}
+		// fstruct, ok := f.()
+		// if !ok {
+		// 	return err
+		// }
 		defer f.Close()
+
+		// test / chrome / googlechromebeta.dmg
+		test_key := "chrome/googlechromebeta.dmg"
 		obj := &s3.GetObjectInput{
 			Bucket: s.bucketName(),
-			Key:    aws.String(o),
+			Key:    aws.String(test_key),
 		}
-		_, err = s.s3Downloader.Download(
+		logger.Infof("f: %+v", f)
+		// w := io.WriterAt(f)
+		// fmt.Print(w)
+		_, err = f.Seek(0, 0)
+		if err != nil {
+			return err
+		}
+		//The w io.WriterAt can be satisfied by an os.File to do multipart concurrent downloads, or in memory []byte wrapper using aws.WriteAtBuffer. In case you download files into memory do not forget to pre-allocate memory to avoid additional allocations and GC runs.
+		// io.WriterAt()
+		cfg, err := getConfig(ctx, s.awsRegion, s.PantriAddress)
+		if err != nil {
+			return err
+		}
+		s3Client := s3.NewFromConfig(*cfg)
+		s.s3Downloader = s3manager.NewDownloader(
+			s3Client,
+			func(d *s3manager.Downloader) {
+				d.Concurrency = 3
+			},
+		)
+		numOfBytesDownloaded, err := s.s3Downloader.Download(
 			ctx,
 			f,
 			obj,
@@ -260,6 +301,9 @@ func (s *Store) Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string, 
 			}
 			return err
 		}
+
+		log.Printf("file downloaded, bytes transferred: %d", numOfBytesDownloaded)
+
 		hash, err := metadata.SHA256FromReader(f)
 		if err != nil {
 			return err

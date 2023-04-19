@@ -3,5 +3,6 @@
 pantri_but_go
 .watchman*
 bazel-*
-.DS_Store
+# Ignore OS X files
+*.DS_Store
 bazel-*

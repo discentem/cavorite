@@ -1,4 +1,4 @@
-package s3
+package stores
 
 import (
 	"context"
@@ -18,7 +18,6 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/discentem/pantri_but_go/internal/metadata"
-	"github.com/discentem/pantri_but_go/stores"
 
 	pantriconfig "github.com/discentem/pantri_but_go/pantri"
 
@@ -26,16 +25,22 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-type Store struct {
-	PantriAddress string         `mapstructure:"pantri_address"`
-	Opts          stores.Options `mapstructure:"options"`
+type S3Store struct {
+	Opts          Options `mapstructure:"options"`
+	fsys          afero.Fs
 	awsRegion     string
 	s3Client      *s3.Client
 	s3Uploader    *s3manager.Uploader
 	s3Downloader  *s3manager.Downloader
 }
 
-func (s *Store) bucketName() *string {
+func NewS3StoreClient(fsys afero.Fs, ) *S3Store {
+	return &S3Store{
+
+	}
+}
+
+func (s *S3Store) bucketName() *string {
 	_, buck := path.Split(s.PantriAddress)
 	return aws.String(buck)
 }
@@ -74,7 +79,7 @@ func getConfig(ctx context.Context, awsRegion string, pantriAddress string) (*aw
 
 }
 
-func (s *Store) init(ctx context.Context, awsRegion string, fsys afero.Fs, sourceRepo string) error {
+func (s *S3Store) init(ctx context.Context, awsRegion string, fsys afero.Fs, sourceRepo string) error {
 	c := pantriconfig.Config{
 		Type:          "s3",
 		PantriAddress: s.PantriAddress,
@@ -93,7 +98,7 @@ func (s *Store) init(ctx context.Context, awsRegion string, fsys afero.Fs, sourc
 	return c.Write(fsys, sourceRepo)
 }
 
-func New(ctx context.Context, awsRegion string, fsys afero.Fs, sourceRepo, pantriAddress string, opts stores.Options) (*Store, error) {
+func New(ctx context.Context, awsRegion string, fsys afero.Fs, sourceRepo, pantriAddress string, opts Options) (*S3Store, error) {
 	if opts.RemoveFromSourceRepo == nil {
 		b := false
 		opts.RemoveFromSourceRepo = &b
@@ -148,17 +153,17 @@ func New(ctx context.Context, awsRegion string, fsys afero.Fs, sourceRepo, pantr
 	return s, nil
 }
 
-func Load(m map[string]interface{}) (stores.Store, error) {
+func Load(m map[string]interface{}) (Store, error) {
 	logger.Infof("type %q detected in pantri %q", m["type"], m["pantri_address"])
-	var s *Store
+	var s *S3Store
 	if err := mapstructure.Decode(m, &s); err != nil {
 		return nil, err
 	}
-	return stores.Store(s), nil
+	return Store(s), nil
 }
 
 // TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
-func (s *Store) Upload(ctx context.Context, fsys afero.Fs, sourceRepo string, destination string, objects ...string) error {
+func (s *S3Store) Upload(ctx context.Context, fsys afero.Fs, sourceRepo string, destination string, objects ...string) error {
 	if err := initS3(s); err != nil {
 		return err
 	}
@@ -242,7 +247,7 @@ func keyFromPfile(fsys afero.Fs, path, ext string) (*string, error) {
 	return &m.Key, nil
 }
 
-func (s *Store) Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string, pfiles ...string) error {
+func (s *S3Store) Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string, pfiles ...string) error {
 	log.Println(pfiles)
 	log.Println(sourceRepo)
 	log.Printf("bucket name: %s", *s.bucketName())
@@ -322,7 +327,7 @@ func (s *Store) Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string, 
 		}
 		if hash != m.Checksum {
 			fmt.Println(hash, m.Checksum)
-			return stores.ErrRetrieveFailureHashMismatch
+			return ErrRetrieveFailureHashMismatch
 		}
 		op := path.Join(sourceRepo, o)
 		b, err := io.ReadAll(f)

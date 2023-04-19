@@ -1,4 +1,4 @@
-package local
+package stores
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 
 	"github.com/discentem/pantri_but_go/internal/metadata"
-	"github.com/discentem/pantri_but_go/stores"
 
 	pantriconfig "github.com/discentem/pantri_but_go/pantri"
 
@@ -20,12 +19,12 @@ import (
 	"github.com/spf13/afero"
 )
 
-type Store struct {
-	PantriAddress string         `mapstructure:"pantri_address"`
-	Opts          stores.Options `mapstructure:"options"`
+type LocalStore struct {
+	Opts Options `mapstructure:"options"`
+	fsys afero.Fs
 }
 
-func (s *Store) init(fsys afero.Fs, sourceRepo string) error {
+func (s *LocalStore) init(fsys afero.Fs, sourceRepo string) error {
 	epa, err := homedir.Expand(s.PantriAddress)
 	if err != nil {
 		return err
@@ -48,7 +47,7 @@ func (s *Store) init(fsys afero.Fs, sourceRepo string) error {
 	return c.Write(fsys, sourceRepo)
 }
 
-func New(fsys afero.Fs, sourceRepo, pantriAddress string, o stores.Options) (*Store, error) {
+func New(fsys afero.Fs, sourceRepo, pantriAddress string, o Options) (*Store, error) {
 	if o.RemoveFromSourceRepo == nil {
 		b := false
 		o.RemoveFromSourceRepo = &b
@@ -68,16 +67,16 @@ func New(fsys afero.Fs, sourceRepo, pantriAddress string, o stores.Options) (*St
 	return s, nil
 }
 
-func Load(m map[string]interface{}) (stores.Store, error) {
+func Load(m map[string]interface{}) (Store, error) {
 	logger.Infof("type %q detected in pantri %q", m["type"], m["pantri_address"])
 	var s *Store
 	if err := mapstructure.Decode(m, &s); err != nil {
 		return nil, err
 	}
-	return stores.Store(s), nil
+	return Store(s), nil
 }
 
-func (s *Store) Upload(_ context.Context, fsys afero.Fs, sourceRepo string, destination string, objects ...string) error {
+func (s *LocalStore) Upload(_ context.Context, fsys afero.Fs, sourceRepo string, destination string, objects ...string) error {
 	for _, o := range objects {
 		objp := path.Join(s.PantriAddress, o)
 		b, err := os.ReadFile(o)
@@ -158,7 +157,7 @@ func (s *Store) Retrieve(_ context.Context, fsys afero.Fs, sourceRepo string, ob
 		}
 		if hash != m.Checksum {
 			fmt.Println(hash, m.Checksum)
-			return stores.ErrRetrieveFailureHashMismatch
+			return ErrRetrieveFailureHashMismatch
 		}
 		op := path.Join(sourceRepo, o)
 		if err := os.WriteFile(op, b, 0644); err != nil {

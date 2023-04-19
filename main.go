@@ -106,6 +106,13 @@ func main() {
 						Usage:    "extension for object metadata files",
 						Value:    "pfile",
 					},
+					&cli.StringFlag{
+						Name:     "region",
+						Required: false,
+						Aliases:  []string{},
+						Usage:    "region is used for Storage providers that have a geographical concept. Mostly for cloud providers.",
+						Value:    "us-east-1",
+					},
 				},
 				Action: func(c *cli.Context) error {
 					setLoggerOpts(c)
@@ -127,6 +134,7 @@ func main() {
 					}
 					sourceRepo := c.String("source_repo")
 					pantriAddress := c.String("pantri_address")
+					region := c.String("region")
 					// store agnostic initialization, specific initialization determined by backend
 					return pantri.Initialize(context.Background(), afero.NewOsFs(), sourceRepo, backend, pantriAddress, opts)
 				},

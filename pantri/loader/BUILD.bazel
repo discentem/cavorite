@@ -7,8 +7,6 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//stores",
-        "//stores/local",
-        "//stores/s3",
         "@com_github_mitchellh_go_homedir//:go-homedir",
         "@com_github_spf13_afero//:afero",
     ],

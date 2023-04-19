@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -22,26 +21,19 @@ import (
 	pantriconfig "github.com/discentem/pantri_but_go/pantri"
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
-	"github.com/mitchellh/mapstructure"
 )
 
 type S3Store struct {
-	Opts          Options `mapstructure:"options"`
-	fsys          afero.Fs
-	awsRegion     string
-	s3Client      *s3.Client
-	s3Uploader    *s3manager.Uploader
-	s3Downloader  *s3manager.Downloader
-}
-
-func NewS3StoreClient(fsys afero.Fs, ) *S3Store {
-	return &S3Store{
-
-	}
+	Opts         Options `mapstructure:"options"`
+	fs           afero.Fs
+	awsRegion    string
+	s3Client     *s3.Client
+	s3Uploader   *s3manager.Uploader
+	s3Downloader *s3manager.Downloader
 }
 
 func (s *S3Store) bucketName() *string {
-	_, buck := path.Split(s.PantriAddress)
+	_, buck := path.Split(s.Opts.PantriAddress)
 	return aws.String(buck)
 }
 
@@ -79,10 +71,10 @@ func getConfig(ctx context.Context, awsRegion string, pantriAddress string) (*aw
 
 }
 
-func (s *S3Store) init(ctx context.Context, awsRegion string, fsys afero.Fs, sourceRepo string) error {
+func (s *S3Store) WriteConfig(ctx context.Context, sourceRepo string) error {
 	c := pantriconfig.Config{
 		Type:          "s3",
-		PantriAddress: s.PantriAddress,
+		PantriAddress: s.Opts.PantriAddress,
 		Opts:          s.Opts,
 		Validate: func() error {
 			_, err := s.s3Client.HeadBucket(
@@ -95,10 +87,10 @@ func (s *S3Store) init(ctx context.Context, awsRegion string, fsys afero.Fs, sou
 		},
 	}
 
-	return c.Write(fsys, sourceRepo)
+	return c.Write(s.fs, sourceRepo)
 }
 
-func New(ctx context.Context, awsRegion string, fsys afero.Fs, sourceRepo, pantriAddress string, opts Options) (*S3Store, error) {
+func NewS3StoreClient(ctx context.Context, fs afero.Fs, awsRegion, sourceRepo string, opts Options) (*S3Store, error) {
 	if opts.RemoveFromSourceRepo == nil {
 		b := false
 		opts.RemoveFromSourceRepo = &b
@@ -110,7 +102,7 @@ func New(ctx context.Context, awsRegion string, fsys afero.Fs, sourceRepo, pantr
 	cfg, err := getConfig(
 		ctx,
 		awsRegion,
-		pantriAddress,
+		opts.PantriAddress,
 	)
 	if err != nil {
 		return nil, err
@@ -130,47 +122,31 @@ func New(ctx context.Context, awsRegion string, fsys afero.Fs, sourceRepo, pantr
 		},
 	)
 
-	s := &Store{
-		PantriAddress: pantriAddress,
-		Opts:          opts,
-		awsRegion:     awsRegion,
-		s3Client:      s3Client,
-		s3Uploader:    s3Uploader,
-		s3Downloader:  s3Downloader,
-	}
-
-	err = s.init(
-		ctx,
-		awsRegion,
-		fsys,
-		sourceRepo,
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return s, nil
+	return &S3Store{
+		Opts:         opts,
+		fs:           fs,
+		awsRegion:    awsRegion,
+		s3Client:     s3Client,
+		s3Uploader:   s3Uploader,
+		s3Downloader: s3Downloader,
+	}, nil
 }
 
-func Load(m map[string]interface{}) (Store, error) {
-	logger.Infof("type %q detected in pantri %q", m["type"], m["pantri_address"])
-	var s *S3Store
-	if err := mapstructure.Decode(m, &s); err != nil {
-		return nil, err
-	}
-	return Store(s), nil
-}
+// func Load(m map[string]interface{}) (Store, error) {
+// 	logger.Infof("type %q detected in pantri %q", m["type"], m["pantri_address"])
+// 	var s *S3Store
+// 	if err := mapstructure.Decode(m, &s); err != nil {
+// 		return nil, err
+// 	}
+// 	return Store(s), nil
+// }
 
 // TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
-func (s *S3Store) Upload(ctx context.Context, fsys afero.Fs, sourceRepo string, destination string, objects ...string) error {
-	if err := initS3(s); err != nil {
-		return err
-	}
+func (s *S3Store) Upload(ctx context.Context, sourceRepo string, destination string, objects ...string) error {
 	for _, object := range objects {
 		logger.Info("starting upload")
 		logger.V(2).Info(object)
-		f, err := fsys.Open(object)
+		f, err := s.fs.Open(object)
 		if err != nil {
 			return err
 		}
@@ -192,7 +168,7 @@ func (s *S3Store) Upload(ctx context.Context, fsys afero.Fs, sourceRepo string, 
 
 		// Write the metadata file to disk
 		err = metadata.WriteToFs(
-			fsys,
+			s.fs,
 			sourceRepo,
 			*md,
 			filepath.Base(destination),
@@ -202,17 +178,6 @@ func (s *S3Store) Upload(ctx context.Context, fsys afero.Fs, sourceRepo string, 
 			return err
 		}
 
-		cfg, err := getConfig(ctx, s.awsRegion, s.PantriAddress)
-		if err != nil {
-			return err
-		}
-		s.s3Client = s3.NewFromConfig(*cfg)
-		s.s3Uploader = s3manager.NewUploader(
-			s.s3Client,
-			func(u *s3manager.Uploader) {
-				u.PartSize = 64 * 1024 * 1024 // 64MB per part
-			},
-		)
 		// Reset offset after writing metadata, before attempting upload. This prevents a 0 byte upload.
 		_, err = f.Seek(0, 0)
 		if err != nil {
@@ -238,16 +203,7 @@ func (s *S3Store) Upload(ctx context.Context, fsys afero.Fs, sourceRepo string, 
 	return nil
 }
 
-//lint:ignore U1000 func unused
-func keyFromPfile(fsys afero.Fs, path, ext string) (*string, error) {
-	m, err := metadata.ParsePfile(fsys, path, ".pfile")
-	if err != nil {
-		return nil, err
-	}
-	return &m.Key, nil
-}
-
-func (s *S3Store) Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string, pfiles ...string) error {
+func (s *S3Store) Retrieve(ctx context.Context, sourceRepo string, pfiles ...string) error {
 	log.Println(pfiles)
 	log.Println(sourceRepo)
 	log.Printf("bucket name: %s", *s.bucketName())
@@ -257,9 +213,7 @@ func (s *S3Store) Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string
 			strings.TrimSuffix(filepath.Join(sourceRepo, o), s.Opts.MetaDataFileExtension),
 		)
 		retrievePath := strings.TrimSuffix(filepath.Join(sourceRepo, o), s.Opts.MetaDataFileExtension)
-		f, err := os.Create(retrievePath)
-		// f = //fs.File
-		// f = os.File --> looking for this
+		f, err := s.fs.Create(retrievePath)
 		if err != nil {
 			return err
 		}
@@ -284,24 +238,13 @@ func (s *S3Store) Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string
 		}
 		//The w io.WriterAt can be satisfied by an os.File to do multipart concurrent downloads, or in memory []byte wrapper using aws.WriteAtBuffer. In case you download files into memory do not forget to pre-allocate memory to avoid additional allocations and GC runs.
 		// io.WriterAt()
-		cfg, err := getConfig(ctx, s.awsRegion, s.PantriAddress)
-		if err != nil {
-			return err
-		}
-		s3Client := s3.NewFromConfig(*cfg)
-		s.s3Downloader = s3manager.NewDownloader(
-			s3Client,
-			func(d *s3manager.Downloader) {
-				d.Concurrency = 3
-			},
-		)
 		numOfBytesDownloaded, err := s.s3Downloader.Download(
 			ctx,
 			f,
 			obj,
 		)
 		if err != nil {
-			if rmvFerr := fsys.Remove(retrievePath); rmvFerr != nil {
+			if rmvFerr := s.fs.Remove(retrievePath); rmvFerr != nil {
 				return fmt.Errorf("failed to remove %s due %w after encountering download failure: %w", retrievePath, rmvFerr, err)
 			}
 			return err
@@ -334,7 +277,7 @@ func (s *S3Store) Retrieve(ctx context.Context, fsys afero.Fs, sourceRepo string
 		if err != nil {
 			return err
 		}
-		if err := afero.WriteFile(fsys, op, b, 0644); err != nil {
+		if err := afero.WriteFile(s.fs, op, b, 0644); err != nil {
 			return err
 		}
 	}

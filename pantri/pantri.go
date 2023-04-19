@@ -8,18 +8,18 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/discentem/pantri_but_go/stores"
-
 	"github.com/google/logger"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/afero"
 )
 
 type Config struct {
-	Type          string         `json:"type"`
-	PantriAddress string         `json:"pantri_address"`
-	Opts          stores.Options `json:"options"`
-	Validate      func() error   `json:"-"`
+	PantriAddress         string `json:"pantri_address" mapstructure:"pantri_address"`
+	MetaDataFileExtension string `json:"metadata_file_extension" mapstructure:"metadata_file_extension"`
+	// TODO(discentem) remove this option. See #15
+	RemoveFromSourceRepo *bool        `json:"remove_from_sourcerepo" mapstructure:"remove_from_sourcerepo"`
+	Type                 string       `json:"type"`
+	Validate             func() error `json:"-"`
 }
 
 type dirExpanderer func(string) (string, error)

@@ -8,11 +8,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
-
-	pantri "github.com/discentem/pantri_but_go/pantri/loader"
-	"github.com/discentem/pantri_but_go/stores/s3"
 
 	"github.com/discentem/pantri_but_go/stores"
 
@@ -37,6 +35,12 @@ func getPrereqs(c *cli.Context) {
 
 	// fsys afero.FS
 }
+
+var (
+	globalStoreOpts stores.Options
+
+)
+
 func main() {
 	defer logger.Init("pantri_but_go", true, false, io.Discard).Close()
 
@@ -73,14 +77,16 @@ func main() {
 				return errors.New("specifying multiple backends not allowed, try again")
 			}
 			fileExt := c.String("metadata_file_extension")
-			opts := stores.Options{
-				RemoveFromSourceRepo:  &remove,
-				MetaDataFileExtension: fileExt,
-			}
 			sourceRepo := c.String("source_repo")
 			pantriAddress := c.String("pantri_address")
+			globalStoreOpts = stores.Options{
+				RemoveFromSourceRepo:  &remove,
+				MetaDataFileExtension: fileExt,
+				PantriAddress: pantriAddress,
+			}
+	
 			// store agnostic initialization, specific initialization determined by backend
-			return pantri.Initialize(context.Background(), afero.NewOsFs(), sourceRepo, backend, pantriAddress, opts)
+			// return pantri.Initialize(context.Background(), afero.NewOsFs(), sourceRepo, backend, pantriAddress, opts)
 
 			fmt.Fprintf(cCtx.App.Writer, "BEFORE WAS RUN\n")
 			return nil
@@ -93,19 +99,19 @@ func main() {
 				Aliases: []string{},
 				Usage:   "Initalize pantri.",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:     "pantri_address",
-						Aliases:  []string{"p", "pa"},
-						Required: true,
-						Usage:    "path to pantri storage",
-					},
-					&cli.StringFlag{
-						Name:     "metadata_file_extension",
-						Required: false,
-						Aliases:  []string{"ext"},
-						Usage:    "extension for object metadata files",
-						Value:    "pfile",
-					},
+					// &cli.StringFlag{
+					// 	Name:     "pantri_address",
+					// 	Aliases:  []string{"p", "pa"},
+					// 	Required: true,
+					// 	Usage:    "path to pantri storage",
+					// },
+					// &cli.StringFlag{
+					// 	Name:     "metadata_file_extension",
+					// 	Required: false,
+					// 	Aliases:  []string{"ext"},
+					// 	Usage:    "extension for object metadata files",
+					// 	Value:    "pfile",
+					// },
 					&cli.StringFlag{
 						Name:     "region",
 						Required: false,
@@ -127,17 +133,27 @@ func main() {
 					} else {
 						return errors.New("specifying multiple backends not allowed, try again")
 					}
-					fileExt := c.String("metadata_file_extension")
-					opts := stores.Options{
-						RemoveFromSourceRepo:  &remove,
-						MetaDataFileExtension: fileExt,
-					}
-					sourceRepo := c.String("source_repo")
-					pantriAddress := c.String("pantri_address")
-					region := c.String("region")
-					// store agnostic initialization, specific initialization determined by backend
-					return pantri.Initialize(context.Background(), afero.NewOsFs(), sourceRepo, backend, pantriAddress, opts)
-				},
+
+					fmt.Println(globalStoreOpts)
+
+					fs := afero.NewOsFs()
+					ctx := context.Background()
+
+					// switch backend {
+					// case "s3":
+					// 	s, err := stores.NewS3StoreClient(ctx, fs, awsRegion, sourceRepo, opts)
+					// 	if err != nil {
+					// 		return err
+					// 	}
+					// 	err = s.WriteConfig(ctx, sourceRepo)
+					// 	if err != nil {
+					// 		return err
+					// 	}
+					// default:
+					// 	return nil, fmt.Errorf("%s: %w", b, ErrUnsupportedStore)
+					// }
+
+					return nil
 			},
 			{
 				Name:    "upload",
@@ -190,7 +206,7 @@ func main() {
 					fsys := afero.NewOsFs()
 
 					//example start - lets init a standardized --> pantri client
-					s3Client := s3.New()
+					// s3Client := s3.New()
 
 					s, err := pantri.InitWithS3(s3.New(ctx, "us-east-1", fsys, sourceRepo, address, opts))
 

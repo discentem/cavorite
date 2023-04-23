@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/logger"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/afero"
 
 	"github.com/discentem/pantri_but_go/internal/metadata"
@@ -75,7 +76,7 @@ func (s *S3Store) WriteConfig(ctx context.Context, sourceRepo string) error {
 	c := pantriconfig.Config{
 		Type:          "s3",
 		PantriAddress: s.Opts.PantriAddress,
-		Opts:          s.Opts,
+		// Opts:          s.Opts,
 		Validate: func() error {
 			_, err := s.s3Client.HeadBucket(
 				ctx,
@@ -132,14 +133,14 @@ func NewS3StoreClient(ctx context.Context, fs afero.Fs, awsRegion, sourceRepo st
 	}, nil
 }
 
-// func Load(m map[string]interface{}) (Store, error) {
-// 	logger.Infof("type %q detected in pantri %q", m["type"], m["pantri_address"])
-// 	var s *S3Store
-// 	if err := mapstructure.Decode(m, &s); err != nil {
-// 		return nil, err
-// 	}
-// 	return Store(s), nil
-// }
+func Load(m map[string]interface{}) (Store, error) {
+	logger.Infof("type %q detected in pantri %q", m["type"], m["pantri_address"])
+	var s *S3Store
+	if err := mapstructure.Decode(m, &s); err != nil {
+		return nil, err
+	}
+	return Store(s), nil
+}
 
 // TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
 func (s *S3Store) Upload(ctx context.Context, sourceRepo string, destination string, objects ...string) error {
@@ -264,7 +265,7 @@ func (s *S3Store) Retrieve(ctx context.Context, sourceRepo string, pfiles ...str
 		}
 		pfilePath := filepath.Join(sourceRepo, o)
 
-		m, err := metadata.ParsePfile(fsys, pfilePath, ext)
+		m, err := metadata.ParsePfile(s.fs, pfilePath, ext)
 		if err != nil {
 			return err
 		}

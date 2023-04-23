@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 
@@ -18,7 +17,8 @@ import (
 )
 
 var (
-	defaultStore = "local"
+	defaultStore        = "s3"
+	defaultBackendStore = "s3"
 )
 
 func setLoggerOpts(c *cli.Context) {
@@ -38,7 +38,6 @@ func getPrereqs(c *cli.Context) {
 
 var (
 	globalStoreOpts stores.Options
-
 )
 
 func main() {
@@ -64,27 +63,74 @@ func main() {
 			Value:    false,
 			Usage:    "displays logger.V(2).* messages",
 		},
+		&cli.BoolFlag{
+			Name:     "remove",
+			Aliases:  []string{"remove", "rm", "del"},
+			Required: false,
+			Value:    false,
+			Usage:    "Perform removal of source files from source_repo",
+		},
+		&cli.StringFlag{
+			Name:     "region",
+			Value:    "us-east-1",
+			Aliases:  []string{"region"},
+			Usage:    "Set the region to use for cloud storage sources",
+			Required: false,
+		},
+		&cli.StringFlag{
+			Name:     "backend",
+			Value:    defaultBackendStore,
+			Aliases:  []string{"b", "type"},
+			Usage:    "Set the backend type to use for Pantri storage sources",
+			Required: false,
+		},
+		&cli.StringFlag{
+			Name:     "pantri_address",
+			Aliases:  []string{"p", "pa"},
+			Required: true,
+			Usage:    "path to pantri storage",
+		},
+		&cli.StringFlag{
+			Name:     "metadata_file_extension",
+			Required: false,
+			Aliases:  []string{"ext"},
+			Usage:    "extension for object metadata files",
+			Value:    "pfile",
+		},
+		&cli.StringFlag{
+			Name:     "region",
+			Required: false,
+			Aliases:  []string{},
+			Usage:    "region is used for Storage providers that have a geographical concept. Mostly for cloud providers.",
+			Value:    "us-east-1",
+		},
 	}
+
 	app := &cli.App{
-		Before: func(cCtx *cli.Context) error {
-			var backend string
-			if c.NArg() == 0 {
-				log.Printf("defaulting to %s for pantri storage", defaultStore)
-				backend = defaultStore
-			} else if c.NArg() == 1 {
-				backend = c.Args().First()
-			} else {
-				return errors.New("specifying multiple backends not allowed, try again")
+		Before: func(c *cli.Context) error {
+			backend := c.String("backend")
+			if len(backend) == 0 {
+				backend = defaultBackendStore
 			}
+
+			// if c.NArg() == 0 {
+			// 	log.Printf("defaulting to %s for pantri storage", defaultStore)
+			// 	backend = defaultStore
+			// } else if c.NArg() == 1 {
+			// 	backend = c.Args().First()
+			// } else {
+			// 	return errors.New("specifying multiple backends not allowed, try again")
+			// }
 			fileExt := c.String("metadata_file_extension")
 			sourceRepo := c.String("source_repo")
 			pantriAddress := c.String("pantri_address")
+			performRemoval := c.Bool("remove")
 			globalStoreOpts = stores.Options{
-				RemoveFromSourceRepo:  &remove,
+				RemoveFromSourceRepo:  &performRemoval,
 				MetaDataFileExtension: fileExt,
-				PantriAddress: pantriAddress,
+				PantriAddress:         pantriAddress,
 			}
-	
+
 			// store agnostic initialization, specific initialization determined by backend
 			// return pantri.Initialize(context.Background(), afero.NewOsFs(), sourceRepo, backend, pantriAddress, opts)
 
@@ -99,19 +145,19 @@ func main() {
 				Aliases: []string{},
 				Usage:   "Initalize pantri.",
 				Flags: []cli.Flag{
-					// &cli.StringFlag{
-					// 	Name:     "pantri_address",
-					// 	Aliases:  []string{"p", "pa"},
-					// 	Required: true,
-					// 	Usage:    "path to pantri storage",
-					// },
-					// &cli.StringFlag{
-					// 	Name:     "metadata_file_extension",
-					// 	Required: false,
-					// 	Aliases:  []string{"ext"},
-					// 	Usage:    "extension for object metadata files",
-					// 	Value:    "pfile",
-					// },
+					&cli.StringFlag{
+						Name:     "pantri_address",
+						Aliases:  []string{"p", "pa"},
+						Required: true,
+						Usage:    "path to pantri storage",
+					},
+					&cli.StringFlag{
+						Name:     "metadata_file_extension",
+						Required: false,
+						Aliases:  []string{"ext"},
+						Usage:    "extension for object metadata files",
+						Value:    "pfile",
+					},
 					&cli.StringFlag{
 						Name:     "region",
 						Required: false,
@@ -123,7 +169,7 @@ func main() {
 				Action: func(c *cli.Context) error {
 					setLoggerOpts(c)
 
-					remove := c.Bool("remove")
+					// remove := c.Bool("remove")
 					var backend string
 					if c.NArg() == 0 {
 						log.Printf("defaulting to %s for pantri storage", defaultStore)
@@ -139,21 +185,22 @@ func main() {
 					fs := afero.NewOsFs()
 					ctx := context.Background()
 
-					// switch backend {
-					// case "s3":
-					// 	s, err := stores.NewS3StoreClient(ctx, fs, awsRegion, sourceRepo, opts)
-					// 	if err != nil {
-					// 		return err
-					// 	}
-					// 	err = s.WriteConfig(ctx, sourceRepo)
-					// 	if err != nil {
-					// 		return err
-					// 	}
-					// default:
-					// 	return nil, fmt.Errorf("%s: %w", b, ErrUnsupportedStore)
-					// }
+					switch backend {
+					case "s3":
+						s, err := stores.NewS3StoreClient(ctx, fs, awsRegion, sourceRepo, opts)
+						if err != nil {
+							return err
+						}
+						err = s.WriteConfig(ctx, sourceRepo)
+						if err != nil {
+							return err
+						}
+					default:
+						return nil, fmt.Errorf("%s: %w", b, ErrUnsupportedStore)
+					}
 
 					return nil
+				},
 			},
 			{
 				Name:    "upload",
@@ -202,22 +249,25 @@ func main() {
 					if c.NArg() == 0 {
 						return errors.New("you must pass the path of an object to retrieve")
 					}
+
+					ctx := context.Background()
 					sourceRepo := c.String("source_repo")
-					fsys := afero.NewOsFs()
+					fs := afero.NewOsFs()
+
+					s, err := stores.NewS3StoreClient(ctx, fs, "us-east-1", sourceRepo, stores.Options{})
 
 					//example start - lets init a standardized --> pantri client
 					// s3Client := s3.New()
 
-					s, err := pantri.InitWithS3(s3.New(ctx, "us-east-1", fsys, sourceRepo, address, opts))
+					// s, err := pantri.InitWithS3(s3.New(ctx, "us-east-1", fsys, sourceRepo, address, opts))
 
-					s, err := pantri.InitWithLocalStore(localstore.New(fsys, sourceRepo, address, opts))
+					// s, err := pantri.InitWithLocalStore(localstore.New(fsys, sourceRepo, address, opts))
 
-					s.Retrieve()
-					s.Upload()
+					// s.Retrieve()
+					// s.Upload()
 
 					// example end
 
-					pantri.InitializeS3()
 					s, err := pantri.Load(fsys, sourceRepo)
 					if err != nil {
 						return err

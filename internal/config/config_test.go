@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/discentem/pantri_but_go/internal/stores"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,7 +30,7 @@ func TestDirExpanderFails(t *testing.T) {
 	conf := Config{
 		Validate: func() error { return nil },
 	}
-	dirExpander = func(path string) (string, error) {
+	expander = func(path string) (string, error) {
 		return "", errors.New("borked")
 	}
 	err := conf.Write(afero.NewMemMapFs(), "")
@@ -38,12 +39,14 @@ func TestDirExpanderFails(t *testing.T) {
 
 func TestSuccessfulWrite(t *testing.T) {
 	conf := Config{
-		Type:          "blah",
-		PantriAddress: "blahaddress",
-		Validate:      func() error { return nil },
+		StoreType: stores.StoreTypeUndefined,
+		Options: stores.Options{
+			PantriAddress: "s3://blahaddress/bucket",
+		},
+		Validate: func() error { return nil },
 	}
 	// override back to a dirExpander that will succeed, as opposed to previous test
-	dirExpander = func(path string) (string, error) {
+	expander = func(path string) (string, error) {
 		return path, nil
 	}
 	fsys := afero.NewMemMapFs()
@@ -55,9 +58,9 @@ func TestSuccessfulWrite(t *testing.T) {
 	assert.NoError(t, err)
 
 	expected := `{
- "type": "blah",
- "pantri_address": "blahaddress",
+ "store_type": "undefined",
  "options": {
+  "pantri_address": "s3://blahaddress/bucket"
   "metadata_file_extension": "",
   "remove_from_sourcerepo": null
  }

@@ -1,4 +1,4 @@
-package s3
+package stores
 
 import (
 	"bytes"
@@ -14,18 +14,18 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 
 	"github.com/discentem/pantri_but_go/internal/metadata"
-	"github.com/discentem/pantri_but_go/internal/stores"
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 )
 
 type S3Store struct {
-	Opts      stores.Options `mapstructure:"options"`
+	Options   Options `mapstructure:"options"`
 	fsys      afero.Fs
 	awsRegion string
 	// Migrate to internal/s3Client instead of using s3Client directly from AWS_SDK
@@ -35,7 +35,7 @@ type S3Store struct {
 	//
 }
 
-func NewS3StoreClient(ctx context.Context, fsys afero.Fs, awsRegion, sourceRepo string, opts stores.Options) (*S3Store, error) {
+func NewS3StoreClient(ctx context.Context, fsys afero.Fs, awsRegion, sourceRepo string, opts Options) (*S3Store, error) {
 	if opts.RemoveFromSourceRepo == nil {
 		b := false
 		opts.RemoveFromSourceRepo = &b
@@ -67,7 +67,7 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, awsRegion, sourceRepo 
 	)
 
 	return &S3Store{
-		Opts:         opts,
+		Options:      opts,
 		fsys:         fsys,
 		awsRegion:    awsRegion,
 		s3Client:     s3Client,
@@ -81,7 +81,7 @@ func getConfig(region string, pantriAddress string) (*aws.Config, error) {
 	var err error
 
 	if strings.HasPrefix(pantriAddress, "s3://") {
-		cfg, err = config.LoadDefaultConfig(context.TODO())
+		cfg, err = awsConfig.LoadDefaultConfig(context.TODO())
 		if err != nil {
 			return nil, err
 		}
@@ -114,16 +114,16 @@ func getConfig(region string, pantriAddress string) (*aws.Config, error) {
 // func (s *S3Store) init(ctx context.Context, fsys afero.Fs, sourceRepo string) error {
 // 	c := pantri.Config{
 // 		Type:          "s3",
-// 		Opts:          s.Opts,
+// 		Opts:          s.Options,
 // 		Validate: func() error {
-// 			cfg, err := getConfig(s.awsRegion, s.Opts.PantriAddress)
+// 			cfg, err := getConfig(s.awsRegion, s.Options.PantriAddress)
 // 			if err != nil {
 // 				return err
 // 			}
 // 			uploader := s3.NewFromConfig(*cfg)
 // 			// s3://test --> test
 // 			// http://stuff/test --> test
-// 			_, buck := path.Split(s.Opts.PantriAddress)
+// 			_, buck := path.Split(s.Options.PantriAddress)
 // 			_, err = uploader.HeadBucket(ctx, &s3.HeadBucketInput{
 // 				Bucket: &buck,
 // 			})
@@ -153,8 +153,8 @@ func getConfig(region string, pantriAddress string) (*aws.Config, error) {
 // 	return s, nil
 // }
 
-func (s *S3Store) GetOptions() stores.Options {
-	return s.Opts
+func (s *S3Store) GetOptions() Options {
+	return s.Options
 }
 
 // TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
@@ -182,22 +182,22 @@ func (s *S3Store) Upload(ctx context.Context, sourceRepo string, objects ...stri
 		if err != nil {
 			return err
 		}
-		if err := os.MkdirAll(filepath.Dir(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Opts.MetaDataFileExtension))), os.ModePerm); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension))), os.ModePerm); err != nil {
 			return err
 		}
-		if err := os.WriteFile(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Opts.MetaDataFileExtension)), blob, 0644); err != nil {
+		if err := os.WriteFile(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension)), blob, 0644); err != nil {
 			return err
 		}
 
-		if s.Opts.RemoveFromSourceRepo != nil {
-			if *s.Opts.RemoveFromSourceRepo {
+		if s.Options.RemoveFromSourceRepo != nil {
+			if *s.Options.RemoveFromSourceRepo {
 				if err := os.Remove(o); err != nil {
 					return err
 				}
 			}
 		}
 
-		_, buck := path.Split(s.Opts.PantriAddress)
+		_, buck := path.Split(s.Options.PantriAddress)
 		obj := s3.PutObjectInput{
 			Bucket: aws.String(buck),
 			Key:    &o,
@@ -220,7 +220,7 @@ func (s *S3Store) Retrieve(ctx context.Context, sourceRepo string, objects ...st
 			return err
 		}
 		defer f.Close()
-		_, buck := path.Split(s.Opts.PantriAddress)
+		_, buck := path.Split(s.Options.PantriAddress)
 		obj := &s3.GetObjectInput{
 			Bucket: aws.String(buck),
 			Key:    aws.String(o),
@@ -234,10 +234,10 @@ func (s *S3Store) Retrieve(ctx context.Context, sourceRepo string, objects ...st
 			return err
 		}
 		var ext string
-		if s.Opts.MetaDataFileExtension == "" {
+		if s.Options.MetaDataFileExtension == "" {
 			ext = ".pfile"
 		} else {
-			ext = s.Opts.MetaDataFileExtension
+			ext = s.Options.MetaDataFileExtension
 		}
 		pfilePath := filepath.Join(sourceRepo, o)
 
@@ -247,7 +247,7 @@ func (s *S3Store) Retrieve(ctx context.Context, sourceRepo string, objects ...st
 		}
 		if hash != m.Checksum {
 			fmt.Println(hash, m.Checksum)
-			return stores.ErrRetrieveFailureHashMismatch
+			return ErrRetrieveFailureHashMismatch
 		}
 		op := path.Join(sourceRepo, o)
 		b, err := io.ReadAll(f)
@@ -260,34 +260,3 @@ func (s *S3Store) Retrieve(ctx context.Context, sourceRepo string, objects ...st
 	}
 	return nil
 }
-
-// func Load(m map[string]interface{}, ctx context.Context, fsys afero.Fs, region string) (stores.Store, error) {
-// 	logger.Infof("type %q detected in pantri %q", m["type"], m["pantri_address"])
-// 	if err := mapstructure.Decode(m, &s); err != nil {
-// 		return nil, err
-// 	}
-// 	s3, err := s3.NewS3StoreClient(ctx, fsys, "us-east-1", sourceRepo, opts)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return stores.Store(s3), nil
-// }
-
-// // from loader //////////////////////////////////
-// func Initialize(ctx context.Context, fsys afero.Fs, sourceRepo, backend, address string, opts stores.Options) (stores.Store, error) {
-// 	var s stores.Store
-// 	switch b := (backend); b {
-// 	case "s3":
-// 		s3, err := s3.NewS3StoreClient(ctx, fsys, "us-east-1", sourceRepo, opts)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		s = stores.Store(s3)
-// 	default:
-// 		return nil, fmt.Errorf("%s: %w", b, ErrUnsupportedStore)
-// 	}
-// 	return s, nil
-
-// }
-
-// //

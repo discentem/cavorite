@@ -1,6 +1,7 @@
-package pantri
+package config
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,16 +9,15 @@ import (
 	"path/filepath"
 
 	"github.com/discentem/pantri_but_go/internal/stores"
-
 	"github.com/google/logger"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/afero"
 )
 
 type Config struct {
-	Type     string         `json:"type"`
-	Opts     stores.Options `json:"options"`
-	Validate func() error   `json:"-"`
+	StoreType stores.StoreType `json:"store_type"`
+	Options   stores.Options   `json:"options"`
+	Validate  func() error     `json:"-"`
 }
 
 type dirExpander func(string) (string, error)
@@ -33,6 +33,21 @@ var (
 	ErrConfigNotExist                = errors.New("config file does not exist")
 	ErrConfigDirNotExist             = errors.New("config directory does not exist")
 )
+
+func InitializeStoreTypeS3Config(
+	ctx context.Context,
+	fsys afero.Fs,
+	sourceRepo, pantriAddress, awsRegion string,
+	opts stores.Options,
+) Config {
+	return Config{
+		StoreType: stores.StoreTypeS3,
+		Options:   opts,
+		Validate: func() error {
+			return nil
+		},
+	}
+}
 
 func (c *Config) Write(fsys afero.Fs, sourceRepo string) error {
 	if c.Validate == nil {

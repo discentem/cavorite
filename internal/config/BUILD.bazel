@@ -1,9 +1,9 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "pantri",
-    srcs = ["pantri.go"],
-    importpath = "github.com/discentem/pantri_but_go/internal/pantri",
+    name = "config",
+    srcs = ["config.go"],
+    importpath = "github.com/discentem/pantri_but_go/internal/config",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/stores",
@@ -14,9 +14,9 @@ go_library(
 )
 
 go_test(
-    name = "pantri_test",
-    srcs = ["pantri_test.go"],
-    embed = [":pantri"],
+    name = "config_test",
+    srcs = ["config_test.go"],
+    embed = [":config"],
     deps = [
         "//internal/stores",
         "@com_github_spf13_afero//:afero",

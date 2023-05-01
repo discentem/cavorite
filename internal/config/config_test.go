@@ -1,4 +1,4 @@
-package pantri
+package config
 
 import (
 	"errors"
@@ -39,9 +39,9 @@ func TestDirExpanderFails(t *testing.T) {
 
 func TestSuccessfulWrite(t *testing.T) {
 	conf := Config{
-		Type: "blah",
-		Opts: stores.Options{
-			PantriAddress: "blahaddress",
+		StoreType: stores.StoreTypeUndefined,
+		Options: stores.Options{
+			PantriAddress: "s3://blahaddress/bucket",
 		},
 		Validate: func() error { return nil },
 	}
@@ -58,9 +58,9 @@ func TestSuccessfulWrite(t *testing.T) {
 	assert.NoError(t, err)
 
 	expected := `{
- "type": "blah",
- "pantri_address": "blahaddress",
+ "store_type": "undefined",
  "options": {
+  "pantri_address": "s3://blahaddress/bucket"
   "metadata_file_extension": "",
   "remove_from_sourcerepo": null
  }

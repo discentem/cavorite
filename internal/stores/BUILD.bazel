@@ -1,0 +1,11 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "stores",
+    srcs = [
+        "options.go",
+        "stores.go",
+    ],
+    importpath = "github.com/discentem/pantri_but_go/internal/stores",
+    visibility = ["//visibility:public"],
+)

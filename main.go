@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -10,9 +12,9 @@ import (
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 
-	pantri "github.com/discentem/pantri_but_go/pantri/loader"
-
-	"github.com/discentem/pantri_but_go/stores"
+	"github.com/discentem/pantri_but_go/internal/pantri"
+	"github.com/discentem/pantri_but_go/internal/stores"
+	s3store "github.com/discentem/pantri_but_go/internal/stores/s3"
 
 	"github.com/urfave/cli/v2"
 )
@@ -50,6 +52,19 @@ func main() {
 			Value:    false,
 			Usage:    "displays logger.V(2).* messages",
 		},
+		&cli.StringFlag{
+			Name:     "pantri_address",
+			Aliases:  []string{"p", "pa"},
+			Required: true,
+			Usage:    "path to pantri storage",
+		},
+		&cli.StringFlag{
+			Name:     "metadata_file_extension",
+			Required: false,
+			Aliases:  []string{"ext"},
+			Usage:    "extension for object metadata files",
+			Value:    "pfile",
+		},
 	}
 	app := &cli.App{
 		Flags: flags,
@@ -59,46 +74,31 @@ func main() {
 				Name:    "init",
 				Aliases: []string{},
 				Usage:   "Initalize pantri.",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:     "pantri_address",
-						Aliases:  []string{"p", "pa"},
-						Required: true,
-						Usage:    "path to pantri storage",
-					},
-					&cli.StringFlag{
-						Name:     "metadata_file_extension",
-						Required: false,
-						Aliases:  []string{"ext"},
-						Usage:    "extension for object metadata files",
-						Value:    "pfile",
-					},
-				},
 				Action: func(c *cli.Context) error {
-					setLoggerOpts(c)
+					// setLoggerOpts(c)
 
-					remove := c.Bool("remove")
-					var backend string
-					if c.NArg() == 0 {
-						log.Printf("defaulting to %s for pantri storage", defaultStore)
-						backend = defaultStore
-					} else if c.NArg() == 1 {
-						backend = c.Args().First()
-					} else {
-						return errors.New("specifying multiple backends not allowed, try again")
-					}
-					fileExt := c.String("metadata_file_extension")
-					opts := stores.Options{
-						RemoveFromSourceRepo:  &remove,
-						MetaDataFileExtension: fileExt,
-					}
-					sourceRepo := c.String("source_repo")
-					pantriAddress := c.String("pantri_address")
-					// store agnostic initialization, specific initialization determined by backend
-					err := pantri.Initialize(context.Background(), afero.NewOsFs(), sourceRepo, backend, pantriAddress, opts)
-					if err != nil {
-						return err
-					}
+					// remove := c.Bool("remove")
+					// var backend string
+					// if c.NArg() == 0 {
+					// 	log.Printf("defaulting to %s for pantri storage", defaultStore)
+					// 	backend = defaultStore
+					// } else if c.NArg() == 1 {
+					// 	backend = c.Args().First()
+					// } else {
+					// 	return errors.New("specifying multiple backends not allowed, try again")
+					// }
+					// fileExt := c.String("metadata_file_extension")
+					// opts := stores.Options{
+					// 	RemoveFromSourceRepo:  &remove,
+					// 	MetaDataFileExtension: fileExt,
+					// }
+					// sourceRepo := c.String("source_repo")
+					// pantriAddress := c.String("pantri_address")
+					// // store agnostic initialization, specific initialization determined by backend
+					// err := pantri.Initialize(context.Background(), afero.NewOsFs(), sourceRepo, backend, pantriAddress, opts)
+					// if err != nil {
+					// 	return err
+					// }
 					return nil
 				},
 			},
@@ -115,19 +115,47 @@ func main() {
 				},
 				Action: func(c *cli.Context) error {
 					setLoggerOpts(c)
+					var store stores.Store
 
 					if c.NArg() == 0 {
 						return errors.New("you must pass the path of an object to upload")
 					}
-					sourceRepo := c.String("source_repo")
+
+					ctx := context.Background()
 					fsys := afero.NewOsFs()
-					s, err := pantri.Load(fsys, sourceRepo)
+					sourceRepo := c.String("source_repo")
+					if sourceRepo == "" {
+						return errors.New("sourceRepo must be specified")
+					}
+					b, err := pantri.ReadConfig(fsys, sourceRepo)
+					if err != nil {
+						return errors.New("")
+					}
+					var pantriConfig pantri.Config
+					err = json.Unmarshal(b, &pantriConfig)
 					if err != nil {
 						return err
 					}
+					opts := stores.Options{
+						PantriAddress:         sourceRepo,
+						MetaDataFileExtension: fileExt,
+					}
+					switch pantriConfig.Type {
+					case "s3":
+						s3, err := s3store.NewS3StoreClient(ctx, fsys, awsRegion, sourceRepo, opts)
+						if err != nil {
+							return fmt.Errorf("improper stores.S3Client init: %v", err)
+						}
+						&store = stores.Store(s3)
+					default:
+						return fmt.Errorf("type %q is not supported", pantriConfig.Type)
+					}
+
+					logger.Infof("Uploading to: %s", store.GetOptions().PantriAddress)
+					logger.Infof("Uploading file: %s", c.Args().Slice())
 					// TODO(discentem) improve log message to include pantriAddress
-					logger.Infof("Uploading %s", c.Args().Slice())
-					if err := s.Upload(context.Background(), fsys, sourceRepo, c.Args().Slice()...); err != nil {
+					err = store.Upload(ctx, sourceRepo, c.Args().Slice()...)
+					if err != nil {
 						return err
 					}
 					return nil
@@ -138,22 +166,22 @@ func main() {
 				Aliases: []string{"r"},
 				Usage:   "Retrieve the specified file",
 				Action: func(c *cli.Context) error {
-					setLoggerOpts(c)
+					// setLoggerOpts(c)
 
-					if c.NArg() == 0 {
-						return errors.New("you must pass the path of an object to retrieve")
-					}
-					sourceRepo := c.String("source_repo")
-					fsys := afero.NewOsFs()
-					s, err := pantri.Load(fsys, sourceRepo)
-					if err != nil {
-						return err
-					}
-					// TODO(discentem) improve log message to include pantriAddress
-					log.Printf("Retrieving %s", c.Args().Slice())
-					if err := s.Retrieve(context.Background(), fsys, sourceRepo, c.Args().Slice()...); err != nil {
-						return err
-					}
+					// if c.NArg() == 0 {
+					// 	return errors.New("you must pass the path of an object to retrieve")
+					// }
+					// sourceRepo := c.String("source_repo")
+					// fsys := afero.NewOsFs()
+					// s, err := pantri.Load(fsys, sourceRepo)
+					// if err != nil {
+					// 	return err
+					// }
+					// // TODO(discentem) improve log message to include pantriAddress
+					// log.Printf("Retrieving %s", c.Args().Slice())
+					// if err := s.Retrieve(context.Background(), fsys, sourceRepo, c.Args().Slice()...); err != nil {
+					// 	return err
+					// }
 					return nil
 				},
 			},
@@ -167,7 +195,6 @@ func main() {
 			},
 		},
 	}
-
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)

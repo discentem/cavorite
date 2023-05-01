@@ -2,4 +2,7 @@
 .dmg
 pantri_but_go
 .watchman*
+# Ignore OS X files
+.sl
+*.DS_Store
 bazel-*

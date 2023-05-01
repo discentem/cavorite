@@ -11,8 +11,8 @@ go_library(
     importpath = "github.com/discentem/pantri_but_go",
     visibility = ["//visibility:private"],
     deps = [
-        "//pantri/loader",
-        "//stores",
+        "//internal/config",
+        "//internal/stores",
         "@com_github_google_logger//:logger",
         "@com_github_spf13_afero//:afero",
         "@com_github_urfave_cli_v2//:cli",

@@ -107,53 +107,12 @@ func getConfig(region string, pantriAddress string) (*aws.Config, error) {
 	return nil, errors.New("pantriAddress did not contain s3://, http://, or https:// prefix")
 }
 
-// func (s *S3Store) init(ctx context.Context, fsys afero.Fs, sourceRepo string) error {
-// 	c := pantri.Config{
-// 		Type:          "s3",
-// 		Opts:          s.Options,
-// 		Validate: func() error {
-// 			cfg, err := getConfig(s.awsRegion, s.Options.PantriAddress)
-// 			if err != nil {
-// 				return err
-// 			}
-// 			uploader := s3.NewFromConfig(*cfg)
-// 			// s3://test --> test
-// 			// http://stuff/test --> test
-// 			_, buck := path.Split(s.Options.PantriAddress)
-// 			_, err = uploader.HeadBucket(ctx, &s3.HeadBucketInput{
-// 				Bucket: &buck,
-// 			})
-// 			return err
-// 		},
-// 	}
-
-// 	return c.Write(fsys, sourceRepo)
-// }
-
-// func New(ctx context.Context, fsys afero.Fs, sourceRepo, pantriAddress string, o stores.Options) (*S3Store, error) {
-// 	if o.RemoveFromSourceRepo == nil {
-// 		b := false
-// 		o.RemoveFromSourceRepo = &b
-// 	}
-// 	if o.MetaDataFileExtension == "" {
-// 		e := ".pfile"
-// 		o.MetaDataFileExtension = e
-// 	}
-// 	s := &S3Store{
-// 		Opts: o,
-// 	}
-// 	err := s.init(ctx, fsys, sourceRepo)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return s, nil
-// }
-
 func (s *S3Store) GetOptions() Options {
 	return s.Options
 }
 
 // TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
+// Upload generates the metadata, writes it to disk and uploads the file to the S3 bucket
 func (s *S3Store) Upload(ctx context.Context, sourceRepo string, objects ...string) error {
 	for _, o := range objects {
 		f, err := os.Open(o)
@@ -173,18 +132,21 @@ func (s *S3Store) Upload(ctx context.Context, sourceRepo string, objects ...stri
 			return err
 		}
 		logger.V(2).Infof("%s has a checksum of %q", o, m.Checksum)
-		// convert to json
+		// convert metadata to json
 		blob, err := json.MarshalIndent(m, "", " ")
 		if err != nil {
 			return err
 		}
+		// Create path for metadata if it doesn't already exist
 		if err := os.MkdirAll(filepath.Dir(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension))), os.ModePerm); err != nil {
 			return err
 		}
+		// Write metadata to disk
 		if err := os.WriteFile(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension)), blob, 0644); err != nil {
 			return err
 		}
 
+		// Generate S3 struct for object and upload to S3 bucket
 		_, buck := path.Split(s.Options.PantriAddress)
 		obj := s3.PutObjectInput{
 			Bucket: aws.String(buck),
@@ -200,27 +162,33 @@ func (s *S3Store) Upload(ctx context.Context, sourceRepo string, objects ...stri
 	return nil
 }
 
+// Retrieve gets the file from the S3 bucket, validates the hash is correct and writes it to disk
 func (s *S3Store) Retrieve(ctx context.Context, sourceRepo string, objects ...string) error {
 	for _, o := range objects {
+		// Create local path if it doesn't already exist
 		retrievePath := filepath.Join(sourceRepo, o)
 		f, err := os.Create(retrievePath)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
+		// Create an S3 struct for the file to be retrieved
 		_, buck := path.Split(s.Options.PantriAddress)
 		obj := &s3.GetObjectInput{
 			Bucket: aws.String(buck),
 			Key:    aws.String(o),
 		}
+		// Download the file
 		_, err = s.s3Downloader.Download(ctx, f, obj)
 		if err != nil {
 			return err
 		}
+		// Get the hash for the downloaded file
 		hash, err := metadata.SHA256FromReader(f)
 		if err != nil {
 			return err
 		}
+		// Figure out which file extension is being used
 		var ext string
 		if s.Options.MetaDataFileExtension == "" {
 			ext = ".pfile"
@@ -229,19 +197,23 @@ func (s *S3Store) Retrieve(ctx context.Context, sourceRepo string, objects ...st
 		}
 		pfilePath := filepath.Join(sourceRepo, o)
 
+		// Get the metadata from the metadata file
 		m, err := metadata.ParsePfile(s.fsys, pfilePath, ext)
 		if err != nil {
 			return err
 		}
+		// If the hash of the downloaded file does not match the retrieved file, return an error
 		if hash != m.Checksum {
 			fmt.Println(hash, m.Checksum)
 			return ErrRetrieveFailureHashMismatch
 		}
+		// Get the final file path
 		op := path.Join(sourceRepo, o)
 		b, err := io.ReadAll(f)
 		if err != nil {
 			return err
 		}
+		// Write the file out to its final location
 		if err := os.WriteFile(op, b, 0644); err != nil {
 			return err
 		}

@@ -189,7 +189,7 @@ func (s *S3Store) Retrieve(ctx context.Context, sourceRepo string, objects ...st
 		}
 
 		// Get the metadata from the metadata file
-		meta, err := metadata.ReadPfile(s.fsys, sourceRepo, o, s.Options)
+		meta, err := metadata.ReadPfile(s.fsys, sourceRepo, o, s.Options.MetaDataFileExtension)
 		if err != nil {
 			return err
 		}

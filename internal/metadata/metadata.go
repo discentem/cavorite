@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/discentem/pantri_but_go/internal/stores"
 	"github.com/spf13/afero"
 )
 
@@ -64,13 +63,13 @@ func ParsePfile(fsys afero.Fs, obj, ext string) (*ObjectMetaData, error) {
 	return &metadata, nil
 }
 
-func ReadPfile(fsys afero.Fs, sourceRepo, obj string, options stores.Options) (*ObjectMetaData, error) {
+func ReadPfile(fsys afero.Fs, sourceRepo, obj, optionExt string) (*ObjectMetaData, error) {
 	// Figure out which file extension is being used
 	var ext string
-	if options.MetaDataFileExtension == "" {
+	if optionExt == "" {
 		ext = ".pfile"
 	} else {
-		ext = options.MetaDataFileExtension
+		ext = optionExt
 	}
 	pfilePath := filepath.Join(sourceRepo, obj)
 	return ParsePfile(fsys, pfilePath, ext)

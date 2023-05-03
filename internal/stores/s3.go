@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -165,9 +164,9 @@ func (s *S3Store) Upload(ctx context.Context, sourceRepo string, objects ...stri
 // Retrieve gets the file from the S3 bucket, validates the hash is correct and writes it to disk
 func (s *S3Store) Retrieve(ctx context.Context, sourceRepo string, objects ...string) error {
 	for _, o := range objects {
-		// Create local path if it doesn't already exist
-		retrievePath := filepath.Join(sourceRepo, o)
-		f, err := os.Create(retrievePath)
+		// Create local path if it doesn't already exist and get a file handle
+		objectPath := filepath.Join(sourceRepo, o)
+		f, err := os.Create(objectPath)
 		if err != nil {
 			return err
 		}
@@ -184,38 +183,25 @@ func (s *S3Store) Retrieve(ctx context.Context, sourceRepo string, objects ...st
 			return err
 		}
 		// Get the hash for the downloaded file
-		hash, err := metadata.SHA256FromReader(f)
+		retrievedHash, err := metadata.SHA256FromReader(f)
 		if err != nil {
 			return err
 		}
-		// Figure out which file extension is being used
-		var ext string
-		if s.Options.MetaDataFileExtension == "" {
-			ext = ".pfile"
-		} else {
-			ext = s.Options.MetaDataFileExtension
-		}
-		pfilePath := filepath.Join(sourceRepo, o)
 
 		// Get the metadata from the metadata file
-		m, err := metadata.ParsePfile(s.fsys, pfilePath, ext)
+		meta, err := metadata.ReadPfile(s.fsys, sourceRepo, o, s.Options)
 		if err != nil {
 			return err
 		}
 		// If the hash of the downloaded file does not match the retrieved file, return an error
-		if hash != m.Checksum {
-			fmt.Println(hash, m.Checksum)
+		if retrievedHash != meta.Checksum {
+			fmt.Println(retrievedHash, meta.Checksum)
+			// Its wrong, so let's remove it
+			err = os.Remove(objectPath)
+			if err != nil {
+				return errors.New(fmt.Sprintf("Hash mismatch, couldn't delete %s", objectPath))
+			}
 			return ErrRetrieveFailureHashMismatch
-		}
-		// Get the final file path
-		op := path.Join(sourceRepo, o)
-		b, err := io.ReadAll(f)
-		if err != nil {
-			return err
-		}
-		// Write the file out to its final location
-		if err := os.WriteFile(op, b, 0644); err != nil {
-			return err
 		}
 	}
 	return nil

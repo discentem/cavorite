@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/discentem/pantri_but_go/internal/stores"
 	"github.com/spf13/afero"
 )
 
@@ -60,4 +62,16 @@ func ParsePfile(fsys afero.Fs, obj, ext string) (*ObjectMetaData, error) {
 		return nil, fmt.Errorf("json marshal failed: %w", err)
 	}
 	return &metadata, nil
+}
+
+func ReadPfile(fsys afero.Fs, sourceRepo, obj string, options stores.Options) (*ObjectMetaData, error) {
+	// Figure out which file extension is being used
+	var ext string
+	if options.MetaDataFileExtension == "" {
+		ext = ".pfile"
+	} else {
+		ext = options.MetaDataFileExtension
+	}
+	pfilePath := filepath.Join(sourceRepo, obj)
+	return ParsePfile(fsys, pfilePath, ext)
 }

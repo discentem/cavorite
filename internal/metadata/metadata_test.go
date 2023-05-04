@@ -21,7 +21,7 @@ func TestParsePFile(t *testing.T) {
 	assert.NoError(t, err)
 
 	pfile := `{
-		"name":"a", 
+		"name":"a",
 		"checksum":"b",
 		"date_modified":"2014-11-12T11:45:26.371Z"}`
 
@@ -32,7 +32,7 @@ func TestParsePFile(t *testing.T) {
 		Checksum:     "b",
 		DateModified: modTime,
 	}
-	actual, err := ParsePfile(fsys, filepath.Join("repo", "thingy"), "pfile")
+	actual, err := ParsePfileWithExtension(fsys, filepath.Join("repo", "thingy"), "pfile")
 	assert.NoError(t, err)
 	assert.Equal(t, expect, *actual)
 }

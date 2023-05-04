@@ -18,7 +18,7 @@ var (
 )
 
 type Store interface {
-	Upload(ctx context.Context, sourceRepo string, objects ...string) error
+	Upload(ctx context.Context, objects ...string) error
 	Retrieve(ctx context.Context, sourceRepo string, objects ...string) error
 	GetOptions() Options
 }

@@ -35,13 +35,9 @@ type S3Store struct {
 	//
 }
 
-func NewS3StoreClient(ctx context.Context, fsys afero.Fs, awsRegion, sourceRepo string, opts Options) (*S3Store, error) {
-	if opts.MetaDataFileExtension == "" {
-		e := ".pfile"
-		opts.MetaDataFileExtension = e
-	}
+func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Store, error) {
 	cfg, err := getConfig(
-		awsRegion,
+		opts.Region,
 		opts.PantriAddress,
 	)
 	if err != nil {
@@ -65,7 +61,7 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, awsRegion, sourceRepo 
 	return &S3Store{
 		Options:      opts,
 		fsys:         fsys,
-		awsRegion:    awsRegion,
+		awsRegion:    opts.Region,
 		s3Client:     s3Client,
 		s3Uploader:   s3Uploader,
 		s3Downloader: s3Downloader,
@@ -113,7 +109,7 @@ func (s *S3Store) GetOptions() Options {
 
 // TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
 // Upload generates the metadata, writes it to disk and uploads the file to the S3 bucket
-func (s *S3Store) Upload(ctx context.Context, sourceRepo string, objects ...string) error {
+func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
 		f, err := os.Open(o)
 		if err != nil {
@@ -138,11 +134,11 @@ func (s *S3Store) Upload(ctx context.Context, sourceRepo string, objects ...stri
 			return err
 		}
 		// Create path for metadata if it doesn't already exist
-		if err := os.MkdirAll(filepath.Dir(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension))), os.ModePerm); err != nil {
+		if err := os.MkdirAll(filepath.Dir(filepath.Dir(o)), os.ModePerm); err != nil {
 			return err
 		}
 		// Write metadata to disk
-		if err := os.WriteFile(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension)), blob, 0644); err != nil {
+		if err := os.WriteFile(fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension), blob, 0644); err != nil {
 			return err
 		}
 

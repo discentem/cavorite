@@ -31,7 +31,6 @@ type S3Store struct {
 	s3Client     *s3.Client
 	s3Uploader   *s3manager.Uploader
 	s3Downloader *s3manager.Downloader
-	//
 }
 
 func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Store, error) {
@@ -185,9 +184,8 @@ func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 				Bucket: aws.String(buck),
 				Key:    aws.String(objectPath),
 			}
-			fmt.Printf("%v", obj)
 			// Download the file
-			_, err = s.s3Downloader.Download(ctx, f, obj)
+			_, err := s.s3Downloader.Download(ctx, f, obj)
 			if err != nil {
 				return err
 			}
@@ -198,7 +196,7 @@ func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 			return err
 		}
 		// Get the metadata from the metadata file
-		m, err := metadata.ParsePfile(s.fsys, objectPath)
+		m, err := metadata.ParsePfile(s.fsys, o)
 		if err != nil {
 			return err
 		}

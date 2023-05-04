@@ -1,7 +1,6 @@
 package pantri
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -50,7 +49,7 @@ func init() {
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			if slices.Contains(os.Args, "init") {
-				fmt.Println("Doing an init, ignore missing config")
+				logger.V(2).Info("Doing an init, ignore missing config")
 			} else {
 				log.Fatal(("No config file found, please run init in the base of the repo."))
 			}

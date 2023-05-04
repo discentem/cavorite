@@ -5,7 +5,6 @@ import (
 
 	"github.com/discentem/pantri_but_go/internal/config"
 	"github.com/discentem/pantri_but_go/internal/stores"
-	"github.com/google/logger"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -21,7 +20,6 @@ var initCmd = &cobra.Command{
 
 func Init(cmd *cobra.Command, args []string) error {
 	setLoggerOpts()
-	logger.Info("Initializing repo...")
 
 	repoToInit := args[0]
 	backend := viper.GetString("store_type")
@@ -38,7 +36,6 @@ func Init(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	fsys := afero.NewOsFs()
 
-	// store agnostic initialization, specific initialization determined by backend
 	var storeType stores.StoreType
 	var cfg config.Config
 	switch storeType.FromString(backend) {

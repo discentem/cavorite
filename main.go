@@ -19,19 +19,3 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
-// app := &cli.App{
-// 	Flags: flags,
-// 	Usage: `pantri: but in go!`,
-// 	Commands: []*cli.Command{
-// 		{
-// 		{
-// 			Name:    "delete",
-// 			Aliases: []string{"d"},
-// 			Usage:   "Delete the specified file",
-// 			Action: func(c *cli.Context) error {
-// 				return errors.New("delete is not implemented yet")
-// 			},
-// 		},
-// 	},
-// }

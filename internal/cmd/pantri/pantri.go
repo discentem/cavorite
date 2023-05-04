@@ -16,10 +16,13 @@ var (
 	vv      bool
 	rootCmd = &cobra.Command{
 		Use:   "",
-		Short: "testing 1 2 3",
-		Long:  "A test of the Cobra broadcasting system",
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Help()
+		Short: "A source control friendly binary storage system",
+		Long:  "A source control friendly binary storage system",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := cmd.Help(); err != nil {
+				return err
+			}
+			return nil
 		},
 	}
 )
@@ -51,10 +54,11 @@ func init() {
 			if slices.Contains(os.Args, "init") {
 				logger.V(2).Info("Doing an init, ignore missing config")
 			} else {
-				log.Fatal(("No config file found, please run init in the base of the repo."))
+				log.Fatal("No config file found, please run init in the base of the repo.")
 			}
 			// Config file not found; ignore error if desired
 		} else {
+			log.Fatal("An error occured loading the configuration. Please confirm it is in the correct format.")
 			// Config file was found but another error was produced
 		}
 	} else {

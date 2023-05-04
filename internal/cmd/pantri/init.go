@@ -2,6 +2,7 @@ package pantri
 
 import (
 	"context"
+	"log"
 
 	"github.com/discentem/pantri_but_go/internal/config"
 	"github.com/discentem/pantri_but_go/internal/stores"
@@ -12,8 +13,8 @@ import (
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Initialize a new Pantri repo or directory",
-	Long:  "Initialize a new Pantri repo or directory",
+	Short: "Initialize a new Pantri repo",
+	Long:  "Initialize a new Pantri repo",
 	Args:  cobra.ExactArgs(1),
 	RunE:  Init,
 }
@@ -59,7 +60,13 @@ func init() {
 	initCmd.PersistentFlags().String("region", "us-east-1", "Default region for the storage backend")
 	initCmd.PersistentFlags().String("store_type", "", "Storage backend to use")
 	// Bind all the flags to a viper setting so we can use viper everywhere without thinking about it
-	viper.BindPFlag("backend_address", initCmd.PersistentFlags().Lookup("backend_address"))
-	viper.BindPFlag("region", initCmd.PersistentFlags().Lookup("region"))
-	viper.BindPFlag("store_type", initCmd.PersistentFlags().Lookup("store_type"))
+	if err := viper.BindPFlag("backend_address", initCmd.PersistentFlags().Lookup("backend_address")); err != nil {
+		log.Fatal("Failed to bind backend_address to viper")
+	}
+	if err := viper.BindPFlag("region", initCmd.PersistentFlags().Lookup("region")); err != nil {
+		log.Fatal("Failed to bind region to viper")
+	}
+	if err := viper.BindPFlag("store_type", initCmd.PersistentFlags().Lookup("store_type")); err != nil {
+		log.Fatal("Failed to bind store_type to viper")
+	}
 }

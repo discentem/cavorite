@@ -8,10 +8,6 @@ import (
 	"github.com/google/logger"
 )
 
-var (
-	defaultStore = "local"
-)
-
 func main() {
 	defer logger.Init("pantri_but_go", true, false, io.Discard).Close()
 	err := pantri.Execute()

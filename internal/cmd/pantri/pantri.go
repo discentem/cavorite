@@ -51,9 +51,15 @@ func init() {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			if slices.Contains(os.Args, "init") {
-				logger.V(2).Info("Doing an init, ignore missing config")
-			} else {
+			// ToDo - Figure out if there is a smarter way to do this. This is pretty janky.
+			bypassFor := []string{"init", "help", "-h"}
+			skipConfigCheck := false
+			for _, cmd := range bypassFor {
+				if slices.Contains(os.Args, cmd) {
+					skipConfigCheck = true
+				}
+			}
+			if !skipConfigCheck {
 				log.Fatal("No config file found, please run init in the base of the repo.")
 			}
 			// Config file not found; ignore error if desired

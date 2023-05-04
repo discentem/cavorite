@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -159,59 +158,55 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 }
 
 // Retrieve gets the file from the S3 bucket, validates the hash is correct and writes it to disk
-func (s *S3Store) Retrieve(ctx context.Context, sourceRepo string, objects ...string) error {
+func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
-		// Create local path if it doesn't already exist
-		retrievePath := filepath.Join(sourceRepo, o)
-		f, err := os.Create(retrievePath)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		// Create an S3 struct for the file to be retrieved
-		_, buck := path.Split(s.Options.PantriAddress)
-		obj := &s3.GetObjectInput{
-			Bucket: aws.String(buck),
-			Key:    aws.String(o),
-		}
-		// Download the file
-		_, err = s.s3Downloader.Download(ctx, f, obj)
-		if err != nil {
-			return err
+		// For Retrieve, the object is the pfile itself, which we derive the actual filename from
+		objectPath := strings.TrimSuffix(o, filepath.Ext(o))
+		// We will either read the file that already exists or download it because it
+		// is missing
+		var f *os.File
+		if _, err := os.Stat(objectPath); err == nil {
+			logger.V(2).Infof("%s already exists", objectPath)
+			f, err := os.Open(objectPath)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+		} else {
+			// Create local path if it doesn't already exist
+			f, err = os.Create(objectPath)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			// Create an S3 struct for the file to be retrieved
+			_, buck := path.Split(s.Options.PantriAddress)
+			obj := &s3.GetObjectInput{
+				Bucket: aws.String(buck),
+				Key:    aws.String(objectPath),
+			}
+			fmt.Printf("%v", obj)
+			// Download the file
+			_, err = s.s3Downloader.Download(ctx, f, obj)
+			if err != nil {
+				return err
+			}
 		}
 		// Get the hash for the downloaded file
 		hash, err := metadata.SHA256FromReader(f)
 		if err != nil {
 			return err
 		}
-		// Figure out which file extension is being used
-		var ext string
-		if s.Options.MetaDataFileExtension == "" {
-			ext = ".pfile"
-		} else {
-			ext = s.Options.MetaDataFileExtension
-		}
-		pfilePath := filepath.Join(sourceRepo, o)
-
 		// Get the metadata from the metadata file
-		m, err := metadata.ParsePfile(s.fsys, pfilePath, ext)
+		m, err := metadata.ParsePfile(s.fsys, objectPath)
 		if err != nil {
 			return err
 		}
 		// If the hash of the downloaded file does not match the retrieved file, return an error
 		if hash != m.Checksum {
-			fmt.Println(hash, m.Checksum)
+			logger.V(2).Infof("Hash mismatch, got %s but expected %s", hash, m.Checksum)
+			os.Remove(objectPath)
 			return ErrRetrieveFailureHashMismatch
-		}
-		// Get the final file path
-		op := path.Join(sourceRepo, o)
-		b, err := io.ReadAll(f)
-		if err != nil {
-			return err
-		}
-		// Write the file out to its final location
-		if err := os.WriteFile(op, b, 0644); err != nil {
-			return err
 		}
 	}
 	return nil

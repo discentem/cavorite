@@ -12,15 +12,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-var uploadCmd = &cobra.Command{
-	Use:   "upload",
-	Short: "Upload a file to pantri",
-	Long:  "Upload a file to pantri",
+var retrieveCmd = &cobra.Command{
+	Use:   "retrieve",
+	Short: "retrieve a file from pantri",
+	Long:  "retrieve a file from pantri",
 	Args:  cobra.MinimumNArgs(1),
-	RunE:  Upload,
+	RunE:  Retrieve,
 }
 
-func Upload(cmd *cobra.Command, objects []string) error {
+func Retrieve(cmd *cobra.Command, objects []string) error {
 	setLoggerOpts()
 	var store stores.Store
 	var cfg config.Config
@@ -49,9 +49,9 @@ func Upload(cmd *cobra.Command, objects []string) error {
 		return fmt.Errorf("type %s is not supported", cfg.StoreType.String())
 	}
 
-	logger.Infof("Uploading to: %s", store.GetOptions().PantriAddress)
-	logger.Infof("Uploading file: %s", objects)
-	if err := store.Upload(ctx, objects...); err != nil {
+	logger.Infof("Downloading files from: %s", store.GetOptions().PantriAddress)
+	logger.Infof("Downloading file: %s", objects)
+	if err := store.Retrieve(ctx, objects...); err != nil {
 		return err
 	}
 	return nil

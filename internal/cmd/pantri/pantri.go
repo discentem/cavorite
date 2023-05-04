@@ -46,15 +46,13 @@ func init() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("json")
 	viper.AddConfigPath(".pantri")
-	// err := viper.ReadInConfig() // Find and read the config file
-	// if err != nil {             // Handle errors reading the config file
-	// 	panic(fmt.Errorf("fatal error config file: %w", err))
-	// }
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			if slices.Contains(os.Args, "init") {
 				fmt.Println("Doing an init, ignore missing config")
+			} else {
+				log.Fatal(("No config file found, please run init in the base of the repo."))
 			}
 			// Config file not found; ignore error if desired
 		} else {
@@ -67,5 +65,5 @@ func init() {
 		}
 	}
 
-	rootCmd.AddCommand(initCmd, uploadCmd)
+	rootCmd.AddCommand(initCmd, uploadCmd, retrieveCmd)
 }

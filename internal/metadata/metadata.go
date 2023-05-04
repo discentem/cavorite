@@ -46,8 +46,8 @@ func GenerateFromFile(f os.File) (*ObjectMetaData, error) {
 	return GenerateFromReader(fstat.Name(), fstat.ModTime(), &f)
 }
 
-func ParsePfile(fsys afero.Fs, obj, ext string) (*ObjectMetaData, error) {
-	pfile, err := fsys.Open(fmt.Sprintf("%s.%s", obj, ext))
+func ParsePfile(fsys afero.Fs, obj string) (*ObjectMetaData, error) {
+	pfile, err := fsys.Open(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -60,4 +60,9 @@ func ParsePfile(fsys afero.Fs, obj, ext string) (*ObjectMetaData, error) {
 		return nil, fmt.Errorf("json marshal failed: %w", err)
 	}
 	return &metadata, nil
+}
+
+func ParsePfileWithExtension(fsys afero.Fs, obj, ext string) (*ObjectMetaData, error) {
+	pfile := fmt.Sprintf("%s.%s", obj, ext)
+	return ParsePfile(fsys, pfile)
 }

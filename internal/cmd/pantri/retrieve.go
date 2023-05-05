@@ -49,6 +49,13 @@ func Retrieve(cmd *cobra.Command, objects []string) error {
 		return fmt.Errorf("type %s is not supported", cfg.StoreType.String())
 	}
 
+	// We need to remove the prefix from the path so it is relative
+	objects, err = removePathPrefix(objects)
+	if err != nil {
+		return err
+	}
+
+	logger.V(2).Infof("Downloading file list: %v", objects)
 	logger.Infof("Downloading files from: %s", store.GetOptions().PantriAddress)
 	logger.Infof("Downloading file: %s", objects)
 	if err := store.Retrieve(ctx, objects...); err != nil {

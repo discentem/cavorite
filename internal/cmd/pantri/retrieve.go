@@ -3,7 +3,7 @@ package pantri
 import (
 	"context"
 	"fmt"
-	"strings"
+	"path"
 
 	"github.com/discentem/pantri_but_go/internal/config"
 	"github.com/discentem/pantri_but_go/internal/stores"
@@ -70,7 +70,7 @@ func Retrieve(cmd *cobra.Command, objects []string) error {
 func removeNonMetadataFiles(objects []string) []string {
 	filteredObjects := objects[:0]
 	for _, o := range objects {
-		if strings.HasSuffix(o, viper.GetString("metadata_file_extension")) {
+		if path.Ext(o) == fmt.Sprintf(".%s", viper.GetString("metadata_file_extension")) {
 			filteredObjects = append(filteredObjects, o)
 		} else {
 			logger.Infof("%s is not a valid metadata file, skipping...", o)

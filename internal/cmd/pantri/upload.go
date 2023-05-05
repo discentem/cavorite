@@ -48,6 +48,11 @@ func Upload(cmd *cobra.Command, objects []string) error {
 	default:
 		return fmt.Errorf("type %s is not supported", cfg.StoreType.String())
 	}
+	// We need to remove the prefix from the path so it is relative
+	objects, err = removePathPrefix(objects)
+	if err != nil {
+		return err
+	}
 
 	logger.Infof("Uploading to: %s", store.GetOptions().PantriAddress)
 	logger.Infof("Uploading file: %s", objects)

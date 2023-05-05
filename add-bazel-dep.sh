@@ -1,0 +1,1 @@
+bazel run //:gazelle -- update-repos $1

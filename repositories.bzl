@@ -556,8 +556,8 @@ def go_repositories():
     go_repository(
         name = "org_golang_x_exp",
         importpath = "golang.org/x/exp",
-        sum = "h1:QE6XYQK6naiK1EPAe1g/ILLxN5RBoH5xkJk3CqlMI/Y=",
-        version = "v0.0.0-20200224162631-6cc2880d07d6",
+        sum = "h1:5llv2sWeaMSnA3w2kS57ouQQ4pudlXrR0dCgw51QK9o=",
+        version = "v0.0.0-20230425010034-47ecfdc1ba53",
     )
     go_repository(
         name = "org_golang_x_image",

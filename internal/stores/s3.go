@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
+	"github.com/spf13/viper"
 
 	"github.com/discentem/pantri_but_go/internal/metadata"
 
@@ -159,6 +160,10 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 // Retrieve gets the file from the S3 bucket, validates the hash is correct and writes it to disk
 func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
+		if !strings.HasSuffix(o, viper.GetString("metadata_file_extension")) {
+			logger.Infof("%s is not a valid metadata file, skipping...", o)
+			continue
+		}
 		// For Retrieve, the object is the pfile itself, which we derive the actual filename from
 		objectPath := strings.TrimSuffix(o, filepath.Ext(o))
 		// We will either read the file that already exists or download it because it

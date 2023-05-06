@@ -1,1 +1,2 @@
+--linux_bazel_path_from_getauxval
 test --test_output=all

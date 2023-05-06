@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
 )
 
 type StoreType int
@@ -50,4 +51,12 @@ func (s *StoreType) UnmarshalJSON(b []byte) error {
 	}
 	*s = s.FromString(str)
 	return nil
+}
+
+func openOrCreateFile(filename string) (*os.File, error) {
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0644)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
 }

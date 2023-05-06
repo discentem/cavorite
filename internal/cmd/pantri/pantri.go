@@ -35,10 +35,6 @@ func setLoggerOpts() {
 }
 
 func Execute() error {
-	return rootCmd.Execute()
-}
-
-func init() {
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Run in debug mode")
 	rootCmd.PersistentFlags().BoolVar(&vv, "vv", false, "Run in verbose logging mode")
 	// Defaults set here will be used if they do not exist in the config file
@@ -48,6 +44,10 @@ func init() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("json")
 	viper.AddConfigPath(".pantri")
+	return rootCmd.Execute()
+}
+
+func init() {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {

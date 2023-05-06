@@ -11,6 +11,7 @@ type StoreType int
 const (
 	StoreTypeUndefined StoreType = iota
 	StoreTypeS3
+	StoreTypeGCS
 )
 
 var (
@@ -27,6 +28,8 @@ func (s StoreType) String() string {
 	switch s {
 	case StoreTypeS3:
 		return "s3"
+	case StoreTypeGCS:
+		return "gcs"
 	}
 	return "undefined"
 }
@@ -35,6 +38,7 @@ func (s *StoreType) FromString(storeTypeString string) StoreType {
 	return map[string]StoreType{
 		"undefined": StoreTypeUndefined,
 		"s3":        StoreTypeS3,
+		"gcs":       StoreTypeGCS,
 	}[storeTypeString]
 }
 

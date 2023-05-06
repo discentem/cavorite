@@ -34,7 +34,7 @@ type S3Store struct {
 }
 
 func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Store, error) {
-	cfg, err := getConfig(
+	cfg, err := getS3Config(
 		opts.Region,
 		opts.PantriAddress,
 	)
@@ -66,7 +66,7 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Stor
 	}, nil
 }
 
-func getConfig(region string, pantriAddress string) (*aws.Config, error) {
+func getS3Config(region string, pantriAddress string) (*aws.Config, error) {
 	var cfg aws.Config
 	var err error
 

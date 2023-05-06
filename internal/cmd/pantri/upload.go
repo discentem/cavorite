@@ -45,6 +45,12 @@ func Upload(cmd *cobra.Command, objects []string) error {
 			return fmt.Errorf("improper stores.S3Client init: %v", err)
 		}
 		store = stores.Store(s3)
+	case stores.StoreTypeGCS:
+		gcs, err := stores.NewGCSStoreClient(ctx, fsys, opts)
+		if err != nil {
+			return fmt.Errorf("improper stores.GCSClient init: %v", err)
+		}
+		store = stores.Store(gcs)
 	default:
 		return fmt.Errorf("type %s is not supported", cfg.StoreType.String())
 	}

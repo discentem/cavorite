@@ -21,7 +21,7 @@ var retrieveCmd = &cobra.Command{
 	RunE:  Retrieve,
 }
 
-func Retrieve(cmd *cobra.Command, objects []string) error {
+func Retrieve(_ *cobra.Command, objects []string) error {
 	setLoggerOpts()
 	var store stores.Store
 	var cfg config.Config
@@ -51,7 +51,7 @@ func Retrieve(cmd *cobra.Command, objects []string) error {
 	}
 
 	// We need to remove the prefix from the path so it is relative
-	objects, err = removePathPrefix(objects)
+	objects, err = removePathPrefix(fsys, objects)
 	if err != nil {
 		return err
 	}

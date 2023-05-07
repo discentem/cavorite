@@ -12,15 +12,17 @@ import (
 	"github.com/spf13/viper"
 )
 
-var uploadCmd = &cobra.Command{
-	Use:   "upload",
-	Short: "Upload a file to pantri",
-	Long:  "Upload a file to pantri",
-	Args:  cobra.MinimumNArgs(1),
-	RunE:  Upload,
+func getUploadCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "upload",
+		Short: "Upload a file to pantri",
+		Long:  "Upload a file to pantri",
+		Args:  cobra.MinimumNArgs(1),
+		RunE:  UploadFn,
+	}
 }
 
-func Upload(cmd *cobra.Command, objects []string) error {
+func UploadFn(_ *cobra.Command, objects []string) error {
 	setLoggerOpts()
 	var store stores.Store
 	var cfg config.Config
@@ -49,7 +51,7 @@ func Upload(cmd *cobra.Command, objects []string) error {
 		return fmt.Errorf("type %s is not supported", cfg.StoreType.String())
 	}
 	// We need to remove the prefix from the path so it is relative
-	objects, err = removePathPrefix(objects)
+	objects, err = removePathPrefix(fsys, objects)
 	if err != nil {
 		return err
 	}

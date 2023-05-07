@@ -1,6 +1,7 @@
 package pantri
 
 import (
+	"errors"
 	"log"
 	"os"
 
@@ -12,9 +13,12 @@ import (
 
 var (
 	// These vars are available to every sub command
-	debug   bool
-	vv      bool
-	rootCmd = &cobra.Command{
+	debug bool
+	vv    bool
+)
+
+func getRootCmd() *cobra.Command {
+	rootCmd := &cobra.Command{
 		Use:   "",
 		Short: "A source control friendly binary storage system",
 		Long:  "A source control friendly binary storage system",
@@ -25,7 +29,8 @@ var (
 			return nil
 		},
 	}
-)
+	return rootCmd
+}
 
 func setLoggerOpts() {
 	if vv {
@@ -35,10 +40,7 @@ func setLoggerOpts() {
 }
 
 func Execute() error {
-	return rootCmd.Execute()
-}
-
-func init() {
+	rootCmd := getRootCmd()
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Run in debug mode")
 	rootCmd.PersistentFlags().BoolVar(&vv, "vv", false, "Run in verbose logging mode")
 	// Defaults set here will be used if they do not exist in the config file
@@ -48,6 +50,8 @@ func init() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("json")
 	viper.AddConfigPath(".pantri")
+
+	rootCmd.AddCommand(initCmd, uploadCmd, retrieveCmd)
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
@@ -59,12 +63,19 @@ func init() {
 					skipConfigCheck = true
 				}
 			}
-			if !skipConfigCheck {
-				log.Fatal("No config file found, please run init in the base of the repo.")
+			if len(os.Args) < 2 {
+				logger.Info("no subcommand was issued, displaying help page...")
+				if err := rootCmd.Help(); err != nil {
+					return err
+				}
+				os.Exit(0)
+
+			} else if !skipConfigCheck {
+				return errors.New("No config file found, please run init in the base of the repo.")
 			}
 			// Config file not found; ignore error if desired
 		} else {
-			log.Fatal("An error occured loading the configuration. Please confirm it is in the correct format.")
+			return errors.New("An error occured loading the configuration. Please confirm it is in the correct format.")
 			// Config file was found but another error was produced
 		}
 	} else {
@@ -73,6 +84,6 @@ func init() {
 			log.Fatal("No store_type has been specified, exiting...")
 		}
 	}
-
-	rootCmd.AddCommand(initCmd, uploadCmd, retrieveCmd)
+	// run root command
+	return rootCmd.Execute()
 }

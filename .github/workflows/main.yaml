@@ -1,17 +1,22 @@
 on: [pull_request]
 jobs:
-  ensure_compile_and_run:
-    runs-on: ubuntu-20.04
+  bazel_build:
+    container:
+      image: gcr.io/bazel-public/bazel:latest@sha256:91d0c1fcbb9e46c562dab1b99eba360188fe5d1e2890f502b7af509219a3ff5d
+      options: --user root
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - name: copy dockerfile
         # awful hack because COPY ../ doesn't work in Dockerfile
         # https://github.com/actions/runner/issues/2017
-        run: cp ./_ci/compile_and_run/Dockerfile ./Dockerfile
-      - name: compile and run
-        uses: ./.github/workflows/actions/ensure_compile_and_run/
+        run: cp ./_ci/bazel_build/Dockerfile ./Dockerfile
+      - name: bazel_build
+        uses: ./.github/workflows/actions/bazel_build/
+        env:
+          TEST_TMPDIR: /home/ubuntu/bazel-pantri-output
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - name: copy dockerfile

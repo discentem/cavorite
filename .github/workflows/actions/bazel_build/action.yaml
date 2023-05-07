@@ -1,5 +1,5 @@
-name: "ensure_compile_and_run"
-description: "Ensure the project builds and runs"
+name: "bazel build"
+description: "Ensure the project builds with bazel"
 runs:
   using: docker
   # .github/workflows/main.yaml copies the Dockerfile here

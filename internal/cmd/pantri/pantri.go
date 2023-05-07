@@ -51,7 +51,11 @@ func Execute() error {
 	viper.SetConfigType("json")
 	viper.AddConfigPath(".pantri")
 
-	rootCmd.AddCommand(initCmd, uploadCmd, retrieveCmd)
+	initCmd, err := getInitCmd()
+	if err != nil {
+		return err
+	}
+	rootCmd.AddCommand(initCmd, getUploadCmd(), retrieveCmd)
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {

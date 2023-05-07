@@ -1,21 +1,34 @@
 package pantri
 
 import (
+	"errors"
 	"fmt"
-	"os"
+	"path/filepath"
 	"strings"
+
+	"github.com/google/logger"
 )
 
-func removePathPrefix(objects []string) ([]string, error) {
-	// Our current path is the prefix to remove as pantri can only be run from the root
-	// of the repo
-	pathPrefix, err := os.Getwd()
+func rootOfSourceRepo() (*string, error) {
+	absPathOfConfig, err := filepath.Abs(".pantri/config")
 	if err != nil {
-		return nil, err
+		return nil, errors.New(".pantri/config not detected, not in sourceRepo root")
 	}
+	logger.V(2).Infof("absPathOfconfig: %q", absPathOfConfig)
+	root := filepath.Dir(filepath.Dir(absPathOfConfig))
+	return &root, nil
+}
 
+func removePathPrefix(objects []string, prefix string) ([]string, error) {
 	for i, object := range objects {
-		objects[i] = strings.TrimPrefix(object, fmt.Sprintf("%s/", pathPrefix))
+		absObject, err := filepath.Abs(object)
+		if err != nil {
+			return nil, err
+		}
+		if !strings.HasPrefix(absObject, prefix) {
+			return nil, fmt.Errorf("%q does not exist relative to source_repo: %q", object, prefix)
+		}
+		objects[i] = strings.TrimPrefix(absObject, fmt.Sprintf("%s/", prefix))
 	}
 
 	return objects, nil

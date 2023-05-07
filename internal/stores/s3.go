@@ -109,19 +109,20 @@ func (s *S3Store) GetOptions() Options {
 // Upload generates the metadata, writes it to disk and uploads the file to the S3 bucket
 func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
-		f, err := os.Open(o)
+		logger.V(2).Infof("object: %s", o)
+		f, err := s.fsys.Open(o)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
 		// TODO(discentem): probably inefficient, reading entire file into memory
-		b, err := os.ReadFile(o)
+		b, err := afero.ReadFile(s.fsys, o)
 		if err != nil {
 			return err
 		}
 
 		// generate pantri metadata
-		m, err := metadata.GenerateFromFile(*f)
+		m, err := metadata.GenerateFromFile(f)
 		if err != nil {
 			return err
 		}
@@ -132,11 +133,18 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 			return err
 		}
 		// Create path for metadata if it doesn't already exist
-		if err := os.MkdirAll(filepath.Dir(filepath.Dir(o)), os.ModePerm); err != nil {
+		if err := s.fsys.MkdirAll(filepath.Dir(filepath.Dir(o)), os.ModePerm); err != nil {
 			return err
 		}
 		// Write metadata to disk
-		if err := os.WriteFile(fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension), blob, 0644); err != nil {
+		pwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		objPathrelativeToSourceRepo := filepath.Join(pwd, o)
+		metadataPath := fmt.Sprintf("%s.%s", objPathrelativeToSourceRepo, s.Options.MetaDataFileExtension)
+		logger.V(2).Infof("writing metadata to %s", metadataPath)
+		if err := os.WriteFile(metadataPath, blob, 0644); err != nil {
 			return err
 		}
 

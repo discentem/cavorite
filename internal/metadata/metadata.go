@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"time"
 
 	"github.com/spf13/afero"
@@ -38,12 +37,12 @@ func GenerateFromReader(name string, modTime time.Time, r io.Reader) (*ObjectMet
 	}, nil
 }
 
-func GenerateFromFile(f os.File) (*ObjectMetaData, error) {
+func GenerateFromFile(f afero.File) (*ObjectMetaData, error) {
 	fstat, err := f.Stat()
 	if err != nil {
 		return nil, err
 	}
-	return GenerateFromReader(fstat.Name(), fstat.ModTime(), &f)
+	return GenerateFromReader(fstat.Name(), fstat.ModTime(), f)
 }
 
 func ParsePfile(fsys afero.Fs, obj string) (*ObjectMetaData, error) {

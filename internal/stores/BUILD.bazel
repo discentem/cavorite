@@ -7,7 +7,7 @@ go_library(
         "s3.go",
         "stores.go",
     ],
-    importpath = "github.com/discentem/pantri_but_go/internal/stores",
+    importpath = "github.com/discentem/cavorite/internal/stores",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/metadata",

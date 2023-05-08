@@ -1,4 +1,4 @@
-module github.com/discentem/pantri_but_go
+module github.com/discentem/cavorite
 
 go 1.18
 

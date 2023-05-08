@@ -1,15 +1,15 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "pantri",
+    name = "root",
     srcs = [
         "helpers.go",
         "init.go",
-        "pantri.go",
         "retrieve.go",
+        "root.go",
         "upload.go",
     ],
-    importpath = "github.com/discentem/pantri_but_go/internal/cmd/pantri",
+    importpath = "github.com/discentem/cavorite/internal/cmd/root",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/config",

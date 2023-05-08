@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/discentem/pantri_but_go/internal/stores"
+	"github.com/discentem/cavorite/internal/stores"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

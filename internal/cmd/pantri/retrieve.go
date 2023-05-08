@@ -2,6 +2,7 @@ package pantri
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path"
 
@@ -21,7 +22,7 @@ var retrieveCmd = &cobra.Command{
 	RunE:  Retrieve,
 }
 
-func Retrieve(cmd *cobra.Command, objects []string) error {
+func Retrieve(_ *cobra.Command, objects []string) error {
 	setLoggerOpts()
 	var store stores.Store
 	var cfg config.Config
@@ -49,11 +50,18 @@ func Retrieve(cmd *cobra.Command, objects []string) error {
 	default:
 		return fmt.Errorf("type %s is not supported", cfg.StoreType.String())
 	}
-
-	// We need to remove the prefix from the path so it is relative
-	objects, err = removePathPrefix(objects)
+	sourceRepoRoot, err := rootOfSourceRepo()
 	if err != nil {
 		return err
+	}
+	if sourceRepoRoot == nil {
+		return errors.New("sourceRepoRoot cannot be nil")
+	}
+
+	// We need to remove the prefix from the path so it is relative
+	objects, err = removePathPrefix(objects, *sourceRepoRoot)
+	if err != nil {
+		return fmt.Errorf("retrieve error: %w", err)
 	}
 
 	objects = removeNonMetadataFiles(objects)

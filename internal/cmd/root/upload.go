@@ -1,28 +1,29 @@
-package pantri
+package root
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"path"
 
-	"github.com/discentem/pantri_but_go/internal/config"
-	"github.com/discentem/pantri_but_go/internal/stores"
+	"github.com/discentem/cavorite/internal/config"
+	"github.com/discentem/cavorite/internal/stores"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var retrieveCmd = &cobra.Command{
-	Use:   "retrieve",
-	Short: "retrieve a file from pantri",
-	Long:  "retrieve a file from pantri",
-	Args:  cobra.MinimumNArgs(1),
-	RunE:  Retrieve,
+func getUploadCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "upload",
+		Short: "Upload a file to pantri",
+		Long:  "Upload a file to pantri",
+		Args:  cobra.MinimumNArgs(1),
+		RunE:  UploadFn,
+	}
 }
 
-func Retrieve(_ *cobra.Command, objects []string) error {
+func UploadFn(_ *cobra.Command, objects []string) error {
 	setLoggerOpts()
 	var store stores.Store
 	var cfg config.Config
@@ -50,6 +51,12 @@ func Retrieve(_ *cobra.Command, objects []string) error {
 	default:
 		return fmt.Errorf("type %s is not supported", cfg.StoreType.String())
 	}
+
+	_, err = config.ReadConfig(fsys, ".")
+	if err != nil {
+		return err
+	}
+
 	sourceRepoRoot, err := rootOfSourceRepo()
 	if err != nil {
 		return err
@@ -61,29 +68,13 @@ func Retrieve(_ *cobra.Command, objects []string) error {
 	// We need to remove the prefix from the path so it is relative
 	objects, err = removePathPrefix(objects, *sourceRepoRoot)
 	if err != nil {
-		return fmt.Errorf("retrieve error: %w", err)
+		return fmt.Errorf("upload error: %w", err)
 	}
 
-	objects = removeNonMetadataFiles(objects)
-
-	logger.V(2).Infof("Downloading file list: %v", objects)
-	logger.Infof("Downloading files from: %s", store.GetOptions().PantriAddress)
-	logger.Infof("Downloading file: %s", objects)
-	if err := store.Retrieve(ctx, objects...); err != nil {
+	logger.Infof("Uploading to: %s", store.GetOptions().PantriAddress)
+	logger.Infof("Uploading file: %s", objects)
+	if err := store.Upload(ctx, objects...); err != nil {
 		return err
 	}
 	return nil
-}
-
-func removeNonMetadataFiles(objects []string) []string {
-	filteredObjects := objects[:0]
-	for _, o := range objects {
-		if path.Ext(o) == fmt.Sprintf(".%s", viper.GetString("metadata_file_extension")) {
-			filteredObjects = append(filteredObjects, o)
-		} else {
-			logger.Infof("%s is not a valid metadata file, skipping...", o)
-		}
-	}
-
-	return filteredObjects
 }

@@ -1,4 +1,4 @@
-package pantri
+package root
 
 import (
 	"errors"

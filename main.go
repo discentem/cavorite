@@ -4,13 +4,13 @@ import (
 	"io"
 	"log"
 
-	"github.com/discentem/pantri_but_go/internal/cmd/pantri"
+	"github.com/discentem/cavorite/internal/cmd/root"
 	"github.com/google/logger"
 )
 
 func main() {
-	defer logger.Init("pantri_but_go", true, false, io.Discard).Close()
-	err := pantri.Execute()
+	defer logger.Init("cavorite", true, false, io.Discard).Close()
+	err := root.Execute()
 	if err != nil {
 		log.Fatal(err)
 	}

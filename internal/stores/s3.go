@@ -164,7 +164,6 @@ func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 		// We will either read the file that already exists or download it because it
 		// is missing
 		f, err := openOrCreateFile(objectPath)
-		defer f.Close()
 		if err != nil {
 			return err
 		}
@@ -199,8 +198,13 @@ func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 		// If the hash of the downloaded file does not match the retrieved file, return an error
 		if hash != m.Checksum {
 			logger.V(2).Infof("Hash mismatch, got %s but expected %s", hash, m.Checksum)
-			os.Remove(objectPath)
+			if err := s.fsys.Remove(objectPath); err != nil {
+				return err
+			}
 			return ErrRetrieveFailureHashMismatch
+		}
+		if err := f.Close(); err != nil {
+			return err
 		}
 	}
 	return nil

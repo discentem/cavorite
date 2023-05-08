@@ -2,6 +2,10 @@ PANTRI_BIN := $(shell bazel cquery :pantri_but_go --output=files 2>/dev/null)
 
 build: bazel_build
 
+bazel_build_docker:
+	docker build --tag pantribazelbuild -f _ci/bazel_build/Dockerfile .
+	docker run pantribazelbuild
+
 bazel_build: gazelle
 	bazel build :pantri_but_go
 	@echo Copy, past, and execute this in your shell for convenience:

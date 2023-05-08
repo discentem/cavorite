@@ -96,7 +96,7 @@ Use " [command] --help" for more information about a command.
 
 1. Upload a binary.
 
-   The first argument after all the flags (`~/Downloads/googlechromebeta.dmg`) is the path where the object you are uploading can be found on your filesystem.
+   The first argument (`~/Downloads/googlechromebeta.dmg`) after all the flags is the path where the object you are uploading can be found on your filesystem.
 
    ```shell
    $ $PANTRI_BIN upload ~/some_git_project/googlechromebeta.dmg

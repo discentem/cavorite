@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/discentem/pantri_but_go/internal/config"
@@ -13,14 +12,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func removePathPrefix(objects []string) ([]string, error) {
-	// Our current path is the prefix to remove as pantri can only be run from the root
-	// of the repo
-	pathPrefix, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
+func removePathPrefix(pathPrefix string, objects []string) ([]string, error) {
 	for i, object := range objects {
 		objects[i] = strings.TrimPrefix(object, fmt.Sprintf("%s/", pathPrefix))
 	}
@@ -28,7 +20,7 @@ func removePathPrefix(objects []string) ([]string, error) {
 	return objects, nil
 }
 
-func buildStoresFromConfig(ctx context.Context, cfg config.Config, fsys afero.Fs, opts stores.Options) (stores.Store, error) {
+func initStoreFromConfig(ctx context.Context, cfg config.Config, fsys afero.Fs, opts stores.Options) (stores.Store, error) {
 	var s stores.Store
 	switch cfg.StoreType {
 	case stores.StoreTypeS3:

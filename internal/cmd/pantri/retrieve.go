@@ -3,6 +3,7 @@ package pantri
 import (
 	"context"
 	"fmt"
+	"path"
 
 	"github.com/discentem/pantri_but_go/internal/config"
 	"github.com/discentem/pantri_but_go/internal/stores"
@@ -55,10 +56,32 @@ func Retrieve(cmd *cobra.Command, objects []string) error {
 		return fmt.Errorf("type %s is not supported", cfg.StoreType.String())
 	}
 
+	// We need to remove the prefix from the path so it is relative
+	objects, err = removePathPrefix(objects)
+	if err != nil {
+		return err
+	}
+
+	objects = removeNonMetadataFiles(objects)
+
+	logger.V(2).Infof("Downloading file list: %v", objects)
 	logger.Infof("Downloading files from: %s", store.GetOptions().PantriAddress)
 	logger.Infof("Downloading file: %s", objects)
 	if err := store.Retrieve(ctx, objects...); err != nil {
 		return err
 	}
 	return nil
+}
+
+func removeNonMetadataFiles(objects []string) []string {
+	filteredObjects := objects[:0]
+	for _, o := range objects {
+		if path.Ext(o) == fmt.Sprintf(".%s", viper.GetString("metadata_file_extension")) {
+			filteredObjects = append(filteredObjects, o)
+		} else {
+			logger.Infof("%s is not a valid metadata file, skipping...", o)
+		}
+	}
+
+	return filteredObjects
 }

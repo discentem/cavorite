@@ -163,22 +163,18 @@ func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 		objectPath := strings.TrimSuffix(o, filepath.Ext(o))
 		// We will either read the file that already exists or download it because it
 		// is missing
-		var f *os.File
-		if _, err := os.Stat(objectPath); err == nil {
-			logger.V(2).Infof("%s already exists", objectPath)
-			f, err := os.Open(objectPath)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-		} else {
-			// Create local path if it doesn't already exist
-			f, err = os.Create(objectPath)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-			// Create an S3 struct for the file to be retrieved
+		f, err := openOrCreateFile(objectPath)
+		defer f.Close()
+		if err != nil {
+			return err
+		}
+		fileInfo, err := f.Stat()
+		if err != nil {
+			return err
+		}
+		if fileInfo.Size() > 0 {
+			logger.Infof("%s already exists", objectPath)
+		} else { // Create an S3 struct for the file to be retrieved
 			_, buck := path.Split(s.Options.PantriAddress)
 			obj := &s3.GetObjectInput{
 				Bucket: aws.String(buck),

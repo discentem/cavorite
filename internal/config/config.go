@@ -34,7 +34,7 @@ var (
 	ErrConfigDirNotExist             = errors.New("config directory does not exist")
 )
 
-func InitializeStoreTypeS3Config(
+func InitializeStoreTypeS3(
 	ctx context.Context,
 	fsys afero.Fs,
 	sourceRepo, pantriAddress, awsRegion string,

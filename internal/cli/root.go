@@ -21,18 +21,39 @@ var (
 )
 
 func ExecuteWithContext(ctx context.Context) error {
-	return rootCommand().ExecuteContext(ctx)
+	return rootCmd().ExecuteContext(ctx)
 }
 
-func rootCommand() *cobra.Command {
+func rootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "pantri",
 		Short: "A source control friendly binary storage system",
 		Long:  "A source control friendly binary storage system",
-		PreRun: func(cmd *cobra.Command, args []string) {
-			// set global logger opts
+		// PersistentPreRun -- all downstream cmds will inherit this fn()
+		// Set the global logger opts
+		/*
+			// The *Run functions are executed in the following order:
+			//   * PersistentPreRun() [X]
+			//   * PreRun()
+			//   * Run()
+			//   * PostRun()
+			//   * PersistentPostRun()
+			// All functions get the same args, the arguments after the command name.
+		*/
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			setLoggerOpts()
 		},
+		// RunE
+		// Return the help page if an error occurs
+		/*
+			// The *Run functions are executed in the following order:
+			//   * PersistentPreRunE()
+			//   * PreRunE()
+			//   * RunE() [X]
+			//   * PostRunE()
+			//   * PersistentPostRunE()
+			// All functions get the same args, the arguments after the command name.
+		*/
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cmd.Help(); err != nil {
 				return err
@@ -43,6 +64,7 @@ func rootCommand() *cobra.Command {
 		Version: version,
 	}
 
+	// At the rootCmd level, set these global flags that will be available to downstream cmds
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Run in debug mode")
 	rootCmd.PersistentFlags().BoolVar(&vv, "vv", false, "Run in verbose logging mode")
 
@@ -50,10 +72,11 @@ func rootCommand() *cobra.Command {
 	viper.SetDefault("store_type", stores.StoreTypeUndefined)
 	viper.SetDefault("metadata_file_extension", metadata.MetaDataFileExtension)
 
+	// Import subCmds into the rootCmd
 	rootCmd.AddCommand(
-		initCommand(),
-		retrieveCommand(),
-		uploadCommand(),
+		initCmd(),
+		retrieveCmd(),
+		uploadCmd(),
 	)
 
 	return rootCmd

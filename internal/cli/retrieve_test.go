@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRetrieveCommand(t *testing.T) {
+func TestRetrieveCmd(t *testing.T) {
 	expectedRetrieveCmdArgs := "retrieve ./test_file_one ./test_file_two"
 
-	retrieveCmd := retrieveCommand()
+	retrieveCmd := retrieveCmd()
 
 	// Split the args and handle bash escape characters
 	args, err := shellquote.Split(expectedRetrieveCmdArgs)

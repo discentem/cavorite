@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRootCommand(t *testing.T) {
+func TestRootCmd(t *testing.T) {
 	tests := []string{
 		"pantri",
 		"pantri init",
@@ -16,7 +16,7 @@ func TestRootCommand(t *testing.T) {
 		"pantri retrieve",
 	}
 
-	rootCmd := rootCommand()
+	rootCmd := rootCmd()
 
 	for _, tc := range tests {
 		tc := tc

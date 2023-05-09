@@ -24,7 +24,7 @@ import (
 )
 
 type S3Store struct {
-	Options   Options `mapstructure:"options"`
+	Options   Options `json:"options" mapstructure:"options"`
 	fsys      afero.Fs
 	awsRegion string
 	// Migrate to internal/s3Client instead of using s3Client directly from AWS_SDK
@@ -35,6 +35,7 @@ type S3Store struct {
 
 func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Store, error) {
 	cfg, err := getConfig(
+		ctx,
 		opts.Region,
 		opts.PantriAddress,
 	)
@@ -42,6 +43,7 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Stor
 		return nil, err
 	}
 
+	// TODO (@radsec) - extract this S3 logic to a separate internal client instead of directly from AWS_SDK
 	s3Client := s3.NewFromConfig(*cfg)
 	s3Uploader := s3manager.NewUploader(
 		s3Client,
@@ -66,18 +68,22 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Stor
 	}, nil
 }
 
-func getConfig(region string, pantriAddress string) (*aws.Config, error) {
+func getConfig(ctx context.Context, region string, pantriAddress string) (*aws.Config, error) {
 	var cfg aws.Config
 	var err error
 
-	if strings.HasPrefix(pantriAddress, "s3://") {
-		cfg, err = awsConfig.LoadDefaultConfig(context.TODO())
+	switch {
+	case strings.HasPrefix(pantriAddress, "s3://"):
+		cfg, err = awsConfig.LoadDefaultConfig(
+			ctx,
+			config.WithRegion(region),
+		)
 		if err != nil {
 			return nil, err
 		}
-		return &cfg, nil
-	} else if strings.HasPrefix(pantriAddress, "https://") || strings.HasPrefix(pantriAddress, "http://") {
-		// e.g. http://127.0.0.1:9000/test becomes http://127.0.0.1:9000
+	case strings.HasPrefix(pantriAddress, "http://"):
+		fallthrough
+	case strings.HasPrefix(pantriAddress, "https://"):
 		server, _ := path.Split(pantriAddress)
 		// https://stackoverflow.com/questions/67575681/is-aws-go-sdk-v2-integrated-with-local-minio-server
 		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
@@ -89,16 +95,19 @@ func getConfig(region string, pantriAddress string) (*aws.Config, error) {
 			}, nil
 		})
 
-		cfg, err := config.LoadDefaultConfig(context.Background(),
+		cfg, err = config.LoadDefaultConfig(
+			ctx,
 			config.WithRegion(region),
 			config.WithEndpointResolverWithOptions(resolver),
 		)
 		if err != nil {
 			return nil, err
 		}
-		return &cfg, nil
+	default:
+		return nil, errors.New("pantriAddress did not contain s3://, http://, or https:// prefix")
 	}
-	return nil, errors.New("pantriAddress did not contain s3://, http://, or https:// prefix")
+
+	return &cfg, nil
 }
 
 func (s *S3Store) GetOptions() Options {

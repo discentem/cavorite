@@ -11,7 +11,7 @@ go_library(
     importpath = "github.com/discentem/pantri_but_go",
     visibility = ["//visibility:private"],
     deps = [
-        "//internal/cmd/pantri",
+        "//internal/cli",
         "@com_github_google_logger//:logger",
     ],
 )

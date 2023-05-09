@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/afero"
 )
 
+const MetaDataFileExtension string = "pfile"
+
 type ObjectMetaData struct {
 	Name         string    `json:"name"`
 	Checksum     string    `json:"checksum"`

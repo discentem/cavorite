@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUploadCommand(t *testing.T) {
+func TestUploadCmd(t *testing.T) {
 	expectedUploadCmdArgs := "upload ./test_file_one ./test_file_two"
 
-	uploadCmd := uploadCommand()
+	uploadCmd := uploadCmd()
 
 	// Split the args and handle bash escape characters
 	args, err := shellquote.Split(expectedUploadCmdArgs)

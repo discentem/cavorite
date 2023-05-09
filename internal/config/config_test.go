@@ -81,7 +81,7 @@ func TestWrite(t *testing.T) {
 	t.Run("successful write", TestSuccessfulWrite)
 }
 
-func TestInitializeStoreTypeS3Config(t *testing.T) {
+func TestInitializeStoreTypeS3(t *testing.T) {
 	ctx := context.Background()
 	fsys := afero.NewMemMapFs()
 
@@ -91,7 +91,7 @@ func TestInitializeStoreTypeS3Config(t *testing.T) {
 		Region:                "us-east-9876",
 	}
 
-	cfg := InitializeStoreTypeS3Config(
+	cfg := InitializeStoreTypeS3(
 		ctx,
 		fsys,
 		"~/some_repo_root",

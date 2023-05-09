@@ -6,26 +6,47 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func uploadCommand() *cobra.Command {
+func uploadCmd() *cobra.Command {
 	uploadCmd := &cobra.Command{
 		Use:   "upload",
 		Short: "Upload a file to pantri",
 		Long:  "Upload a file to pantri",
 		Args:  cobra.MinimumNArgs(1),
-		// Load the config with OsFs
+		// PersistentPreRunE
+		// Loads the config with OsFs
+		/*
+			// The *Run functions are executed in the following order:
+			//   * PersistentPreRunE()
+			//   * PreRunE() [X]
+			//   * RunE()
+			//   * PostRunE()
+			//   * PersistentPostRunE()
+			// All functions get the same args, the arguments after the command name.
+		*/
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return loadConfig(afero.NewOsFs())
 		},
-		RunE: uploadRunE,
+		RunE: uploadFn,
 	}
 
 	return uploadCmd
 }
 
-func uploadRunE(cmd *cobra.Command, objects []string) error {
+// uploadFn is the execution runtime for the uploadCmd functionality
+// in Cobra, this is the RunE phase
+/*
+	// The *Run functions are executed in the following order:
+	//   * PersistentPreRunE()
+	//   * PreRunE()
+	//   * RunE() [X]
+	//   * PostRunE()
+	//   * PersistentPostRunE()
+	// All functions get the same args, the arguments after the command name.
+*/
+func uploadFn(cmd *cobra.Command, objects []string) error {
 	fsys := afero.NewOsFs()
 
-	s, err := buildStoresFromConfig(
+	s, err := initStoreFromConfig(
 		cmd.Context(),
 		cfg,
 		fsys,

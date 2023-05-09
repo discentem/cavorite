@@ -27,7 +27,7 @@ type S3Store struct {
 	Options   Options `json:"options" mapstructure:"options"`
 	fsys      afero.Fs
 	awsRegion string
-	// Migrate to internal/s3Client instead of using s3Client directly from AWS_SDK
+	// TODO (@radsec) - extract this S3 logic to a separate internal client instead of directly from AWS_SDK
 	s3Client     *s3.Client
 	s3Uploader   *s3manager.Uploader
 	s3Downloader *s3manager.Downloader

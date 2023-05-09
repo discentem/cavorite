@@ -6,26 +6,47 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func retrieveCommand() *cobra.Command {
+func retrieveCmd() *cobra.Command {
 	retrieveCmd := &cobra.Command{
 		Use:   "retrieve",
 		Short: "retrieve a file from pantri",
 		Long:  "retrieve a file from pantri",
 		Args:  cobra.MinimumNArgs(1),
-		// Load the config with OsFs
+		// PersistentPreRunE
+		// Loads the config with OsFs
+		/*
+			// The *Run functions are executed in the following order:
+			//   * PersistentPreRunE()
+			//   * PreRunE() [X]
+			//   * RunE()
+			//   * PostRunE()
+			//   * PersistentPostRunE()
+			// All functions get the same args, the arguments after the command name.
+		*/
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return loadConfig(afero.NewOsFs())
 		},
-		RunE: retrieveRunE,
+		RunE: retrieveFn,
 	}
 
 	return retrieveCmd
 }
 
-func retrieveRunE(cmd *cobra.Command, objects []string) error {
+// retrieveFn is the execution runtime for the retrieveCmd functionality
+// in Cobra, this is the RunE phase
+/*
+	// The *Run functions are executed in the following order:
+	//   * PersistentPreRunE()
+	//   * PreRunE()
+	//   * RunE() [X]
+	//   * PostRunE()
+	//   * PersistentPostRunE()
+	// All functions get the same args, the arguments after the command name.
+*/
+func retrieveFn(cmd *cobra.Command, objects []string) error {
 	fsys := afero.NewOsFs()
 
-	s, err := buildStoresFromConfig(
+	s, err := initStoreFromConfig(
 		cmd.Context(),
 		cfg,
 		fsys,

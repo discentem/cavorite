@@ -8,7 +8,7 @@ go_library(
         "stores.go",
     ],
     importpath = "github.com/discentem/pantri_but_go/internal/stores",
-    visibility = ["//visibility:public"],
+    visibility = ["//:__subpackages__"],
     deps = [
         "//internal/metadata",
         "@com_github_aws_aws_sdk_go_v2//aws",

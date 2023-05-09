@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -38,10 +39,12 @@ func TestDirExpanderFails(t *testing.T) {
 }
 
 func TestSuccessfulWrite(t *testing.T) {
-	conf := Config{
-		StoreType: stores.StoreTypeUndefined,
+	cfg := Config{
+		StoreType: stores.StoreTypeS3,
 		Options: stores.Options{
-			PantriAddress: "s3://blahaddress/bucket",
+			PantriAddress:         "s3://blahaddress/bucket",
+			MetaDataFileExtension: "",
+			Region:                "us-east-9876",
 		},
 		Validate: func() error { return nil },
 	}
@@ -50,7 +53,7 @@ func TestSuccessfulWrite(t *testing.T) {
 		return path, nil
 	}
 	fsys := afero.NewMemMapFs()
-	err := conf.Write(fsys, ".")
+	err := cfg.Write(fsys, ".")
 	assert.NoError(t, err)
 	f, err := fsys.Open(".pantri/config")
 	assert.NoError(t, err)
@@ -58,11 +61,11 @@ func TestSuccessfulWrite(t *testing.T) {
 	assert.NoError(t, err)
 
 	expected := `{
- "store_type": "undefined",
+ "store_type": "s3",
  "options": {
-  "pantri_address": "s3://blahaddress/bucket"
+  "pantri_address": "s3://blahaddress/bucket",
   "metadata_file_extension": "",
-  "remove_from_sourcerepo": null
+  "region": "us-east-9876"
  }
 }`
 	assert.Equal(t, expected, string(b))
@@ -76,4 +79,32 @@ func TestWrite(t *testing.T) {
 		TestDirExpanderFails,
 	)
 	t.Run("successful write", TestSuccessfulWrite)
+}
+
+func TestInitializeStoreTypeS3Config(t *testing.T) {
+	ctx := context.Background()
+	fsys := afero.NewMemMapFs()
+
+	opts := stores.Options{
+		PantriAddress:         "s3://blahaddress/bucket",
+		MetaDataFileExtension: "pfile",
+		Region:                "us-east-9876",
+	}
+
+	cfg := InitializeStoreTypeS3Config(
+		ctx,
+		fsys,
+		"~/some_repo_root",
+		opts.PantriAddress,
+		opts.Region,
+		opts,
+	)
+
+	// Assert the S3Store Config matches all of the inputs
+	assert.Equal(t, cfg.StoreType, stores.StoreTypeS3)
+	assert.Equal(t, cfg.Options.PantriAddress, opts.PantriAddress)
+	assert.Equal(t, cfg.Options.MetaDataFileExtension, opts.MetaDataFileExtension)
+	assert.Equal(t, cfg.Options.Region, opts.Region)
+
+	assert.NoError(t, cfg.Validate())
 }

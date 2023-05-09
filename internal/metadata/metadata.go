@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"time"
 
 	"github.com/spf13/afero"
 )
+
+const MetaDataFileExtension string = "pfile"
 
 type ObjectMetaData struct {
 	Name         string    `json:"name"`
@@ -38,16 +39,16 @@ func GenerateFromReader(name string, modTime time.Time, r io.Reader) (*ObjectMet
 	}, nil
 }
 
-func GenerateFromFile(f os.File) (*ObjectMetaData, error) {
+func GenerateFromFile(f afero.File) (*ObjectMetaData, error) {
 	fstat, err := f.Stat()
 	if err != nil {
 		return nil, err
 	}
-	return GenerateFromReader(fstat.Name(), fstat.ModTime(), &f)
+	return GenerateFromReader(fstat.Name(), fstat.ModTime(), f)
 }
 
-func ParsePfile(fsys afero.Fs, obj, ext string) (*ObjectMetaData, error) {
-	pfile, err := fsys.Open(fmt.Sprintf("%s.%s", obj, ext))
+func ParsePfile(fsys afero.Fs, obj string) (*ObjectMetaData, error) {
+	pfile, err := fsys.Open(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -60,4 +61,9 @@ func ParsePfile(fsys afero.Fs, obj, ext string) (*ObjectMetaData, error) {
 		return nil, fmt.Errorf("json marshal failed: %w", err)
 	}
 	return &metadata, nil
+}
+
+func ParsePfileWithExtension(fsys afero.Fs, obj, ext string) (*ObjectMetaData, error) {
+	pfile := fmt.Sprintf("%s.%s", obj, ext)
+	return ParsePfile(fsys, pfile)
 }

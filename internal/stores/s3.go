@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -25,29 +24,26 @@ import (
 )
 
 type S3Store struct {
-	Options   Options `mapstructure:"options"`
+	Options   Options `json:"options" mapstructure:"options"`
 	fsys      afero.Fs
 	awsRegion string
 	// Migrate to internal/s3Client instead of using s3Client directly from AWS_SDK
 	s3Client     *s3.Client
 	s3Uploader   *s3manager.Uploader
 	s3Downloader *s3manager.Downloader
-	//
 }
 
-func NewS3StoreClient(ctx context.Context, fsys afero.Fs, awsRegion, sourceRepo string, opts Options) (*S3Store, error) {
-	if opts.MetaDataFileExtension == "" {
-		e := ".pfile"
-		opts.MetaDataFileExtension = e
-	}
+func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Store, error) {
 	cfg, err := getConfig(
-		awsRegion,
+		ctx,
+		opts.Region,
 		opts.PantriAddress,
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	// TODO (@radsec) - extract this S3 logic to a separate internal client instead of directly from AWS_SDK
 	s3Client := s3.NewFromConfig(*cfg)
 	s3Uploader := s3manager.NewUploader(
 		s3Client,
@@ -65,25 +61,29 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, awsRegion, sourceRepo 
 	return &S3Store{
 		Options:      opts,
 		fsys:         fsys,
-		awsRegion:    awsRegion,
+		awsRegion:    opts.Region,
 		s3Client:     s3Client,
 		s3Uploader:   s3Uploader,
 		s3Downloader: s3Downloader,
 	}, nil
 }
 
-func getConfig(region string, pantriAddress string) (*aws.Config, error) {
+func getConfig(ctx context.Context, region string, pantriAddress string) (*aws.Config, error) {
 	var cfg aws.Config
 	var err error
 
-	if strings.HasPrefix(pantriAddress, "s3://") {
-		cfg, err = awsConfig.LoadDefaultConfig(context.TODO())
+	switch {
+	case strings.HasPrefix(pantriAddress, "s3://"):
+		cfg, err = awsConfig.LoadDefaultConfig(
+			ctx,
+			config.WithRegion(region),
+		)
 		if err != nil {
 			return nil, err
 		}
-		return &cfg, nil
-	} else if strings.HasPrefix(pantriAddress, "https://") || strings.HasPrefix(pantriAddress, "http://") {
-		// e.g. http://127.0.0.1:9000/test becomes http://127.0.0.1:9000
+	case strings.HasPrefix(pantriAddress, "http://"):
+		fallthrough
+	case strings.HasPrefix(pantriAddress, "https://"):
 		server, _ := path.Split(pantriAddress)
 		// https://stackoverflow.com/questions/67575681/is-aws-go-sdk-v2-integrated-with-local-minio-server
 		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
@@ -95,96 +95,69 @@ func getConfig(region string, pantriAddress string) (*aws.Config, error) {
 			}, nil
 		})
 
-		cfg, err := config.LoadDefaultConfig(context.Background(),
+		cfg, err = config.LoadDefaultConfig(
+			ctx,
 			config.WithRegion(region),
 			config.WithEndpointResolverWithOptions(resolver),
 		)
 		if err != nil {
 			return nil, err
 		}
-		return &cfg, nil
+	default:
+		return nil, errors.New("pantriAddress did not contain s3://, http://, or https:// prefix")
 	}
-	return nil, errors.New("pantriAddress did not contain s3://, http://, or https:// prefix")
+
+	return &cfg, nil
 }
-
-// func (s *S3Store) init(ctx context.Context, fsys afero.Fs, sourceRepo string) error {
-// 	c := pantri.Config{
-// 		Type:          "s3",
-// 		Opts:          s.Options,
-// 		Validate: func() error {
-// 			cfg, err := getConfig(s.awsRegion, s.Options.PantriAddress)
-// 			if err != nil {
-// 				return err
-// 			}
-// 			uploader := s3.NewFromConfig(*cfg)
-// 			// s3://test --> test
-// 			// http://stuff/test --> test
-// 			_, buck := path.Split(s.Options.PantriAddress)
-// 			_, err = uploader.HeadBucket(ctx, &s3.HeadBucketInput{
-// 				Bucket: &buck,
-// 			})
-// 			return err
-// 		},
-// 	}
-
-// 	return c.Write(fsys, sourceRepo)
-// }
-
-// func New(ctx context.Context, fsys afero.Fs, sourceRepo, pantriAddress string, o stores.Options) (*S3Store, error) {
-// 	if o.RemoveFromSourceRepo == nil {
-// 		b := false
-// 		o.RemoveFromSourceRepo = &b
-// 	}
-// 	if o.MetaDataFileExtension == "" {
-// 		e := ".pfile"
-// 		o.MetaDataFileExtension = e
-// 	}
-// 	s := &S3Store{
-// 		Opts: o,
-// 	}
-// 	err := s.init(ctx, fsys, sourceRepo)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return s, nil
-// }
 
 func (s *S3Store) GetOptions() Options {
 	return s.Options
 }
 
 // TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
-func (s *S3Store) Upload(ctx context.Context, sourceRepo string, objects ...string) error {
+// Upload generates the metadata, writes it to disk and uploads the file to the S3 bucket
+func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
-		f, err := os.Open(o)
+		logger.V(2).Infof("object: %s", o)
+		f, err := s.fsys.Open(o)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
 		// TODO(discentem): probably inefficient, reading entire file into memory
-		b, err := os.ReadFile(o)
+		b, err := afero.ReadFile(s.fsys, o)
 		if err != nil {
 			return err
 		}
 
 		// generate pantri metadata
-		m, err := metadata.GenerateFromFile(*f)
+		m, err := metadata.GenerateFromFile(f)
 		if err != nil {
 			return err
 		}
 		logger.V(2).Infof("%s has a checksum of %q", o, m.Checksum)
-		// convert to json
+		// convert metadata to json
 		blob, err := json.MarshalIndent(m, "", " ")
 		if err != nil {
 			return err
 		}
-		if err := os.MkdirAll(filepath.Dir(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension))), os.ModePerm); err != nil {
+		// Create path for metadata if it doesn't already exist
+		if err := s.fsys.MkdirAll(filepath.Dir(filepath.Dir(o)), os.ModePerm); err != nil {
 			return err
 		}
-		if err := os.WriteFile(path.Join(sourceRepo, fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension)), blob, 0644); err != nil {
+		// Write metadata to disk
+		pwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		objPathrelativeToSourceRepo := filepath.Join(pwd, o)
+		metadataPath := fmt.Sprintf("%s.%s", objPathrelativeToSourceRepo, s.Options.MetaDataFileExtension)
+		logger.V(2).Infof("writing metadata to %s", metadataPath)
+		if err := os.WriteFile(metadataPath, blob, 0644); err != nil {
 			return err
 		}
 
+		// Generate S3 struct for object and upload to S3 bucket
 		_, buck := path.Split(s.Options.PantriAddress)
 		obj := s3.PutObjectInput{
 			Bucket: aws.String(buck),
@@ -200,49 +173,54 @@ func (s *S3Store) Upload(ctx context.Context, sourceRepo string, objects ...stri
 	return nil
 }
 
-func (s *S3Store) Retrieve(ctx context.Context, sourceRepo string, objects ...string) error {
+// Retrieve gets the file from the S3 bucket, validates the hash is correct and writes it to disk
+func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
-		retrievePath := filepath.Join(sourceRepo, o)
-		f, err := os.Create(retrievePath)
+		// For Retrieve, the object is the pfile itself, which we derive the actual filename from
+		objectPath := strings.TrimSuffix(o, filepath.Ext(o))
+		// We will either read the file that already exists or download it because it
+		// is missing
+		f, err := openOrCreateFile(objectPath)
 		if err != nil {
 			return err
 		}
-		defer f.Close()
-		_, buck := path.Split(s.Options.PantriAddress)
-		obj := &s3.GetObjectInput{
-			Bucket: aws.String(buck),
-			Key:    aws.String(o),
-		}
-		_, err = s.s3Downloader.Download(ctx, f, obj)
+		fileInfo, err := f.Stat()
 		if err != nil {
 			return err
 		}
+		if fileInfo.Size() > 0 {
+			logger.Infof("%s already exists", objectPath)
+		} else { // Create an S3 struct for the file to be retrieved
+			_, buck := path.Split(s.Options.PantriAddress)
+			obj := &s3.GetObjectInput{
+				Bucket: aws.String(buck),
+				Key:    aws.String(objectPath),
+			}
+			// Download the file
+			_, err := s.s3Downloader.Download(ctx, f, obj)
+			if err != nil {
+				return err
+			}
+		}
+		// Get the hash for the downloaded file
 		hash, err := metadata.SHA256FromReader(f)
 		if err != nil {
 			return err
 		}
-		var ext string
-		if s.Options.MetaDataFileExtension == "" {
-			ext = ".pfile"
-		} else {
-			ext = s.Options.MetaDataFileExtension
-		}
-		pfilePath := filepath.Join(sourceRepo, o)
-
-		m, err := metadata.ParsePfile(s.fsys, pfilePath, ext)
+		// Get the metadata from the metadata file
+		m, err := metadata.ParsePfile(s.fsys, o)
 		if err != nil {
 			return err
 		}
+		// If the hash of the downloaded file does not match the retrieved file, return an error
 		if hash != m.Checksum {
-			fmt.Println(hash, m.Checksum)
+			logger.V(2).Infof("Hash mismatch, got %s but expected %s", hash, m.Checksum)
+			if err := s.fsys.Remove(objectPath); err != nil {
+				return err
+			}
 			return ErrRetrieveFailureHashMismatch
 		}
-		op := path.Join(sourceRepo, o)
-		b, err := io.ReadAll(f)
-		if err != nil {
-			return err
-		}
-		if err := os.WriteFile(op, b, 0644); err != nil {
+		if err := f.Close(); err != nil {
 			return err
 		}
 	}

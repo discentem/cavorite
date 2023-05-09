@@ -37,11 +37,26 @@ var (
 func InitializeStoreTypeS3Config(
 	ctx context.Context,
 	fsys afero.Fs,
-	sourceRepo, pantriAddress, awsRegion string,
+	pantriAddress, awsRegion string,
 	opts stores.Options,
 ) Config {
 	return Config{
 		StoreType: stores.StoreTypeS3,
+		Options:   opts,
+		Validate: func() error {
+			return nil
+		},
+	}
+}
+
+func InitializeStoreTypeGCSConfig(
+	ctx context.Context,
+	fsys afero.Fs,
+	backendAddresss string,
+	opts stores.Options,
+) Config {
+	return Config{
+		StoreType: stores.StoreTypeGCS,
 		Options:   opts,
 		Validate: func() error {
 			return nil

@@ -41,9 +41,14 @@ func Execute() error {
 func init() {
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Run in debug mode")
 	rootCmd.PersistentFlags().BoolVar(&vv, "vv", false, "Run in verbose logging mode")
+	// Bind Env Vars to viper
+	viper.BindEnv("GOOGLE_APPLICATION_CREDENTIAL")
+	viper.BindEnv("PANTRI_GCS_CREDENTIALS")
 	// Defaults set here will be used if they do not exist in the config file
 	viper.SetDefault("store_type", nil)
 	viper.SetDefault("metadata_file_extension", "pfile")
+	viper.SetDefault("GOOGLE_APPLICATION_CREDENTIAL", nil)
+	viper.SetDefault("PANTRI_GCS_CREDENTIALS", nil)
 	// Set up the config file details
 	viper.SetConfigName("config")
 	viper.SetConfigType("json")

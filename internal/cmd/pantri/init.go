@@ -25,11 +25,11 @@ func Init(cmd *cobra.Command, args []string) error {
 	repoToInit := args[0]
 	backend := viper.GetString("store_type")
 	fileExt := viper.GetString("metadata_file_extension")
-	pantriAddress := viper.GetString("backend_address")
+	backendAddress := viper.GetString("backend_address")
 	region := viper.GetString("region")
 
 	opts := stores.Options{
-		PantriAddress:         pantriAddress,
+		PantriAddress:         backendAddress,
 		MetaDataFileExtension: fileExt,
 		Region:                region,
 	}
@@ -44,9 +44,15 @@ func Init(cmd *cobra.Command, args []string) error {
 		cfg = config.InitializeStoreTypeS3Config(
 			ctx,
 			fsys,
-			repoToInit,
-			pantriAddress,
+			backendAddress,
 			region,
+			opts,
+		)
+	case stores.StoreTypeGCS:
+		cfg = config.InitializeStoreTypeGCSConfig(
+			ctx,
+			fsys,
+			backendAddress,
 			opts,
 		)
 	default:

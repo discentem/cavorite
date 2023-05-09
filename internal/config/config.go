@@ -15,8 +15,8 @@ import (
 )
 
 type Config struct {
-	StoreType stores.StoreType `json:"store_type"`
-	Options   stores.Options   `json:"options"`
+	StoreType stores.StoreType `json:"store_type" mapstructure:"store_type"`
+	Options   stores.Options   `json:"options" mapstructure:"options"`
 	Validate  func() error     `json:"-"`
 }
 

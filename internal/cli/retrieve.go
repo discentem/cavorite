@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func retrieveCommand() *cobra.Command {
+func retrieveCmd() *cobra.Command {
 	retrieveCmd := &cobra.Command{
 		Use:   "retrieve",
 		Short: "retrieve a file from pantri",
@@ -16,16 +16,18 @@ func retrieveCommand() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return loadConfig(afero.NewOsFs())
 		},
-		RunE: retrieveRunE,
+		RunE: retrieveFn,
 	}
 
 	return retrieveCmd
 }
 
-func retrieveRunE(cmd *cobra.Command, objects []string) error {
+// retrieveFn is the execution runtime for the retrieveCmd functionality
+// in Cobra, this is the RunE phase
+func retrieveFn(cmd *cobra.Command, objects []string) error {
 	fsys := afero.NewOsFs()
 
-	s, err := buildStoresFromConfig(
+	s, err := initStoreFromConfig(
 		cmd.Context(),
 		cfg,
 		fsys,

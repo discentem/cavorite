@@ -14,20 +14,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_removePathPrefix(t *testing.T) {
+func TestRemovePathPrefix(t *testing.T) {
 	pathPrefix, err := os.Getwd()
 	assert.NoError(t, err)
 
 	expectedRemovePathPrefixes := []string{"foo/foo.dmg", "bar/bar.pkg"}
-	testRemovePathPrefixes, err := removePathPrefix([]string{
-		fmt.Sprintf("%s/%s", pathPrefix, "foo/foo.dmg"),
-		fmt.Sprintf("%s/%s", pathPrefix, "bar/bar.pkg"),
-	})
+	testRemovePathPrefixes, err := removePathPrefix(
+		pathPrefix,
+		[]string{
+			fmt.Sprintf("%s/%s", pathPrefix, "foo/foo.dmg"),
+			fmt.Sprintf("%s/%s", pathPrefix, "bar/bar.pkg"),
+		})
 	assert.NoError(t, err)
 	assert.Equal(t, expectedRemovePathPrefixes, testRemovePathPrefixes)
 }
 
-func Test_buildStoresFromConfig(t *testing.T) {
+func TestInitStoreFromConfig(t *testing.T) {
 	ctx := context.Background()
 	cfg := config.Config{
 		StoreType: stores.StoreTypeS3,
@@ -40,7 +42,7 @@ func Test_buildStoresFromConfig(t *testing.T) {
 
 	fsys := afero.NewMemMapFs()
 
-	s, err := buildStoresFromConfig(
+	s, err := initStoreFromConfig(
 		ctx,
 		cfg,
 		fsys,
@@ -61,7 +63,7 @@ func Test_buildStoresFromConfig(t *testing.T) {
 	)
 }
 
-func Test_buildStoresFromConfig_Improper_S3Client(t *testing.T) {
+func TestInitStoreFromConfig_InvalidOptions(t *testing.T) {
 	ctx := context.Background()
 	cfg := config.Config{
 		StoreType: stores.StoreTypeS3,
@@ -74,22 +76,17 @@ func Test_buildStoresFromConfig_Improper_S3Client(t *testing.T) {
 
 	fsys := afero.NewMemMapFs()
 
-	_, err := buildStoresFromConfig(
+	_, err := initStoreFromConfig(
 		ctx,
 		cfg,
 		fsys,
 		cfg.Options,
 	)
 
-	t.Log(err.Error())
-
-	assert.ErrorContains(t,
-		err,
-		`improper stores.S3Client init: pantriAddress did not contain s3://, http://, or https:// prefix`,
-	)
+	assert.Errorf(t, err, `improper stores.S3Client init: pantriAddress did not contain s3://, http://, or https:// prefix`)
 }
 
-func Test_buildStoresFromConfig_ImproperStoreType(t *testing.T) {
+func TestInitStoreFromConfig_InvalidateStoreType(t *testing.T) {
 	ctx := context.Background()
 	cfg := config.Config{
 		StoreType: "s4",
@@ -102,17 +99,12 @@ func Test_buildStoresFromConfig_ImproperStoreType(t *testing.T) {
 
 	fsys := afero.NewMemMapFs()
 
-	_, err := buildStoresFromConfig(
+	_, err := initStoreFromConfig(
 		ctx,
 		cfg,
 		fsys,
 		cfg.Options,
 	)
 
-	t.Log(err.Error())
-
-	assert.ErrorContains(t,
-		err,
-		fmt.Sprintf("type %s is not supported", "s4"),
-	)
+	assert.Errorf(t, err, "type %s is not supported", "s4")
 }

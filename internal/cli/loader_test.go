@@ -9,8 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestLoadConfig creates a pantri config file in memory
+// to be read and parsed by viper
 // Test inspired from https://github.com/spf13/viper/blob/master/viper_test.go
-func Test_loadConfig(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	err := fs.Mkdir(".pantri", 0o777)

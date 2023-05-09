@@ -21,10 +21,10 @@ var (
 )
 
 func ExecuteWithContext(ctx context.Context) error {
-	return rootCommand().ExecuteContext(ctx)
+	return rootCmd().ExecuteContext(ctx)
 }
 
-func rootCommand() *cobra.Command {
+func rootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "pantri",
 		Short: "A source control friendly binary storage system",
@@ -51,9 +51,9 @@ func rootCommand() *cobra.Command {
 	viper.SetDefault("metadata_file_extension", metadata.MetaDataFileExtension)
 
 	rootCmd.AddCommand(
-		initCommand(),
-		retrieveCommand(),
-		uploadCommand(),
+		initCmd(),
+		retrieveCmd(),
+		uploadCmd(),
 	)
 
 	return rootCmd

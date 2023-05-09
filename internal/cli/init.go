@@ -10,14 +10,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-func initCommand() *cobra.Command {
+func initCmd() *cobra.Command {
 	initCmd := &cobra.Command{
 		Use:     "init",
 		Short:   "Initialize a new Pantri repo",
 		Long:    "Initialize a new Pantri repo",
 		Args:    cobra.ExactArgs(1),
-		PreRunE: initPreRunE,
-		RunE:    initRunE,
+		PreRunE: initPreExecFn,
+		RunE:    initFn,
 	}
 
 	initCmd.PersistentFlags().String("backend_address", "", "Address for the storage backend")
@@ -27,8 +27,10 @@ func initCommand() *cobra.Command {
 	return initCmd
 }
 
-// Bind all the flags to a viper setting so we can use viper everywhere without thinking about it
-func initPreRunE(cmd *cobra.Command, args []string) error {
+// initPreExecFn is the pre-execution runtime for the initCmd functionality
+// in Cobra, this is the PreRunE phase or think of this as the init() functionality
+func initPreExecFn(cmd *cobra.Command, args []string) error {
+	// Bind all the flags to a viper setting so we can use viper everywhere without thinking about it
 	if err := viper.BindPFlag("backend_address", cmd.PersistentFlags().Lookup("backend_address")); err != nil {
 		return errors.New("Failed to bind backend_address to viper")
 	}
@@ -42,7 +44,9 @@ func initPreRunE(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func initRunE(cmd *cobra.Command, args []string) error {
+// initFn is the execution runtime for the initCmd functionality
+// in Cobra, this is the RunE phase
+func initFn(cmd *cobra.Command, args []string) error {
 	repoToInit := args[0]
 	backend := viper.GetString("store_type")
 	fileExt := viper.GetString("metadata_file_extension")
@@ -59,7 +63,7 @@ func initRunE(cmd *cobra.Command, args []string) error {
 
 	switch stores.StoreType(backend) {
 	case stores.StoreTypeS3:
-		cfg = config.InitializeStoreTypeS3Config(
+		cfg = config.InitializeStoreTypeS3(
 			cmd.Context(),
 			fsys,
 			repoToInit,

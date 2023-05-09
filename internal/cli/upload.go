@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func uploadCommand() *cobra.Command {
+func uploadCmd() *cobra.Command {
 	uploadCmd := &cobra.Command{
 		Use:   "upload",
 		Short: "Upload a file to pantri",
@@ -16,16 +16,18 @@ func uploadCommand() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return loadConfig(afero.NewOsFs())
 		},
-		RunE: uploadRunE,
+		RunE: uploadFn,
 	}
 
 	return uploadCmd
 }
 
-func uploadRunE(cmd *cobra.Command, objects []string) error {
+// uploadFn is the execution runtime for the uploadCmd functionality
+// in Cobra, this is the RunE phase
+func uploadFn(cmd *cobra.Command, objects []string) error {
 	fsys := afero.NewOsFs()
 
-	s, err := buildStoresFromConfig(
+	s, err := initStoreFromConfig(
 		cmd.Context(),
 		cfg,
 		fsys,

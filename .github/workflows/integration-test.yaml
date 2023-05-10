@@ -1,0 +1,47 @@
+name: integration-test
+on:
+  pull_request:
+    branches:
+    - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration_test:
+    runs-on: ubuntu-latest
+    # Service containers to run with `integration_test`
+    services:
+      minio:
+        image: quay.io/minio/minio
+        options: >-
+          server /data
+          MINIO_ACCESS_KEY=minioadmin
+          MINIO_SECRET_KEY=minioadmin
+        ports:
+          - 9000:9000
+        volumes:
+          - /tmp/data:/data
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: bazelbuild/setup-bazelisk@v2
+      - name: Mount bazel cache
+        uses: actions/cache@v3
+        with:
+          path: "~/.cache/bazel"
+          key: bazel
+
+      - name: Setup minio S3 bucket
+        run: |
+          export AWS_ACCESS_KEY_ID=minioadmin
+          export AWS_SECRET_ACCESS_KEY=minioadmin
+          export AWS_EC2_METADATA_DISABLED=true
+          aws --endpoint-url http://127.0.0.1:9000/ s3 mb s3://test
+
+      - name: Build via bazel
+        run: bazel build //...
+      - name: Test via bazel
+        run: bazel test //...

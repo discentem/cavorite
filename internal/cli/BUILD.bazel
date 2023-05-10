@@ -25,6 +25,7 @@ go_library(
 
 go_test(
     name = "cli_test",
+    timeout = "short",
     srcs = [
         "helpers_test.go",
         "init_test.go",
@@ -39,7 +40,7 @@ go_test(
         "//internal/metadata",
         "//internal/stores",
         "//internal/testutil",
-        "@com_github_gonuts_go_shellquote//:go_default_library",
+        "@com_github_gonuts_go_shellquote//:go-shellquote",
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",

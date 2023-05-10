@@ -1,0 +1,69 @@
+name: Integration Tests
+on:
+  pull_request:
+    branches:
+    - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration_tests:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: bazelbuild/setup-bazelisk@v2
+      - name: Mount bazel cache
+        uses: actions/cache@v3
+        with:
+          path: "~/.cache/bazel"
+          key: bazel
+
+      - name: Setup minio S3 bucket
+        run: |
+          wget https://dl.min.io/server/minio/release/linux-amd64/minio
+          chmod +x minio
+          MINIO_ROOT_USER=minioadmin MINIO_ROOT_PASSWORD=minioadmin ./minio server /tmp --address ":9000" --console-address ":9001" &
+
+      - name: Setup minio S3 bucket
+        run: |
+          export AWS_ACCESS_KEY_ID=minioadmin
+          export AWS_SECRET_ACCESS_KEY=minioadmin
+          export AWS_EC2_METADATA_DISABLED=true
+          aws --endpoint-url http://127.0.0.1:9000/ s3 mb s3://test
+
+      - name: Build via bazel
+        run: bazel build //...
+      
+      - name: Setup /tmp folder to test Pantri out
+        run: |
+          mkdir -p /tmp/some_git_project
+          cp ./bazel-bin/pantri_but_go_/pantri_but_go /tmp/some_git_project/pantri_but_go
+          chmod a+x /tmp/some_git_project/pantri_but_go
+
+      - name: Init Pantri from bazel build output
+        run: |
+          export AWS_ACCESS_KEY_ID=minioadmin
+          export AWS_SECRET_ACCESS_KEY=minioadmin
+          cd /tmp/some_git_project
+          ./pantri_but_go init /tmp/some_git_project --backend_address http://127.0.0.1:9000/test --store_type=s3 --region="us-east-1"
+
+      - name: Download and Upload some small package to Pantri test S3/minio bucket
+        run: |
+          export AWS_ACCESS_KEY_ID=minioadmin
+          export AWS_SECRET_ACCESS_KEY=minioadmin
+          cd /tmp/some_git_project
+          wget https://github.com/macadmins/nudge/releases/download/v1.1.11.81465/Nudge_Suite-1.1.11.81465.pkg -O nudge_suite.pkg
+          ./pantri_but_go upload nudge_suite.pkg --vv --debug
+
+      - name: Test File Retrieval with Pantri from test S3/minio bucket
+        run: |
+          export AWS_ACCESS_KEY_ID=minioadmin
+          export AWS_SECRET_ACCESS_KEY=minioadmin
+          cd /tmp/some_git_project
+          rm -f ./nudge_suite.pkg.pkg
+          ./pantri_but_go retrieve nudge_suite.pkg.pfile --vv --debug

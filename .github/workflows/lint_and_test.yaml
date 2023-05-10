@@ -1,0 +1,45 @@
+name: Lint and Tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  golangci_lint:
+    permissions:
+      contents: read  # for actions/checkout to fetch code
+      pull-requests: read  # for golangci/golangci-lint-action to fetch pull requests
+    name: golangci_lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.18'
+          cache: true
+      - uses: actions/checkout@v3
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          args: --verbose
+  bazel_tests:
+    permissions:
+      contents: read  # for actions/checkout to fetch code
+    runs-on: ubuntu-latest
+    name: Bazel Tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: bazelbuild/setup-bazelisk@v2
+      - name: Mount bazel cache
+        uses: actions/cache@v3
+        with:
+          path: "~/.cache/bazel"
+          key: bazel
+      - name: Build via bazel
+        run: bazel build //...
+      - name: Test via bazel
+        run: bazel test //...

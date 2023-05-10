@@ -1,0 +1,21 @@
+name: code-coverage
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  code-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: bazelbuild/setup-bazelisk@v2
+      - name: Mount bazel cache
+        uses: actions/cache@v3
+        with:
+          path: "~/.cache/bazel"
+          key: bazel
+      - name: Build via bazel
+        run: bazel build //...
+      - name: Run bazel code-coverage
+        run: bazel coverage --nocache_test_results ...:all

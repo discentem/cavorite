@@ -2,8 +2,10 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"path/filepath"
 	"strings"
 
 	"github.com/discentem/pantri_but_go/internal/config"
@@ -12,9 +14,26 @@ import (
 	"github.com/spf13/afero"
 )
 
-func removePathPrefix(pathPrefix string, objects []string) ([]string, error) {
+func rootOfSourceRepo() (*string, error) {
+	absPathOfConfig, err := filepath.Abs(".pantri/config")
+	if err != nil {
+		return nil, errors.New(".pantri/config not detected, not in sourceRepo root")
+	}
+	logger.V(2).Infof("absPathOfconfig: %q", absPathOfConfig)
+	root := filepath.Dir(filepath.Dir(absPathOfConfig))
+	return &root, nil
+}
+
+func removePathPrefix(objects []string, prefix string) ([]string, error) {
 	for i, object := range objects {
-		objects[i] = strings.TrimPrefix(object, fmt.Sprintf("%s/", pathPrefix))
+		absObject, err := filepath.Abs(object)
+		if err != nil {
+			return nil, err
+		}
+		if !strings.HasPrefix(absObject, prefix) {
+			return nil, fmt.Errorf("%q does not exist relative to source_repo: %q", object, prefix)
+		}
+		objects[i] = strings.TrimPrefix(absObject, fmt.Sprintf("%s/", prefix))
 	}
 
 	return objects, nil
@@ -29,6 +48,12 @@ func initStoreFromConfig(ctx context.Context, cfg config.Config, fsys afero.Fs, 
 			return nil, fmt.Errorf("improper stores.S3Client init: %v", err)
 		}
 		s = stores.Store(s3)
+	case stores.StoreTypeGCS:
+		gcs, err := stores.NewGCSStoreClient(ctx, fsys, opts)
+		if err != nil {
+			return nil, fmt.Errorf("improper stores.GCSClient init: %v", err)
+		}
+		s = stores.Store(gcs)
 	default:
 		return nil, fmt.Errorf("type %s is not supported", cfg.StoreType)
 	}

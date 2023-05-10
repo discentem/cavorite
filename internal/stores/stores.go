@@ -11,6 +11,7 @@ type StoreType string
 const (
 	StoreTypeUndefined StoreType = "undefined"
 	StoreTypeS3        StoreType = "s3"
+	StoreTypeGCS       StoreType = "gcs"
 )
 
 var (

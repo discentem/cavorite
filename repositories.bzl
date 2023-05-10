@@ -637,3 +637,10 @@ def go_repositories():
         sum = "h1:go1bK/D/BFZV2I8cIQd1NKEZ+0owSTG1fDTci4IqFcE=",
         version = "v0.0.0-20200804184101-5ec99f83aff1",
     )
+    go_repository(
+        name = "com_github_gonuts_go_shellquote",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/gonuts/go-shellquote",
+        sum = "h1:rVmtJJsWzJJ3T52/cPd3wXnDq0X2G8oLiuzbl4fVr4A=",
+        version = "v0.0.0-20180428030007-95032a82bc51",
+    )

@@ -1,1 +1,1 @@
-test --test_output=all
+test --test_size_filters=small,medium --test_output=all --test_verbose_timeout_warnings

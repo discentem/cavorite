@@ -108,3 +108,31 @@ func TestInitializeStoreTypeS3(t *testing.T) {
 
 	assert.NoError(t, cfg.Validate())
 }
+
+func TestInitializeStoreTypeGCS(t *testing.T) {
+	ctx := context.Background()
+	fsys := afero.NewMemMapFs()
+
+	opts := stores.Options{
+		PantriAddress:         "my-test-bucket",
+		MetaDataFileExtension: "pfile",
+		Region:                "us-east-9876",
+	}
+
+	cfg := InitializeStoreTypeGCS(
+		ctx,
+		fsys,
+		"~/some_repo_root",
+		opts.PantriAddress,
+		opts.Region,
+		opts,
+	)
+
+	// Assert the S3Store Config matches all of the inputs
+	assert.Equal(t, cfg.StoreType, stores.StoreTypeGCS)
+	assert.Equal(t, cfg.Options.PantriAddress, opts.PantriAddress)
+	assert.Equal(t, cfg.Options.MetaDataFileExtension, opts.MetaDataFileExtension)
+	assert.Equal(t, cfg.Options.Region, opts.Region)
+
+	assert.NoError(t, cfg.Validate())
+}

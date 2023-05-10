@@ -89,6 +89,14 @@ func initFn(cmd *cobra.Command, args []string) error {
 			region,
 			opts,
 		)
+	case stores.StoreTypeGCS:
+		cfg = config.InitializeStoreTypeGCS(
+			cmd.Context(),
+			fsys,
+			repoToInit,
+			pantriAddress,
+			opts,
+		)
 	default:
 		return config.ErrUnsupportedStore
 	}

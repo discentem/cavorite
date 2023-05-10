@@ -8,6 +8,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/google/logger"
 	"github.com/spf13/afero"
 )
 
@@ -22,6 +23,7 @@ type ObjectMetaData struct {
 func SHA256FromReader(r io.Reader) (string, error) {
 	h := sha256.New()
 	if _, err := io.Copy(h, r); err != nil {
+		logger.Info("Could not generate SHA256")
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil

@@ -1,0 +1,17 @@
+name: code-coverage
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    container:
+      image: gcr.io/bazel-public/bazel:latest@sha256:91d0c1fcbb9e46c562dab1b99eba360188fe5d1e2890f502b7af509219a3ff5d
+      options: --user root
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Run bazel code-coverage
+        run: bazel coverage --nocache_test_results ...:all

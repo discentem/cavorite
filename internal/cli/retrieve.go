@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -54,6 +57,20 @@ func retrieveFn(cmd *cobra.Command, objects []string) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	sourceRepoRoot, err := rootOfSourceRepo()
+	if err != nil {
+		return err
+	}
+	if sourceRepoRoot == nil {
+		return errors.New("sourceRepoRoot cannot be nil")
+	}
+
+	// We need to remove the prefix from the path so it is relative
+	objects, err = removePathPrefix(objects, *sourceRepoRoot)
+	if err != nil {
+		return fmt.Errorf("retrieve error: %w", err)
 	}
 
 	logger.Infof("Downloading files from: %s", s.GetOptions().PantriAddress)

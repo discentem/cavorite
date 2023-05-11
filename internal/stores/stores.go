@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 type StoreType string
@@ -11,6 +13,7 @@ type StoreType string
 const (
 	StoreTypeUndefined StoreType = "undefined"
 	StoreTypeS3        StoreType = "s3"
+	StoreTypeGCS       StoreType = "gcs"
 )
 
 var (
@@ -29,4 +32,8 @@ func openOrCreateFile(filename string) (*os.File, error) {
 		return nil, err
 	}
 	return file, nil
+}
+
+func inferObjPath(pfilePath string) string {
+	return strings.TrimSuffix(pfilePath, filepath.Ext(pfilePath))
 }

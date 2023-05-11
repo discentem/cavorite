@@ -22,7 +22,7 @@ type ObjectMetaData struct {
 func SHA256FromReader(r io.Reader) (string, error) {
 	h := sha256.New()
 	if _, err := io.Copy(h, r); err != nil {
-		return "", err
+		return "", fmt.Errorf("%v: %s", err, "could not generate sha256 due to io.Copy error")
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
 }

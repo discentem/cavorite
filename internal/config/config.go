@@ -49,6 +49,21 @@ func InitializeStoreTypeS3(
 	}
 }
 
+func InitializeStoreTypeGCS(
+	ctx context.Context,
+	fsys afero.Fs,
+	sourceRepo, pantriAddress string,
+	opts stores.Options,
+) Config {
+	return Config{
+		StoreType: stores.StoreTypeGCS,
+		Options:   opts,
+		Validate: func() error {
+			return nil
+		},
+	}
+}
+
 func (c *Config) Write(fsys afero.Fs, sourceRepo string) error {
 	if c.Validate == nil {
 		return ErrValidateNil

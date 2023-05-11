@@ -20,11 +20,12 @@ func TestRemovePathPrefix(t *testing.T) {
 
 	expectedRemovePathPrefixes := []string{"foo/foo.dmg", "bar/bar.pkg"}
 	testRemovePathPrefixes, err := removePathPrefix(
-		pathPrefix,
 		[]string{
 			fmt.Sprintf("%s/%s", pathPrefix, "foo/foo.dmg"),
 			fmt.Sprintf("%s/%s", pathPrefix, "bar/bar.pkg"),
-		})
+		},
+		pathPrefix,
+	)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedRemovePathPrefixes, testRemovePathPrefixes)
 }

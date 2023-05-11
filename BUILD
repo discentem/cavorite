@@ -3,6 +3,7 @@ load("@bazel_gazelle//:def.bzl", "gazelle")
 
 # gazelle:prefix github.com/discentem/pantri_but_go
 # gazelle:exclude .sl
+# gazelle:proto disable_global
 gazelle(name = "gazelle")
 
 gazelle(

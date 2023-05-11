@@ -29,6 +29,35 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 
 load("//:repositories.bzl", "go_repositories")
 
+# gazelle:proto disable_global
+
+# Ref: https://github.com/rules-proto-grpc/rules_proto_grpc/blob/master/docs/overriding_deps.rst
+http_archive(
+    name = "com_google_protobuf",
+    sha256 = "8b28fdd45bab62d15db232ec404248901842e5340299a57765e48abe8a80d930",
+    strip_prefix = "protobuf-3.20.1",
+    urls = [
+        "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.20.1.tar.gz",
+        "https://github.com/protocolbuffers/protobuf/archive/v3.20.1.tar.gz",
+    ],
+)
+
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
+protobuf_deps()
+
+# Ref: https://github.com/bazelbuild/bazel/issues/10270
+http_archive(
+    name = "zlib",
+    build_file = "@com_google_protobuf//:third_party/zlib.BUILD",
+    sha256 = "c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
+    strip_prefix = "zlib-1.2.11",
+    urls = [
+        "https://mirror.bazel.build/zlib.net/zlib-1.2.11.tar.gz",
+        "https://zlib.net/zlib-1.2.11.tar.gz",
+    ],
+)
+
 go_repository(
     name = "com_github_spf13_cobra",
     importpath = "github.com/spf13/cobra",
@@ -65,13 +94,6 @@ go_repository(
 )
 
 go_repository(
-    name = "com_github_hashicorp_hcl_v2",
-    importpath = "github.com/hashicorp/hcl",
-    sum = "h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=",
-    version = "v1.0.0",
-)
-
-go_repository(
     name = "com_github_subosito_gotenv",
     importpath = "github.com/subosito/gotenv",
     sum = "h1:X1TuBLAMDFbaTAChgCBLu3DU3UPyELpnF2jjJ2cz/S8=",
@@ -88,8 +110,8 @@ go_repository(
 go_repository(
     name = "com_github_pelletier_go_toml_v2",
     importpath = "github.com/pelletier/go-toml/v2",
-    sum = "h1:muncTPStnKRos5dpVKULv2FVd4bMOhNePj9CjgDb8Us=",
-    version = "v2.0.7",
+    sum = "h1:nrzqCb7j9cDFj2coyLNLaZuJTLjWjlaz6nvTvIwycIU=",
+    version = "v2.0.6",
 )
 
 go_repository(
@@ -98,6 +120,11 @@ go_repository(
     sum = "h1:Dgnx+6+nfE+IfzjUEISNeydPJh9AXNNsWbGP9KzCsOA=",
     version = "v1.67.0",
 )
+
+load("//:deps.bzl", "go_dependencies")
+
+# gazelle:repository_macro deps.bzl%go_dependencies
+go_dependencies()
 
 # gazelle:repository_macro repositories.bzl%go_repositories
 go_repositories()

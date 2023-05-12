@@ -7,7 +7,7 @@ permissions:
 
 jobs:
   bazel_build:
-    name: bazel build
+    name: Bazel - Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -22,7 +22,7 @@ jobs:
         run: bazel build //...
   
   code_coverage:
-    name: baze code coverage
+    name: Bazel - Code Coverage
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

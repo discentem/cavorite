@@ -60,6 +60,12 @@ jobs:
           wget https://github.com/macadmins/nudge/releases/download/v1.1.11.81465/Nudge_Suite-1.1.11.81465.pkg -O nudge_suite.pkg
           ./cavorite upload nudge_suite.pkg --vv --debug
 
+      - name: Verify cavorite file
+        run: |
+          echo nudge_suite.pkg.cfile
+          nudge_suite.pkg.cfile | jq '.name == nudge_suite.pkg' | less
+          ./cavorite upload nudge_suite.pkg --vv --debug
+
       - name: Test File Retrieval with cavorite from test S3/minio bucket
         run: |
           export AWS_ACCESS_KEY_ID=minioadmin

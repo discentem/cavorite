@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/discentem/pantri_but_go/internal/stores"
+	"github.com/discentem/cavorite/internal/stores"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -42,8 +42,8 @@ func TestSuccessfulWrite(t *testing.T) {
 	cfg := Config{
 		StoreType: stores.StoreTypeS3,
 		Options: stores.Options{
-			PantriAddress:         "s3://blahaddress/bucket",
-			MetaDataFileExtension: "",
+			BackendAddress:        "s3://blahaddress/bucket",
+			MetaDataFileExtension: "cfile",
 			Region:                "us-east-9876",
 		},
 		Validate: func() error { return nil },
@@ -55,7 +55,7 @@ func TestSuccessfulWrite(t *testing.T) {
 	fsys := afero.NewMemMapFs()
 	err := cfg.Write(fsys, ".")
 	assert.NoError(t, err)
-	f, err := fsys.Open(".pantri/config")
+	f, err := fsys.Open(".cavorite/config")
 	assert.NoError(t, err)
 	b, err := afero.ReadAll(f)
 	assert.NoError(t, err)
@@ -63,8 +63,8 @@ func TestSuccessfulWrite(t *testing.T) {
 	expected := `{
  "store_type": "s3",
  "options": {
-  "pantri_address": "s3://blahaddress/bucket",
-  "metadata_file_extension": "",
+  "backend_address": "s3://blahaddress/bucket",
+  "metadata_file_extension": "cfile",
   "region": "us-east-9876"
  }
 }`
@@ -86,8 +86,8 @@ func TestInitializeStoreTypeS3(t *testing.T) {
 	fsys := afero.NewMemMapFs()
 
 	opts := stores.Options{
-		PantriAddress:         "s3://blahaddress/bucket",
-		MetaDataFileExtension: "pfile",
+		BackendAddress:        "s3://blahaddress/bucket",
+		MetaDataFileExtension: "cfile",
 		Region:                "us-east-9876",
 	}
 
@@ -95,14 +95,14 @@ func TestInitializeStoreTypeS3(t *testing.T) {
 		ctx,
 		fsys,
 		"~/some_repo_root",
-		opts.PantriAddress,
+		opts.BackendAddress,
 		opts.Region,
 		opts,
 	)
 
 	// Assert the S3Store Config matches all of the inputs
 	assert.Equal(t, cfg.StoreType, stores.StoreTypeS3)
-	assert.Equal(t, cfg.Options.PantriAddress, opts.PantriAddress)
+	assert.Equal(t, cfg.Options.BackendAddress, opts.BackendAddress)
 	assert.Equal(t, cfg.Options.MetaDataFileExtension, opts.MetaDataFileExtension)
 	assert.Equal(t, cfg.Options.Region, opts.Region)
 
@@ -114,8 +114,8 @@ func TestInitializeStoreTypeGCS(t *testing.T) {
 	fsys := afero.NewMemMapFs()
 
 	opts := stores.Options{
-		PantriAddress:         "my-test-bucket",
-		MetaDataFileExtension: "pfile",
+		BackendAddress:        "my-test-bucket",
+		MetaDataFileExtension: "cfile",
 		Region:                "us-east-9876",
 	}
 
@@ -123,13 +123,13 @@ func TestInitializeStoreTypeGCS(t *testing.T) {
 		ctx,
 		fsys,
 		"~/some_repo_root",
-		opts.PantriAddress,
+		opts.BackendAddress,
 		opts,
 	)
 
 	// Assert the S3Store Config matches all of the inputs
 	assert.Equal(t, cfg.StoreType, stores.StoreTypeGCS)
-	assert.Equal(t, cfg.Options.PantriAddress, opts.PantriAddress)
+	assert.Equal(t, cfg.Options.BackendAddress, opts.BackendAddress)
 	assert.Equal(t, cfg.Options.MetaDataFileExtension, opts.MetaDataFileExtension)
 	assert.Equal(t, cfg.Options.Region, opts.Region)
 

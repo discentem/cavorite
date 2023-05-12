@@ -2,10 +2,12 @@ package cli
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/discentem/pantri_but_go/internal/config"
-	"github.com/discentem/pantri_but_go/internal/metadata"
-	"github.com/discentem/pantri_but_go/internal/stores"
+	"github.com/discentem/cavorite/internal/config"
+	"github.com/discentem/cavorite/internal/metadata"
+	"github.com/discentem/cavorite/internal/program"
+	"github.com/discentem/cavorite/internal/stores"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -26,7 +28,7 @@ func ExecuteWithContext(ctx context.Context) error {
 
 func rootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "pantri",
+		Use:   fmt.Sprintf(program.Name),
 		Short: "A source control friendly binary storage system",
 		Long:  "A source control friendly binary storage system",
 		// PersistentPreRun -- all downstream cmds will inherit this fn()

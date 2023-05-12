@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/discentem/cavorite/internal/program"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -12,8 +13,8 @@ import (
 func retrieveCmd() *cobra.Command {
 	retrieveCmd := &cobra.Command{
 		Use:   "retrieve",
-		Short: "retrieve a file from pantri",
-		Long:  "retrieve a file from pantri",
+		Short: fmt.Sprintf("retrieve a file from %s", program.Name),
+		Long:  fmt.Sprintf("retrieve a file from %s", program.Name),
 		Args:  cobra.MinimumNArgs(1),
 		// PersistentPreRunE
 		// Loads the config with OsFs
@@ -73,7 +74,7 @@ func retrieveFn(cmd *cobra.Command, objects []string) error {
 		return fmt.Errorf("retrieve error: %w", err)
 	}
 
-	logger.Infof("Downloading files from: %s", s.GetOptions().PantriAddress)
+	logger.Infof("Downloading files from: %s", s.GetOptions().BackendAddress)
 	logger.Infof("Downloading file: %s", objects)
 	if err := s.Retrieve(cmd.Context(), objects...); err != nil {
 		return err

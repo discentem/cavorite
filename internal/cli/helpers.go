@@ -8,16 +8,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/discentem/pantri_but_go/internal/config"
-	"github.com/discentem/pantri_but_go/internal/stores"
+	"github.com/discentem/cavorite/internal/config"
+	"github.com/discentem/cavorite/internal/stores"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 )
 
 func rootOfSourceRepo() (*string, error) {
-	absPathOfConfig, err := filepath.Abs(".pantri/config")
+	absPathOfConfig, err := filepath.Abs(".cavorite/config")
 	if err != nil {
-		return nil, errors.New(".pantri/config not detected, not in sourceRepo root")
+		return nil, errors.New(".cavorite/config not detected, not in sourceRepo root")
 	}
 	logger.V(2).Infof("absPathOfconfig: %q", absPathOfConfig)
 	root := filepath.Dir(filepath.Dir(absPathOfConfig))

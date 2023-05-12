@@ -34,6 +34,6 @@ func openOrCreateFile(filename string) (*os.File, error) {
 	return file, nil
 }
 
-func inferObjPath(pfilePath string) string {
-	return strings.TrimSuffix(pfilePath, filepath.Ext(pfilePath))
+func inferObjPath(cfilePath string) string {
+	return strings.TrimSuffix(cfilePath, filepath.Ext(cfilePath))
 }

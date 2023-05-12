@@ -18,7 +18,7 @@ import (
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 
-	"github.com/discentem/pantri_but_go/internal/metadata"
+	"github.com/discentem/cavorite/internal/metadata"
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 )
@@ -37,7 +37,7 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Stor
 	cfg, err := getConfig(
 		ctx,
 		opts.Region,
-		opts.PantriAddress,
+		opts.BackendAddress,
 	)
 	if err != nil {
 		return nil, err
@@ -68,12 +68,12 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Stor
 	}, nil
 }
 
-func getConfig(ctx context.Context, region string, pantriAddress string) (*aws.Config, error) {
+func getConfig(ctx context.Context, region string, address string) (*aws.Config, error) {
 	var cfg aws.Config
 	var err error
 
 	switch {
-	case strings.HasPrefix(pantriAddress, "s3://"):
+	case strings.HasPrefix(address, "s3://"):
 		cfg, err = awsConfig.LoadDefaultConfig(
 			ctx,
 			config.WithRegion(region),
@@ -81,10 +81,10 @@ func getConfig(ctx context.Context, region string, pantriAddress string) (*aws.C
 		if err != nil {
 			return nil, err
 		}
-	case strings.HasPrefix(pantriAddress, "http://"):
+	case strings.HasPrefix(address, "http://"):
 		fallthrough
-	case strings.HasPrefix(pantriAddress, "https://"):
-		server, _ := path.Split(pantriAddress)
+	case strings.HasPrefix(address, "https://"):
+		server, _ := path.Split(address)
 		// https://stackoverflow.com/questions/67575681/is-aws-go-sdk-v2-integrated-with-local-minio-server
 		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
 			return aws.Endpoint{
@@ -104,7 +104,7 @@ func getConfig(ctx context.Context, region string, pantriAddress string) (*aws.C
 			return nil, err
 		}
 	default:
-		return nil, errors.New("pantriAddress did not contain s3://, http://, or https:// prefix")
+		return nil, errors.New("address did not contain s3://, http://, or https:// prefix")
 	}
 
 	return &cfg, nil
@@ -130,7 +130,7 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 			return err
 		}
 
-		// generate pantri metadata
+		// generate metadata
 		m, err := metadata.GenerateFromFile(f)
 		if err != nil {
 			return err
@@ -158,7 +158,7 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 		}
 
 		// Generate S3 struct for object and upload to S3 bucket
-		_, buck := path.Split(s.Options.PantriAddress)
+		_, buck := path.Split(s.Options.BackendAddress)
 		obj := s3.PutObjectInput{
 			Bucket: aws.String(buck),
 			Key:    &o,
@@ -176,7 +176,7 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 // Retrieve gets the file from the S3 bucket, validates the hash is correct and writes it to disk
 func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
-		// For Retrieve, the object is the pfile itself, which we derive the actual filename from
+		// For Retrieve, the object is the cfile itself, which we derive the actual filename from
 		objectPath := strings.TrimSuffix(o, filepath.Ext(o))
 		// We will either read the file that already exists or download it because it
 		// is missing
@@ -191,7 +191,7 @@ func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 		if fileInfo.Size() > 0 {
 			logger.Infof("%s already exists", objectPath)
 		} else { // Create an S3 struct for the file to be retrieved
-			_, buck := path.Split(s.Options.PantriAddress)
+			_, buck := path.Split(s.Options.BackendAddress)
 			obj := &s3.GetObjectInput{
 				Bucket: aws.String(buck),
 				Key:    aws.String(objectPath),
@@ -208,7 +208,7 @@ func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 			return err
 		}
 		// Get the metadata from the metadata file
-		m, err := metadata.ParsePfile(s.fsys, o)
+		m, err := metadata.ParseCfile(s.fsys, o)
 		if err != nil {
 			return err
 		}

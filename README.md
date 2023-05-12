@@ -18,9 +18,9 @@ Usage:
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
-  init        Initialize a new Pantri repo
-  retrieve    retrieve a file from pantri
-  upload      Upload a file to pantri
+  init        Initialize a new cavorite repo
+  retrieve    retrieve a file from cavorite
+  upload      Upload a file to cavorite
 
 Flags:
       --debug   Run in debug mode
@@ -46,18 +46,18 @@ Use " [command] --help" for more information about a command.
 
 1. Create a bucket in web console: http://127.0.0.1:9001. Let's assume the bucket is called `test`.
 
-1. Build `pantri_but_go`
+1. Build `cavorite`
 
    ```bash
    make build
    ```
 
-   This will output and copy-and-pastable command to set `PANTRI_BIN`. This will be convenient for the following steps.
+   This will output and copy-and-pastable command to set `cavorite_BIN`. This will be convenient for the following steps.
 
-1. Set PANTRI_BIN environment variable. This should point to a built copy of pantri_but_go. For example:
+1. Set cavorite_BIN environment variable. This should point to a built copy of cavorite. For example:
 
    ```bash
-   $ PANTRI_BIN=bazel-out/darwin_arm64-fastbuild/bin/pantri_but_go_/pantri_but_go
+   $ cavorite_BIN=bazel-out/darwin_arm64-fastbuild/bin/cavorite_/cavorite
    ```
 
 1. Export the credentials for minio into the env vars
@@ -67,28 +67,28 @@ Use " [command] --help" for more information about a command.
    $ export AWS_SECRET_ACCESS_KEY=minioadmin
    ```
 
-1. Initialize pantri. This assumes default Minio credentials. **You should change these credentials for a production deployment**.
+1. Initialize cavorite. This assumes default Minio credentials. **You should change these credentials for a production deployment**.
 
    ```shell
-   $ $PANTRI_BIN init ~/some_git_project --backend_address http://127.0.0.1:9000/test  --store_type=s3 --region="us-east-1"
+   $ $cavorite_BIN init ~/some_git_project --backend_address http://127.0.0.1:9000/test  --store_type=s3 --region="us-east-1"
    ```
    If successful you should see:
    ```
-   2022/10/17 23:22:14 initializing pantri config at ~/some_git_project/.pantri/config
+   2022/10/17 23:22:14 initializing cavorite config at ~/some_git_project/.cavorite/config
    ```
 
    Inspect the config:
    ```shell
    $ cd ~/some_git_project
-   $ cat .pantri/config
+   $ cat .cavorite/config
    ```
 
    ```
    {
       "store_type": "s3",
       "options": {
-         "pantri_address": "http://127.0.0.1:9000/test",
-         "metadata_file_extension": "pfile",
+         "backend_address": "http://127.0.0.1:9000/test",
+         "metadata_file_extension": "cfile",
          "region": "us-east-1"
       }
    }
@@ -99,14 +99,14 @@ Use " [command] --help" for more information about a command.
    The first argument (`~/Downloads/googlechromebeta.dmg`) after all the flags is the path where the object you are uploading can be found on your filesystem.
 
    ```shell
-   $ $PANTRI_BIN upload ~/some_git_project/googlechromebeta.dmg
+   $ $cavorite_BIN upload ~/some_git_project/googlechromebeta.dmg
    ```
 
 1. Observe that the binary has been uploaded to Minio. Nagivate to http://127.0.0.1/buckets/test/browse to confirm.
 
-1. Confirm pantri metadata has been written.
+1. Confirm cavorite metadata has been written.
    ```shell
-   $ cat ~/some_git_project/googlechromebeta.dmg.pfile
+   $ cat ~/some_git_project/googlechromebeta.dmg.cfile
    ```
 
    ```
@@ -124,9 +124,9 @@ Use " [command] --help" for more information about a command.
    rm ~/some_git_project/googlechromebeta.dmg
 
    # Then retrieve it
-   $PANTRI_BIN retrieve googlechromebeta.dmg.pfile
+   $cavorite_BIN retrieve googlechromebeta.dmg.cfile
 
-   2022/10/18 21:57:53 type "s3" detected in pantri "http://127.0.0.1:9000/test"
+   2022/10/18 21:57:53 type "s3" detected in cavorite "http://127.0.0.1:9000/test"
    2022/10/18 21:57:53 Retrieving [~/some_git_project/googlechromebeta.dmg]
    ```
 

@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/discentem/pantri_but_go/internal/config"
-	"github.com/discentem/pantri_but_go/internal/metadata"
-	"github.com/discentem/pantri_but_go/internal/stores"
+	"github.com/discentem/cavorite/internal/config"
+	"github.com/discentem/cavorite/internal/metadata"
+	"github.com/discentem/cavorite/internal/stores"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,7 +35,7 @@ func TestInitStoreFromConfig(t *testing.T) {
 	cfg := config.Config{
 		StoreType: stores.StoreTypeS3,
 		Options: stores.Options{
-			PantriAddress:         "s3://test-bucket",
+			BackendAddress:        "s3://test-bucket",
 			MetaDataFileExtension: metadata.MetaDataFileExtension,
 			Region:                "us-east-9876",
 		},
@@ -52,7 +52,7 @@ func TestInitStoreFromConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test GetOptions from newly created S3Store
-	assert.Equal(t, s.GetOptions().PantriAddress, "s3://test-bucket")
+	assert.Equal(t, s.GetOptions().BackendAddress, "s3://test-bucket")
 
 	// Test if type is equal to stores.S3Store
 	// to ensure sure the buildStores returns
@@ -69,7 +69,7 @@ func TestInitStoreFromConfig_InvalidOptions(t *testing.T) {
 	cfg := config.Config{
 		StoreType: stores.StoreTypeS3,
 		Options: stores.Options{
-			PantriAddress:         "s4://test-bucket",
+			BackendAddress:        "s4://test-bucket",
 			MetaDataFileExtension: metadata.MetaDataFileExtension,
 			Region:                "us-east-9876",
 		},
@@ -84,7 +84,7 @@ func TestInitStoreFromConfig_InvalidOptions(t *testing.T) {
 		cfg.Options,
 	)
 
-	assert.Errorf(t, err, `improper stores.S3Client init: pantriAddress did not contain s3://, http://, or https:// prefix`)
+	assert.Errorf(t, err, `improper stores.S3Client init: cavoriteAddress did not contain s3://, http://, or https:// prefix`)
 }
 
 func TestInitStoreFromConfig_InvalidateStoreType(t *testing.T) {
@@ -92,7 +92,7 @@ func TestInitStoreFromConfig_InvalidateStoreType(t *testing.T) {
 	cfg := config.Config{
 		StoreType: "s4",
 		Options: stores.Options{
-			PantriAddress:         "s4://test-bucket",
+			BackendAddress:        "s4://test-bucket",
 			MetaDataFileExtension: metadata.MetaDataFileExtension,
 			Region:                "us-east-9876",
 		},

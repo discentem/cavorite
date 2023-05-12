@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParsePFile(t *testing.T) {
+func TestParseCFile(t *testing.T) {
 	fsys := afero.NewMemMapFs()
-	fname := filepath.Join("repo", "thingy.pfile")
+	fname := filepath.Join("repo", "thingy.cfile")
 	f, err := fsys.Create(fname)
 	assert.NoError(t, err)
 
@@ -20,19 +20,19 @@ func TestParsePFile(t *testing.T) {
 	err = fsys.Chtimes(f.Name(), time.Time{}, modTime)
 	assert.NoError(t, err)
 
-	pfile := `{
+	cfile := `{
 		"name":"a",
 		"checksum":"b",
 		"date_modified":"2014-11-12T11:45:26.371Z"}`
 
-	_, err = f.Write([]byte(pfile))
+	_, err = f.Write([]byte(cfile))
 	assert.NoError(t, err)
 	expect := ObjectMetaData{
 		Name:         "a",
 		Checksum:     "b",
 		DateModified: modTime,
 	}
-	actual, err := ParsePfileWithExtension(fsys, filepath.Join("repo", "thingy"), "pfile")
+	actual, err := ParseCfileWithExtension(fsys, filepath.Join("repo", "thingy"), "cfile")
 	assert.NoError(t, err)
 	assert.Equal(t, expect, *actual)
 }

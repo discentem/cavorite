@@ -39,31 +39,31 @@ jobs:
       - name: Build via bazel
         run: bazel build //...
       
-      - name: Setup /tmp folder to test Pantri out
+      - name: Setup /tmp folder to test cavorite out
         run: |
           mkdir -p /tmp/some_git_project
-          cp ./bazel-bin/pantri_but_go_/pantri_but_go /tmp/some_git_project/pantri_but_go
-          chmod a+x /tmp/some_git_project/pantri_but_go
+          cp ./bazel-bin/cavorite_/cavorite /tmp/some_git_project/cavorite
+          chmod a+x /tmp/some_git_project/cavorite
 
-      - name: Init Pantri from bazel build output
+      - name: Init cavorite from bazel build output
         run: |
           export AWS_ACCESS_KEY_ID=minioadmin
           export AWS_SECRET_ACCESS_KEY=minioadmin
           cd /tmp/some_git_project
-          ./pantri_but_go init /tmp/some_git_project --backend_address http://127.0.0.1:9000/test --store_type=s3 --region="us-east-1"
+          ./cavorite init /tmp/some_git_project --backend_address http://127.0.0.1:9000/test --store_type=s3 --region="us-east-1"
 
-      - name: Download and Upload some small package to Pantri test S3/minio bucket
+      - name: Download and Upload some small package to cavorite test S3/minio bucket
         run: |
           export AWS_ACCESS_KEY_ID=minioadmin
           export AWS_SECRET_ACCESS_KEY=minioadmin
           cd /tmp/some_git_project
           wget https://github.com/macadmins/nudge/releases/download/v1.1.11.81465/Nudge_Suite-1.1.11.81465.pkg -O nudge_suite.pkg
-          ./pantri_but_go upload nudge_suite.pkg --vv --debug
+          ./cavorite upload nudge_suite.pkg --vv --debug
 
-      - name: Test File Retrieval with Pantri from test S3/minio bucket
+      - name: Test File Retrieval with cavorite from test S3/minio bucket
         run: |
           export AWS_ACCESS_KEY_ID=minioadmin
           export AWS_SECRET_ACCESS_KEY=minioadmin
           cd /tmp/some_git_project
           rm -f ./nudge_suite.pkg
-          ./pantri_but_go retrieve nudge_suite.pkg.pfile --vv --debug
+          ./cavorite retrieve nudge_suite.pkg.pfile --vv --debug

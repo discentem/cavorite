@@ -10,10 +10,10 @@ import (
 
 func TestRootCmd(t *testing.T) {
 	tests := []string{
-		"pantri",
-		"pantri init",
-		"pantri upload",
-		"pantri retrieve",
+		"cavorite",
+		"cavorite init",
+		"cavorite upload",
+		"cavorite retrieve",
 	}
 
 	rootCmd := rootCmd()
@@ -29,7 +29,7 @@ func TestRootCmd(t *testing.T) {
 			subCmd, subArgs, err := rootCmd.Traverse(args)
 			require.NoError(t, err)
 			assert.NotNil(t, subCmd)
-			assert.Equal(t, subCmd.Use, "pantri")
+			assert.Equal(t, subCmd.Use, "cavorite")
 			assert.NoError(t, subCmd.ParseFlags(subArgs))
 		})
 	}

@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"github.com/discentem/pantri_but_go/internal/stores"
+	"github.com/discentem/cavorite/internal/stores"
 	"github.com/spf13/afero"
 	"github.com/spf13/viper"
 )
@@ -15,7 +15,7 @@ func loadConfig(fs afero.Fs) error {
 	viper.SetConfigName("config")
 	viper.SetConfigType("json")
 	viper.AddConfigPath(".")
-	viper.AddConfigPath(".pantri")
+	viper.AddConfigPath(".cavorite")
 
 	// Retrieve from EnvVars if they exist...
 	viper.AutomaticEnv()

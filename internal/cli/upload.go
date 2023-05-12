@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/discentem/cavorite/internal/program"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -12,8 +13,8 @@ import (
 func uploadCmd() *cobra.Command {
 	uploadCmd := &cobra.Command{
 		Use:   "upload",
-		Short: "Upload a file to pantri",
-		Long:  "Upload a file to pantri",
+		Short: fmt.Sprintf("Upload a file to %s", program.Name),
+		Long:  fmt.Sprintf("Upload a file to %s", program.Name),
 		Args:  cobra.MinimumNArgs(1),
 		// PersistentPreRunE
 		// Loads the config with OsFs
@@ -73,7 +74,7 @@ func uploadFn(cmd *cobra.Command, objects []string) error {
 		return fmt.Errorf("upload error: %w", err)
 	}
 
-	logger.Infof("Uploading to: %s", s.GetOptions().PantriAddress)
+	logger.Infof("Uploading to: %s", s.GetOptions().BackendAddress)
 	logger.Infof("Uploading file: %s", objects)
 	if err := s.Upload(cmd.Context(), objects...); err != nil {
 		return err

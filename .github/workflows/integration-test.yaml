@@ -29,7 +29,7 @@ jobs:
           chmod +x minio
           MINIO_ROOT_USER=minioadmin MINIO_ROOT_PASSWORD=minioadmin ./minio server /tmp --address ":9000" --console-address ":9001" &
 
-      - name: Setup minio S3 bucket
+      - name: Init minio S3 bucket
         run: |
           export AWS_ACCESS_KEY_ID=minioadmin
           export AWS_SECRET_ACCESS_KEY=minioadmin
@@ -58,6 +58,12 @@ jobs:
           export AWS_SECRET_ACCESS_KEY=minioadmin
           cd /tmp/some_git_project
           wget https://github.com/macadmins/nudge/releases/download/v1.1.11.81465/Nudge_Suite-1.1.11.81465.pkg -O nudge_suite.pkg
+          ./cavorite upload nudge_suite.pkg --vv --debug
+
+      - name: Verify cavorite file
+        run: |
+          cat nudge_suite.pkg.cfile
+          cat nudge_suite.pkg.cfile | jq '.name == nudge_suite.pkg' | less
           ./cavorite upload nudge_suite.pkg --vv --debug
 
       - name: Test File Retrieval with cavorite from test S3/minio bucket

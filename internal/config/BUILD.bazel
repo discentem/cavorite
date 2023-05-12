@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "config",
     srcs = ["config.go"],
-    importpath = "github.com/discentem/pantri_but_go/internal/config",
+    importpath = "github.com/discentem/cavorite/internal/config",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/stores",

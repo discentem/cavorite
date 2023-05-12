@@ -1,16 +1,16 @@
-PANTRI_BIN := $(shell bazel cquery :pantri_but_go --output=files 2>/dev/null)
+CAVORITE_BIN := $(shell bazel cquery :cavorite --output=files 2>/dev/null)
 
 build: bazel_build
 
 bazel_build_docker:
-	docker build --tag pantribazelbuild -f _ci/bazel_build/Dockerfile .
-	docker run pantribazelbuild
+	docker build --tag cavoritebazelbuild -f _ci/bazel_build/Dockerfile .
+	docker run cavoritebazelbuild
 
 bazel_build: gazelle
-	bazel build :pantri_but_go
+	bazel build :cavorite
 	@echo Copy, past, and execute this in your shell for convenience:
 	@echo
-	@echo PANTRI_BIN=$(PANTRI_BIN)
+	@echo CAVORITE_BIN=$(CAVORITE_BIN)
 
 ci: compile_and_run lint
 
@@ -19,8 +19,8 @@ compile_and_run:
 	docker run cnr
 
 lint:
-	docker build --tag pantributgolint -f _ci/lint/Dockerfile .
-	docker run pantributgolint
+	docker build --tag cavoritelint -f _ci/lint/Dockerfile .
+	docker run cavoritegolint
 
 gazelle:
 	bazel run :gazelle

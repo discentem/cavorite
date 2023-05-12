@@ -10,11 +10,12 @@ go_library(
         "root.go",
         "upload.go",
     ],
-    importpath = "github.com/discentem/pantri_but_go/internal/cli",
+    importpath = "github.com/discentem/cavorite/internal/cli",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/config",
         "//internal/metadata",
+        "//internal/program",
         "//internal/stores",
         "@com_github_google_logger//:logger",
         "@com_github_spf13_afero//:afero",
@@ -25,7 +26,6 @@ go_library(
 
 go_test(
     name = "cli_test",
-    timeout = "short",
     srcs = [
         "helpers_test.go",
         "init_test.go",

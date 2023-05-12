@@ -2,9 +2,11 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 
-	"github.com/discentem/pantri_but_go/internal/config"
-	"github.com/discentem/pantri_but_go/internal/stores"
+	"github.com/discentem/cavorite/internal/config"
+	"github.com/discentem/cavorite/internal/program"
+	"github.com/discentem/cavorite/internal/stores"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -13,8 +15,8 @@ import (
 func initCmd() *cobra.Command {
 	initCmd := &cobra.Command{
 		Use:     "init",
-		Short:   "Initialize a new Pantri repo",
-		Long:    "Initialize a new Pantri repo",
+		Short:   fmt.Sprintf("Initialize a new %s repo", program.Name),
+		Long:    fmt.Sprintf("Initialize a new %s repo", program.Name),
 		Args:    cobra.ExactArgs(1),
 		PreRunE: initPreExecFn,
 		RunE:    initFn,
@@ -68,11 +70,11 @@ func initFn(cmd *cobra.Command, args []string) error {
 	repoToInit := args[0]
 	backend := viper.GetString("store_type")
 	fileExt := viper.GetString("metadata_file_extension")
-	pantriAddress := viper.GetString("backend_address")
+	backendAddress := viper.GetString("backend_address")
 	region := viper.GetString("region")
 
 	opts := stores.Options{
-		PantriAddress:         pantriAddress,
+		BackendAddress:        backendAddress,
 		MetaDataFileExtension: fileExt,
 		Region:                region,
 	}
@@ -85,7 +87,7 @@ func initFn(cmd *cobra.Command, args []string) error {
 			cmd.Context(),
 			fsys,
 			repoToInit,
-			pantriAddress,
+			backendAddress,
 			region,
 			opts,
 		)
@@ -94,7 +96,7 @@ func initFn(cmd *cobra.Command, args []string) error {
 			cmd.Context(),
 			fsys,
 			repoToInit,
-			pantriAddress,
+			backendAddress,
 			opts,
 		)
 	default:

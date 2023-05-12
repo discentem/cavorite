@@ -12,7 +12,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	gcsStorage "cloud.google.com/go/storage"
-	"github.com/discentem/pantri_but_go/internal/metadata"
+	"github.com/discentem/cavorite/internal/metadata"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 	"google.golang.org/api/option"
@@ -25,10 +25,10 @@ type GCSStore struct {
 }
 
 // NewGCSStoreClient creates a GCS Storage Client utilizing either the default GOOGLE_APPLICATION_CREDENTIAL  env var
-// or a json string env var named PANTRI_GCS_CREDENTIALS
+// or a json string env var named CAVORITE_GCS_CREDENTIALS
 func NewGCSStoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*GCSStore, error) {
 	gcsDefault := os.Getenv("GOOGLE_APPLICATION_CREDENTIAL")
-	pantriGCSCreds := os.Getenv("PANTRI_GCS_CREDENTIALS")
+	cavoriteGCSCreds := os.Getenv("CAVORITE_GCS_CREDENTIALS")
 	var client *gcsStorage.Client
 	var err error
 	// Look for the default google env var first
@@ -37,9 +37,9 @@ func NewGCSStoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*GCSSt
 		if err != nil {
 			return nil, err
 		}
-	} else if pantriGCSCreds != "" {
+	} else if cavoriteGCSCreds != "" {
 		// If that doesn't exist, look for our own en var which contains a json string
-		credentialsBytes := []byte(pantriGCSCreds)
+		credentialsBytes := []byte(cavoriteGCSCreds)
 		client, err = gcsStorage.NewClient(ctx, option.WithCredentialsJSON(credentialsBytes))
 		if err != nil {
 			return nil, err
@@ -74,7 +74,7 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 		}
 		defer f.Close()
 
-		// Generate pantri metadata
+		// Generate cavorite metadata
 		m, err := metadata.GenerateFromFile(f)
 		if err != nil {
 			return err
@@ -94,7 +94,7 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 		ctx, cancel := context.WithTimeout(ctx, time.Second*1800)
 		defer cancel()
 
-		gcsObject := s.gcsClient.Bucket(s.Options.PantriAddress).Object(o)
+		gcsObject := s.gcsClient.Bucket(s.Options.BackendAddress).Object(o)
 		// ToDo(natewalck) Maybe expose this as a setting?
 		// Only allow the file to be written if it doesn't already exist.
 		wc := gcsObject.If(storage.Conditions{DoesNotExist: true}).NewWriter(ctx)
@@ -141,7 +141,7 @@ func (s *GCSStore) Retrieve(ctx context.Context, metaObjects ...string) error {
 		if fileInfo.Size() > 0 {
 			logger.Infof("%s already exists", objectPath)
 		} else { // Download the file as it doesn't exist on disk
-			rc, err := s.gcsClient.Bucket(s.Options.PantriAddress).Object(objectPath).NewReader(ctx)
+			rc, err := s.gcsClient.Bucket(s.Options.BackendAddress).Object(objectPath).NewReader(ctx)
 			if err != nil {
 				return err
 			}

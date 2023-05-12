@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/discentem/pantri_but_go/internal/stores"
+	"github.com/discentem/cavorite/internal/stores"
 	"github.com/google/logger"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/afero"
@@ -26,7 +26,7 @@ var (
 	// dirExpander can be overwritten for tests
 	// expander can be overwritten with fakes for tests
 	expander             dirExpander = homedir.Expand
-	ErrValidateNil                   = errors.New("pantri config must have a Validate() function")
+	ErrValidateNil                   = errors.New("cavorite config must have a Validate() function")
 	ErrValidate                      = errors.New("validate() failed")
 	ErrDirExpander                   = errors.New("dirExpander failed")
 	ErrUnsupportedStore              = errors.New("not a supported store type")
@@ -37,7 +37,7 @@ var (
 func InitializeStoreTypeS3(
 	ctx context.Context,
 	fsys afero.Fs,
-	sourceRepo, pantriAddress, awsRegion string,
+	sourceRepo, backendAddress, awsRegion string,
 	opts stores.Options,
 ) Config {
 	return Config{
@@ -52,7 +52,7 @@ func InitializeStoreTypeS3(
 func InitializeStoreTypeGCS(
 	ctx context.Context,
 	fsys afero.Fs,
-	sourceRepo, pantriAddress string,
+	sourceRepo, backendAddress string,
 	opts stores.Options,
 ) Config {
 	return Config{
@@ -83,21 +83,21 @@ func (c *Config) Write(fsys afero.Fs, sourceRepo string) error {
 			err,
 		)
 	}
-	cfile := filepath.Join(esr, ".pantri/config")
+	cfile := filepath.Join(esr, ".cavorite/config")
 	if _, err := fsys.Stat(esr); err != nil {
-		return fmt.Errorf("%s does not exist, so we can't make it a pantri repo", esr)
+		return fmt.Errorf("%s does not exist, so we can't make it a cavorite repo", esr)
 	}
 
 	if err := fsys.MkdirAll(filepath.Dir(cfile), os.ModePerm); err != nil {
 		return err
 	}
-	logger.Infof("initializing pantri config at %s", cfile)
+	logger.Infof("initializing cavorite config at %s", cfile)
 	return afero.WriteFile(fsys, cfile, b, os.ModePerm)
 }
 
 func ReadConfig(fsys afero.Fs, sourceRepo string) ([]byte, error) {
 	cfile, err := expander(
-		fmt.Sprintf("%s/.pantri/config", sourceRepo),
+		fmt.Sprintf("%s/.cavorite/config", sourceRepo),
 	)
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func ReadConfig(fsys afero.Fs, sourceRepo string) ([]byte, error) {
 	if _, err := fsys.Stat(filepath.Dir(cfile)); err != nil {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf(
-				"%s has not be initialized as a pantri repo: %w: %s",
+				"%s has not be initialized as a cavorite repo: %w: %s",
 				sourceRepo,
 				ErrConfigDirNotExist,
 				filepath.Dir(cfile),
@@ -118,7 +118,7 @@ func ReadConfig(fsys afero.Fs, sourceRepo string) ([]byte, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf(
-				"%s has not be initialized as a pantri repo: %w: %s",
+				"%s has not be initialized as a cavorite repo: %w: %s",
 				sourceRepo,
 				ErrConfigNotExist,
 				cfile,

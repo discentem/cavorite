@@ -2,6 +2,6 @@ FROM gcr.io/bazel-public/bazel:latest@sha256:91d0c1fcbb9e46c562dab1b99eba360188f
 
 COPY . .
 
-RUN mkdir bazel-pantri-output
+RUN mkdir bazel-cavorite-output
 
-RUN bazel run :pantri_but_go
+RUN bazel run :cavorite

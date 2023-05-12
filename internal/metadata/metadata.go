@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-const MetaDataFileExtension string = "pfile"
+const MetaDataFileExtension string = "cfile"
 
 type ObjectMetaData struct {
 	Name         string    `json:"name"`
@@ -47,12 +47,12 @@ func GenerateFromFile(f afero.File) (*ObjectMetaData, error) {
 	return GenerateFromReader(fstat.Name(), fstat.ModTime(), f)
 }
 
-func ParsePfile(fsys afero.Fs, obj string) (*ObjectMetaData, error) {
-	pfile, err := fsys.Open(obj)
+func ParseCfile(fsys afero.Fs, obj string) (*ObjectMetaData, error) {
+	cfile, err := fsys.Open(obj)
 	if err != nil {
 		return nil, err
 	}
-	b, err := io.ReadAll(pfile)
+	b, err := io.ReadAll(cfile)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func ParsePfile(fsys afero.Fs, obj string) (*ObjectMetaData, error) {
 	return &metadata, nil
 }
 
-func ParsePfileWithExtension(fsys afero.Fs, obj, ext string) (*ObjectMetaData, error) {
-	pfile := fmt.Sprintf("%s.%s", obj, ext)
-	return ParsePfile(fsys, pfile)
+func ParseCfileWithExtension(fsys afero.Fs, obj, ext string) (*ObjectMetaData, error) {
+	cfile := fmt.Sprintf("%s.%s", obj, ext)
+	return ParseCfile(fsys, cfile)
 }

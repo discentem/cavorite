@@ -85,8 +85,9 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 		if err != nil {
 			return err
 		}
-		// Write metadata to disk
-		if err := os.WriteFile(fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension), blob, 0644); err != nil {
+		// Write metadata to fsys
+		fname := fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension)
+		if err := afero.WriteFile(s.fsys, fname, blob, 0644); err != nil {
 			return err
 		}
 
@@ -130,7 +131,7 @@ func (s *GCSStore) Retrieve(ctx context.Context, metaObjects ...string) error {
 		objectPath := inferObjPath(mo)
 		// We will either read the file that already exists or download it because it
 		// is missing
-		f, err := openOrCreateFile(objectPath)
+		f, err := openOrCreateFile(s.fsys, objectPath)
 		if err != nil {
 			return err
 		}

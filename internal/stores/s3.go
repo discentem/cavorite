@@ -153,7 +153,7 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 		objPathrelativeToSourceRepo := filepath.Join(pwd, o)
 		metadataPath := fmt.Sprintf("%s.%s", objPathrelativeToSourceRepo, s.Options.MetaDataFileExtension)
 		logger.V(2).Infof("writing metadata to %s", metadataPath)
-		if err := os.WriteFile(metadataPath, blob, 0644); err != nil {
+		if err := afero.WriteFile(s.fsys, metadataPath, blob, 0644); err != nil {
 			return err
 		}
 
@@ -180,7 +180,7 @@ func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 		objectPath := strings.TrimSuffix(o, filepath.Ext(o))
 		// We will either read the file that already exists or download it because it
 		// is missing
-		f, err := openOrCreateFile(objectPath)
+		f, err := openOrCreateFile(s.fsys, objectPath)
 		if err != nil {
 			return err
 		}

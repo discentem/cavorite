@@ -145,7 +145,7 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 		if err := s.fsys.MkdirAll(filepath.Dir(filepath.Dir(o)), os.ModePerm); err != nil {
 			return err
 		}
-		// Write metadata to fsys
+		// Write metadata to disk
 		metadataPath := fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension)
 		logger.V(2).Infof("writing metadata to %s", metadataPath)
 		if err := os.WriteFile(metadataPath, blob, 0644); err != nil {

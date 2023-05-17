@@ -1,15 +1,16 @@
 ## **Disclaimer**
 
-This is not production ready or even a code complete project.
+This is not production ready nor feature complete. See [Issues](https://github.com/discentem/cavorite/issues) for upcoming features.
 
 ## What is this?
 
-Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri. A re-write in go with support for s3, minio and eventually other storage systems.
+A cli tool that makes it easy to track large, binary files in source control repositories.
+
+Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri, this is a re-write in Go with support for s3, minio, Google Cloud Storage, and possibly other storage systems. See [internal/stores](internal/stores) for information about implementing new storage drivers.
 
 ## Man page
 
-```
-A source control friendly binary storage system
+``` 
 
 Usage:
    [flags]
@@ -30,7 +31,9 @@ Flags:
 Use " [command] --help" for more information about a command.
 ```
 
-## Full workflow
+## Full testing workflow
+
+> These steps are also performed automatically by our integration test on each pull request and push: [.github/workflows/integration-test.yaml](.github/workflows/integration-test.yaml)
 
 ### Minio (S3)
 

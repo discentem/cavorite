@@ -146,12 +146,7 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 			return err
 		}
 		// Write metadata to disk
-		pwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-		objPathrelativeToSourceRepo := filepath.Join(pwd, o)
-		metadataPath := fmt.Sprintf("%s.%s", objPathrelativeToSourceRepo, s.Options.MetaDataFileExtension)
+		metadataPath := fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension)
 		logger.V(2).Infof("writing metadata to %s", metadataPath)
 		if err := os.WriteFile(metadataPath, blob, 0644); err != nil {
 			return err

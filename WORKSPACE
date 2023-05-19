@@ -40,6 +40,13 @@ http_archive(
 
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
+go_repository(
+    name = "com_github_fsouza_fake_gcs_server",
+    importpath = "github.com/fsouza/fake-gcs-server",
+    sum = "h1:UXPNcCDrS3j7T3CBjZm+x9zBD9Cc5jqQZlm0mcbZAIE=",
+    version = "v1.45.1",
+)
+
 bazel_skylib_workspace()
 
 load("//:repositories.bzl", "go_repositories")

@@ -85,8 +85,8 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 			return err
 		}
 		// Write metadata to fsys
-		fname := fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension)
-		if err := afero.WriteFile(s.fsys, fname, blob, 0644); err != nil {
+		metadataPath := fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension)
+		if err := afero.WriteFile(s.fsys, metadataPath, blob, 0644); err != nil {
 			return err
 		}
 

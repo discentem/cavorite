@@ -63,8 +63,7 @@ func (s *GCSStore) GetOptions() Options {
 	return s.Options
 }
 
-// TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
-// Upload generates the metadata, writes it to disk and uploads the file to the GCS bucket
+// Upload generates the metadata, writes it s.fsys and uploads the file to the GCS bucket
 func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
 		logger.V(2).Infof("Object: %s\n", o)
@@ -86,8 +85,8 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 			return err
 		}
 		// Write metadata to fsys
-		fname := fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension)
-		if err := afero.WriteFile(s.fsys, fname, blob, 0644); err != nil {
+		metadataPath := fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension)
+		if err := afero.WriteFile(s.fsys, metadataPath, blob, 0644); err != nil {
 			return err
 		}
 
@@ -123,8 +122,7 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 	return nil
 }
 
-// Retrieve gets the file from the GCS bucket, validates the hash is correct and writes it to disk
-// if err := s.Retrieve(cmd.Context(), objects...); err != nil {
+// Retrieve gets the file from the GCS bucket, validates the hash is correct and writes it to s.fsys
 func (s *GCSStore) Retrieve(ctx context.Context, metaObjects ...string) error {
 	for _, mo := range metaObjects {
 		// For Retrieve, the object is the cfile itself, which we derive the actual filename from

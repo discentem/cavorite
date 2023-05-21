@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/spf13/afero"
 )
 
 type StoreType string
@@ -26,8 +28,8 @@ type Store interface {
 	GetOptions() Options
 }
 
-func openOrCreateFile(filename string) (*os.File, error) {
-	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0644)
+func openOrCreateFile(fsys afero.Fs, filename string) (afero.File, error) {
+	file, err := fsys.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		return nil, err
 	}

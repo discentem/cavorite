@@ -1,0 +1,6 @@
+name: "lint"
+description: "lint"
+runs:
+  using: docker
+  # .github/workflows/main.yaml copies the Dockerfile here
+  image: ../../../../Dockerfile

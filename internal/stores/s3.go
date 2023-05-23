@@ -117,6 +117,10 @@ func (s *S3Store) GetOptions() Options {
 // TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
 // Upload generates the metadata, writes it to disk and uploads the file to the S3 bucket
 func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
+	if s.Options.MetadataFileExtension == "" {
+		return ErrMetadataFileExtensionEmpty
+	}
+
 	for _, o := range objects {
 		logger.V(2).Infof("object: %s", o)
 		f, err := s.fsys.Open(o)
@@ -146,7 +150,7 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 			return err
 		}
 		// Write metadata to disk
-		metadataPath := fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension)
+		metadataPath := fmt.Sprintf("%s.%s", o, s.Options.MetadataFileExtension)
 		logger.V(2).Infof("writing metadata to %s", metadataPath)
 		if err := afero.WriteFile(s.fsys, metadataPath, blob, 0644); err != nil {
 			return err

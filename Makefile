@@ -12,15 +12,9 @@ bazel_build: gazelle
 	@echo
 	@echo CAVORITE_BIN=$(CAVORITE_BIN)
 
-ci: compile_and_run lint
-
-compile_and_run:
-	docker build --tag cnr -f _ci/compile_and_run/Dockerfile .
-	docker run cnr
-
 lint:
 	docker build --tag cavoritelint -f _ci/lint/Dockerfile .
-	docker run cavoritegolint
+	docker run cavoritelint
 
 gazelle:
 	bazel run :gazelle

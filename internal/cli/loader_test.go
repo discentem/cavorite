@@ -3,7 +3,7 @@ package cli
 import (
 	"testing"
 
-	"github.com/discentem/cavorite/internal/testutil"
+	"github.com/discentem/cavorite/internal/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +18,7 @@ func TestLoadConfig(t *testing.T) {
 	err := fs.Mkdir(".cavorite", 0o777)
 	require.NoError(t, err)
 
-	file, err := fs.Create(testutil.AbsFilePath(t, ".cavorite/config"))
+	file, err := fs.Create(testutils.AbsFilePath(t, ".cavorite/config"))
 	require.NoError(t, err)
 
 	_, err = file.Write([]byte(`{

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -23,14 +24,28 @@ import (
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 )
 
+type S3Downloader interface {
+	Download(
+		ctx context.Context,
+		w io.WriterAt,
+		input *s3.GetObjectInput,
+		options ...func(*s3manager.Downloader)) (n int64, err error)
+}
+
+type S3Uploader interface {
+	Upload(ctx context.Context,
+		input *s3.PutObjectInput,
+		opts ...func(*s3manager.Uploader)) (
+		*s3manager.UploadOutput, error,
+	)
+}
+
 type S3Store struct {
-	Options   Options `json:"options" mapstructure:"options"`
-	fsys      afero.Fs
-	awsRegion string
-	// TODO (@radsec) - extract this S3 logic to a separate internal client instead of directly from AWS_SDK
-	s3Client     *s3.Client
-	s3Uploader   *s3manager.Uploader
-	s3Downloader *s3manager.Downloader
+	Options      Options `json:"options" mapstructure:"options"`
+	fsys         afero.Fs
+	awsRegion    string
+	s3Uploader   S3Uploader
+	s3Downloader S3Downloader
 }
 
 func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Store, error) {
@@ -59,11 +74,12 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Stor
 	)
 
 	return &S3Store{
-		Options:      opts,
-		fsys:         fsys,
-		awsRegion:    opts.Region,
-		s3Client:     s3Client,
-		s3Uploader:   s3Uploader,
+		Options:   opts,
+		fsys:      fsys,
+		awsRegion: opts.Region,
+		// s3Uploader meets our interface for S3Uploader
+		s3Uploader: s3Uploader,
+		// s3Downloader meets our interface for S3Downloader
 		s3Downloader: s3Downloader,
 	}, nil
 }

@@ -39,7 +39,7 @@ go_test(
         "//internal/config",
         "//internal/metadata",
         "//internal/stores",
-        "//internal/testutil",
+        "//internal/testutils",
         "@com_github_gonuts_go_shellquote//:go-shellquote",
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",

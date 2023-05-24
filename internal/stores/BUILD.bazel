@@ -27,9 +27,13 @@ go_test(
     name = "stores_test",
     srcs = [
         "gcs_test.go",
+        "s3_test.go",
     ],
     embed = [":stores"],
     deps = [
+        "//internal/testutils",
+        "@com_github_aws_aws_sdk_go_v2_feature_s3_manager//:manager",
+        "@com_github_aws_aws_sdk_go_v2_service_s3//:s3",
         "@com_github_fsouza_fake_gcs_server//fakestorage",
         "@com_github_spf13_afero//:afero",
         "@com_github_stretchr_testify//assert",

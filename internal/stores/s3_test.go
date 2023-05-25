@@ -18,14 +18,14 @@ type aferoS3Server struct {
 	buckets map[string]afero.Fs
 }
 
-func (u aferoS3Server) Upload(ctx context.Context,
+func (s aferoS3Server) Upload(ctx context.Context,
 	input *s3.PutObjectInput,
 	opts ...func(*s3manager.Uploader)) (
 	*s3manager.UploadOutput, error,
 ) {
 	bucket := *input.Bucket
 	// check if the bucket referenced in input exists
-	_, ok := u.buckets[bucket]
+	_, ok := s.buckets[bucket]
 	if !ok {
 		return nil, fmt.Errorf("%s does not exist in this aferoS3Server", bucket)
 	}
@@ -44,17 +44,43 @@ func (u aferoS3Server) Upload(ctx context.Context,
 		return nil, err
 	}
 	// write bucketfs to associated bucket
-	u.buckets[bucket] = *bucketfs
+	s.buckets[bucket] = *bucketfs
 	// S3Store doesn't use UploadOutput, so in the test we don't either
 	return nil, nil
 }
 
-func (d aferoS3Server) Download(
+func (s aferoS3Server) Download(
 	ctx context.Context,
 	w io.WriterAt,
 	input *s3.GetObjectInput,
 	options ...func(*s3manager.Downloader)) (n int64, err error) {
-	return n, nil
+
+	bucket := *input.Bucket
+	// check if the bucket referenced in input exists
+	_, ok := s.buckets[bucket]
+	if !ok {
+		return 0, fmt.Errorf("%s does not exist in this aferoS3Server", bucket)
+	}
+
+	objectHandle, err := s.buckets[bucket].Open(*input.Key)
+	if err != nil {
+		return 0, fmt.Errorf("could not find %s in bucket %s: %w", *input.Key, bucket, err)
+	}
+	objInfo, err := objectHandle.Stat()
+	if err != nil {
+		return 0, err
+	}
+	b := make([]byte, objInfo.Size())
+	_, err = objectHandle.Read(b)
+	if err != nil {
+		return 0, fmt.Errorf("failed to read bytes from objectHandle: %w", err)
+	}
+	nbw, err := w.WriteAt(b, 0)
+	if err != nil {
+		return 0, fmt.Errorf("failed to write objectHandle bytes to w: %w", err)
+	}
+	return int64(nbw), nil
+
 }
 
 func TestS3StoreUpload(t *testing.T) {
@@ -94,5 +120,54 @@ func TestS3StoreUpload(t *testing.T) {
  "checksum": "4df3c3f68fcc83b27e9d42c90431a72499f17875c81a599b566c9889b9696703",
  "date_modified": "2014-11-12T11:45:26.371Z"
 }`)
+}
+
+func TestS3StoreRetrieve(t *testing.T) {
+	mTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")
+	// create bucket content
+	bucketfs, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
+		"someObject": {
+			Content: []byte("tla"),
+			ModTime: &mTime,
+		},
+	})
+	assert.NoError(t, err)
+
+	fakeS3Server := aferoS3Server{
+		buckets: map[string]afero.Fs{
+			// create a bucket in our fake s3 server with the content
+			"aFakeBucket": *bucketfs,
+		},
+	}
+
+	localFs, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
+		"someObject.cfile": {
+			Content: []byte(`{
+				"name": "someObject",
+				"checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+				"date_modified": "2014-11-12T11:45:26.371Z"
+			   }`),
+			ModTime: &mTime,
+		},
+	})
+	assert.NoError(t, err)
+
+	store := S3Store{
+		Options: Options{
+			BackendAddress:        "s3://aFakeBucket",
+			MetadataFileExtension: "cfile",
+		},
+		fsys:         *localFs,
+		awsRegion:    "us-east-1",
+		s3Uploader:   fakeS3Server,
+		s3Downloader: fakeS3Server,
+	}
+
+	err = store.Retrieve(context.Background(), "someObject.cfile")
+	assert.NoError(t, err)
+
+	// ensure the content of the file is correct
+	b, _ := afero.ReadFile(*localFs, "someObject")
+	assert.Equal(t, `tla`, string(b))
 
 }

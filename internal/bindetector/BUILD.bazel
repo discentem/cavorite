@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "bindetector",
+    srcs = [
+        "bindector.go",
+        "bindector_windows.go",
+        "bindetector_darwin.go",
+    ],
+    importpath = "github.com/discentem/cavorite/internal/bindetector",
+    visibility = ["//:__subpackages__"],
+)

@@ -2,9 +2,7 @@ package stores
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -63,6 +61,10 @@ func (s *GCSStore) GetOptions() Options {
 	return s.Options
 }
 
+func (s *GCSStore) GetFsys() afero.Fs {
+	return s.fsys
+}
+
 // Upload generates the metadata, writes it s.fsys and uploads the file to the GCS bucket
 func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 	if s.Options.MetadataFileExtension == "" {
@@ -77,20 +79,8 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 		}
 		defer f.Close()
 
-		// Generate cavorite metadata
-		m, err := metadata.GenerateFromFile(f)
+		cleanup, err := WriteMetadataToFsys(s, o)
 		if err != nil {
-			return err
-		}
-		logger.V(2).Infof("%s has a checksum of %q", o, m.Checksum)
-		// convert metadata to json
-		blob, err := json.MarshalIndent(m, "", " ")
-		if err != nil {
-			return err
-		}
-		// Write metadata to fsys
-		metadataPath := fmt.Sprintf("%s.%s", o, s.Options.MetadataFileExtension)
-		if err := afero.WriteFile(s.fsys, metadataPath, blob, 0644); err != nil {
 			return err
 		}
 
@@ -106,10 +96,16 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 		// Reset to the start of the file because metadata generation has already read it once
 		_, err = f.Seek(0, io.SeekStart)
 		if err != nil {
+			if err := cleanup(); err != nil {
+				return err
+			}
 			return err
 		}
 		_, err = io.Copy(wc, f)
 		if err != nil {
+			if err := cleanup(); err != nil {
+				return err
+			}
 			logger.V(2).Infof("Failed to upload %s", o)
 			return err
 		}
@@ -119,6 +115,9 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 			if strings.Contains(err.Error(), "conditionNotMet") {
 				logger.Infof("%s already exists, skipping...", o)
 			} else {
+				if err := cleanup(); err != nil {
+					return err
+				}
 				return err
 			}
 		}

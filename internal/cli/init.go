@@ -75,7 +75,7 @@ func initFn(cmd *cobra.Command, args []string) error {
 
 	opts := stores.Options{
 		BackendAddress:        backendAddress,
-		MetaDataFileExtension: fileExt,
+		MetadataFileExtension: fileExt,
 		Region:                region,
 	}
 

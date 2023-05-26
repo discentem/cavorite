@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-const MetaDataFileExtension string = "cfile"
+const MetadataFileExtension string = "cfile"
 
 type ObjectMetaData struct {
 	Name         string    `json:"name"`

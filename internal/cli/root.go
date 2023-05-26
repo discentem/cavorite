@@ -72,7 +72,7 @@ func rootCmd() *cobra.Command {
 
 	// Defaults set here will be used if they do not exist in the config file
 	viper.SetDefault("store_type", stores.StoreTypeUndefined)
-	viper.SetDefault("metadata_file_extension", metadata.MetaDataFileExtension)
+	viper.SetDefault("metadata_file_extension", metadata.MetadataFileExtension)
 
 	// Import subCmds into the rootCmd
 	rootCmd.AddCommand(

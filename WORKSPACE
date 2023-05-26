@@ -40,6 +40,62 @@ http_archive(
 
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
 
+go_repository(
+    name = "com_github_fsouza_fake_gcs_server",
+    importpath = "github.com/fsouza/fake-gcs-server",
+    sum = "h1:UXPNcCDrS3j7T3CBjZm+x9zBD9Cc5jqQZlm0mcbZAIE=",
+    version = "v1.45.1",
+)
+
+go_repository(
+    name = "com_github_sirupsen_logrus",
+    importpath = "github.com/sirupsen/logrus",
+    sum = "h1:oxx1eChJGI6Uks2ZC4W1zpLlVgqB8ner4EuQwV4Ik1Y=",
+    version = "v1.9.2",
+)
+
+go_repository(
+    name = "com_github_gorilla_handlers",
+    importpath = "github.com/gorilla/handlers",
+    sum = "h1:9lRY6j8DEeeBT10CvO9hGW0gmky0BprnvDI5vfhUHH4=",
+    version = "v1.5.1",
+)
+
+go_repository(
+    name = "com_github_gorilla_mux",
+    importpath = "github.com/gorilla/mux",
+    sum = "h1:i40aqfkR1h2SlN9hojwV5ZA91wcXFOvkdNIeFDP5koI=",
+    version = "v1.8.0",
+)
+
+go_repository(
+    name = "com_github_google_renameio_v2",
+    importpath = "github.com/google/renameio/v2",
+    sum = "h1:UifI23ZTGY8Tt29JbYFiuyIU3eX+RNFtUwefq9qAhxg=",
+    version = "v2.0.0",
+)
+
+go_repository(
+    name = "com_github_felixge_httpsnoop",
+    importpath = "github.com/felixge/httpsnoop",
+    sum = "h1:s/nj+GCswXYzN5v2DpNMuMQYe+0DDwt5WVCU6CWBdXk=",
+    version = "v1.0.3",
+)
+
+go_repository(
+    name = "com_github_pkg_xattr",
+    importpath = "github.com/pkg/xattr",
+    sum = "h1:5883YPCtkSd8LFbs13nXplj9g9tlrwoJRjgpgMu1/fE=",
+    version = "v0.4.9",
+)
+
+go_repository(
+    name = "com_github_sourcegraph_conc",
+    importpath = "github.com/sourcegraph/conc",
+    sum = "h1:OQTbbt6P72L20UqAkXXuLOj79LfEanQ+YQFNpLA9ySo=",
+    version = "v0.3.0",
+)
+
 bazel_skylib_workspace()
 
 load("//:repositories.bzl", "go_repositories")

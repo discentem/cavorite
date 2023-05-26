@@ -43,7 +43,7 @@ func TestSuccessfulWrite(t *testing.T) {
 		StoreType: stores.StoreTypeS3,
 		Options: stores.Options{
 			BackendAddress:        "s3://blahaddress/bucket",
-			MetaDataFileExtension: "cfile",
+			MetadataFileExtension: "cfile",
 			Region:                "us-east-9876",
 		},
 		Validate: func() error { return nil },
@@ -87,7 +87,7 @@ func TestInitializeStoreTypeS3(t *testing.T) {
 
 	opts := stores.Options{
 		BackendAddress:        "s3://blahaddress/bucket",
-		MetaDataFileExtension: "cfile",
+		MetadataFileExtension: "cfile",
 		Region:                "us-east-9876",
 	}
 
@@ -103,7 +103,7 @@ func TestInitializeStoreTypeS3(t *testing.T) {
 	// Assert the S3Store Config matches all of the inputs
 	assert.Equal(t, cfg.StoreType, stores.StoreTypeS3)
 	assert.Equal(t, cfg.Options.BackendAddress, opts.BackendAddress)
-	assert.Equal(t, cfg.Options.MetaDataFileExtension, opts.MetaDataFileExtension)
+	assert.Equal(t, cfg.Options.MetadataFileExtension, opts.MetadataFileExtension)
 	assert.Equal(t, cfg.Options.Region, opts.Region)
 
 	assert.NoError(t, cfg.Validate())
@@ -115,7 +115,7 @@ func TestInitializeStoreTypeGCS(t *testing.T) {
 
 	opts := stores.Options{
 		BackendAddress:        "my-test-bucket",
-		MetaDataFileExtension: "cfile",
+		MetadataFileExtension: "cfile",
 		Region:                "us-east-9876",
 	}
 
@@ -130,7 +130,7 @@ func TestInitializeStoreTypeGCS(t *testing.T) {
 	// Assert the S3Store Config matches all of the inputs
 	assert.Equal(t, cfg.StoreType, stores.StoreTypeGCS)
 	assert.Equal(t, cfg.Options.BackendAddress, opts.BackendAddress)
-	assert.Equal(t, cfg.Options.MetaDataFileExtension, opts.MetaDataFileExtension)
+	assert.Equal(t, cfg.Options.MetadataFileExtension, opts.MetadataFileExtension)
 	assert.Equal(t, cfg.Options.Region, opts.Region)
 
 	assert.NoError(t, cfg.Validate())

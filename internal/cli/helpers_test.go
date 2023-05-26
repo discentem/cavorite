@@ -36,7 +36,7 @@ func TestInitStoreFromConfig(t *testing.T) {
 		StoreType: stores.StoreTypeS3,
 		Options: stores.Options{
 			BackendAddress:        "s3://test-bucket",
-			MetaDataFileExtension: metadata.MetaDataFileExtension,
+			MetadataFileExtension: metadata.MetadataFileExtension,
 			Region:                "us-east-9876",
 		},
 	}
@@ -70,7 +70,7 @@ func TestInitStoreFromConfig_InvalidOptions(t *testing.T) {
 		StoreType: stores.StoreTypeS3,
 		Options: stores.Options{
 			BackendAddress:        "s4://test-bucket",
-			MetaDataFileExtension: metadata.MetaDataFileExtension,
+			MetadataFileExtension: metadata.MetadataFileExtension,
 			Region:                "us-east-9876",
 		},
 	}
@@ -93,7 +93,7 @@ func TestInitStoreFromConfig_InvalidateStoreType(t *testing.T) {
 		StoreType: "s4",
 		Options: stores.Options{
 			BackendAddress:        "s4://test-bucket",
-			MetaDataFileExtension: metadata.MetaDataFileExtension,
+			MetadataFileExtension: metadata.MetadataFileExtension,
 			Region:                "us-east-9876",
 		},
 	}

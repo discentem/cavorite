@@ -63,9 +63,12 @@ func (s *GCSStore) GetOptions() Options {
 	return s.Options
 }
 
-// TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
-// Upload generates the metadata, writes it to disk and uploads the file to the GCS bucket
+// Upload generates the metadata, writes it s.fsys and uploads the file to the GCS bucket
 func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
+	if s.Options.MetadataFileExtension == "" {
+		return ErrMetadataFileExtensionEmpty
+	}
+
 	for _, o := range objects {
 		logger.V(2).Infof("Object: %s\n", o)
 		f, err := s.fsys.Open(o)
@@ -85,8 +88,9 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 		if err != nil {
 			return err
 		}
-		// Write metadata to disk
-		if err := os.WriteFile(fmt.Sprintf("%s.%s", o, s.Options.MetaDataFileExtension), blob, 0644); err != nil {
+		// Write metadata to fsys
+		metadataPath := fmt.Sprintf("%s.%s", o, s.Options.MetadataFileExtension)
+		if err := afero.WriteFile(s.fsys, metadataPath, blob, 0644); err != nil {
 			return err
 		}
 
@@ -122,15 +126,14 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 	return nil
 }
 
-// Retrieve gets the file from the GCS bucket, validates the hash is correct and writes it to disk
-// if err := s.Retrieve(cmd.Context(), objects...); err != nil {
+// Retrieve gets the file from the GCS bucket, validates the hash is correct and writes it to s.fsys
 func (s *GCSStore) Retrieve(ctx context.Context, metaObjects ...string) error {
 	for _, mo := range metaObjects {
 		// For Retrieve, the object is the cfile itself, which we derive the actual filename from
 		objectPath := inferObjPath(mo)
 		// We will either read the file that already exists or download it because it
 		// is missing
-		f, err := openOrCreateFile(objectPath)
+		f, err := openOrCreateFile(s.fsys, objectPath)
 		if err != nil {
 			return err
 		}
@@ -169,7 +172,7 @@ func (s *GCSStore) Retrieve(ctx context.Context, metaObjects ...string) error {
 		}
 		// If the hash of the downloaded file does not match the retrieved file, return an error
 		if hash != m.Checksum {
-			logger.V(2).Infof("Hash mismatch, got %s but expected %s", hash, m.Checksum)
+			logger.Infof("Hash mismatch, got %s but expected %s", hash, m.Checksum)
 			if err := s.fsys.Remove(objectPath); err != nil {
 				return err
 			}

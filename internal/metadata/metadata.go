@@ -13,6 +13,8 @@ import (
 
 const MetadataFileExtension string = "cfile"
 
+var ErrMetadataFileExtensionEmpty = fmt.Errorf("options.MetadatafileExtension cannot be %q", "")
+
 type ObjectMetaData struct {
 	Name         string    `json:"name"`
 	Checksum     string    `json:"checksum"`

@@ -4,7 +4,7 @@ Stores are the interface by which metadata is managed and files are uploaded/ret
 ## Upload
 When uploading files, the following items should be handled in the implementation:
 
-* Metadata should be generated from the file and written alongside the binary on disk
+* Metadata should be generated from the file and written alongside the binary on the filesystem.
 * Upload the file to the bucket
 
 ## Retrieve

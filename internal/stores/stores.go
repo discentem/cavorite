@@ -65,10 +65,6 @@ func WriteMetadataToFsys(s Store, fullObjectPath string, f afero.File) (cleanup 
 	if err != nil {
 		return nil, err
 	}
-	// Create path for metadata if it doesn't already exist
-	if err := fsys.MkdirAll(filepath.Dir(filepath.Dir(fullObjectPath)), os.ModePerm); err != nil {
-		return nil, err
-	}
 	// Write metadata to disk
 	metadataPath := fmt.Sprintf("%s.%s", fullObjectPath, opts.MetadataFileExtension)
 	logger.V(2).Infof("writing metadata to %s", metadataPath)

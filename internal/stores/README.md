@@ -4,8 +4,13 @@ Stores are the interface by which metadata is managed and files are uploaded/ret
 ## Upload
 When uploading files, the following items should be handled in the implementation:
 
-* Metadata should be generated from the file and written alongside the binary on disk
+* Loop through the objects you want to upload.
+* Open a file handle, `f`, for each file and call `WriteMetadataToFsys()`
+* Call `f.Seek(0, io.SeekStart)` on the file handle to ensure that all the bytes are captured during upload phase
+    * If this fails, call `cleanup()` which is returned by `WriteMetadataToFsys()`
 * Upload the file to the bucket
+    * If this fails, call `cleanup()` which is returned by `WriteMetadataToFsys()`
+
 
 ## Retrieve
 When retrieving files, the following items need to be implemented:

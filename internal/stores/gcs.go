@@ -2,7 +2,6 @@ package stores
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +13,7 @@ import (
 	gcsStorage "cloud.google.com/go/storage"
 	"github.com/discentem/cavorite/internal/metadata"
 	"github.com/google/logger"
+	"github.com/hashicorp/go-multierror"
 	"github.com/spf13/afero"
 	"google.golang.org/api/option"
 )
@@ -63,12 +63,13 @@ func (s *GCSStore) GetOptions() Options {
 	return s.Options
 }
 
+func (s *GCSStore) GetFsys() afero.Fs {
+	return s.fsys
+}
+
 // Upload generates the metadata, writes it s.fsys and uploads the file to the GCS bucket
 func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
-	if s.Options.MetadataFileExtension == "" {
-		return ErrMetadataFileExtensionEmpty
-	}
-
+	var multErr error
 	for _, o := range objects {
 		logger.V(2).Infof("Object: %s\n", o)
 		f, err := s.fsys.Open(o)
@@ -77,20 +78,11 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 		}
 		defer f.Close()
 
-		// Generate cavorite metadata
-		m, err := metadata.GenerateFromFile(f)
+		// cleanupFn is function that can be called if
+		// uploading to s3 fails. cleanupFn deletes the cfile
+		// so that we don't retain a cfile without a corresponding binary
+		cleanupFn, err := WriteMetadataToFsys(s, o, f)
 		if err != nil {
-			return err
-		}
-		logger.V(2).Infof("%s has a checksum of %q", o, m.Checksum)
-		// convert metadata to json
-		blob, err := json.MarshalIndent(m, "", " ")
-		if err != nil {
-			return err
-		}
-		// Write metadata to fsys
-		metadataPath := fmt.Sprintf("%s.%s", o, s.Options.MetadataFileExtension)
-		if err := afero.WriteFile(s.fsys, metadataPath, blob, 0644); err != nil {
 			return err
 		}
 
@@ -104,14 +96,24 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 		wc := gcsObject.If(storage.Conditions{DoesNotExist: true}).NewWriter(ctx)
 
 		// Reset to the start of the file because metadata generation has already read it once
-		_, err = f.Seek(0, io.SeekStart)
+		_, seekErr := f.Seek(0, io.SeekStart)
 		if err != nil {
-			return err
+			// seek failed, add this failure to multErr
+			multErr = multierror.Append(multErr, fmt.Errorf("f.Seek() error: %w", seekErr))
+			if cleanupErr := cleanupFn(); err != nil {
+				// cleanup also failed, add to multErr
+				multErr = multierror.Append(multErr, fmt.Errorf("cleanupFn() error: %w", cleanupErr))
+			}
+			// return multiple errors
+			return multErr
 		}
 		_, err = io.Copy(wc, f)
 		if err != nil {
-			logger.V(2).Infof("Failed to upload %s", o)
-			return err
+			multErr = multierror.Append(multErr, fmt.Errorf("io.Copy() error: %w", err))
+			if cleanupErr := cleanupFn(); err != nil {
+				multErr = multierror.Append(multErr, fmt.Errorf("cleanupFn() error: %w", cleanupErr))
+			}
+			return multErr
 		}
 
 		if err := wc.Close(); err != nil {
@@ -119,7 +121,11 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 			if strings.Contains(err.Error(), "conditionNotMet") {
 				logger.Infof("%s already exists, skipping...", o)
 			} else {
-				return err
+				multErr = multierror.Append(multErr, fmt.Errorf("wc.Close() err: %w", err))
+				if cleanupErr := cleanupFn(); err != nil {
+					multErr = multierror.Append(multErr, fmt.Errorf("cleanupFn() error: %w", cleanupErr))
+				}
+				return multErr
 			}
 		}
 	}

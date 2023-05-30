@@ -1,13 +1,10 @@
 package stores
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -130,45 +127,29 @@ func (s *S3Store) GetOptions() Options {
 	return s.Options
 }
 
-// TODO(discentem): #34 largely copy-pasted from stores/local/local.go. Can be consolidated
+func (s *S3Store) GetFsys() afero.Fs {
+	return s.fsys
+}
+
 // Upload generates the metadata, writes it to disk and uploads the file to the S3 bucket
 func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
-	if s.Options.MetadataFileExtension == "" {
-		return ErrMetadataFileExtensionEmpty
-	}
-
 	for _, o := range objects {
-		logger.V(2).Infof("object: %s", o)
 		f, err := s.fsys.Open(o)
 		if err != nil {
 			return err
 		}
-		defer f.Close()
-		// TODO(discentem): probably inefficient, reading entire file into memory
-		b, err := afero.ReadFile(s.fsys, o)
+		// cleanupFn is function that can be called if
+		// uploading to s3 fails. cleanupFn deletes the cfile
+		// so that we don't retain a cfile without a corresponding binary
+		cleanupFn, err := WriteMetadataToFsys(s, o, f)
 		if err != nil {
 			return err
 		}
-
-		// generate metadata
-		m, err := metadata.GenerateFromFile(f)
+		_, err = f.Seek(0, io.SeekStart)
 		if err != nil {
-			return err
-		}
-		logger.V(2).Infof("%s has a checksum of %q", o, m.Checksum)
-		// convert metadata to json
-		blob, err := json.MarshalIndent(m, "", " ")
-		if err != nil {
-			return err
-		}
-		// Create path for metadata if it doesn't already exist
-		if err := s.fsys.MkdirAll(filepath.Dir(filepath.Dir(o)), os.ModePerm); err != nil {
-			return err
-		}
-		// Write metadata to disk
-		metadataPath := fmt.Sprintf("%s.%s", o, s.Options.MetadataFileExtension)
-		logger.V(2).Infof("writing metadata to %s", metadataPath)
-		if err := afero.WriteFile(s.fsys, metadataPath, blob, 0644); err != nil {
+			if err := cleanupFn(); err != nil {
+				return err
+			}
 			return err
 		}
 
@@ -177,11 +158,17 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 		obj := s3.PutObjectInput{
 			Bucket: aws.String(buck),
 			Key:    &o,
-			Body:   bytes.NewReader(b),
+			Body:   f,
 		}
 		out, err := s.s3Uploader.Upload(ctx, &obj)
 		if err != nil {
+			if err := cleanupFn(); err != nil {
+				return fmt.Errorf("cleanup() failed after Upload failure: %w", err)
+			}
 			logger.Error(out)
+			return err
+		}
+		if err := f.Close(); err != nil {
 			return err
 		}
 	}

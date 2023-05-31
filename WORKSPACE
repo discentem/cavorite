@@ -110,6 +110,13 @@ go_repository(
     version = "v1.1.0",
 )
 
+go_repository(
+    name = "com_github_azure_azure_sdk_for_go",
+    importpath = "github.com/Azure/azure-sdk-for-go",
+    sum = "h1:fcYLmCpyNYRnvJbPerq7U0hS+6+I79yEDJBqVNcqUzU=",
+    version = "v68.0.0+incompatible",
+)
+
 bazel_skylib_workspace()
 
 load("//:repositories.bzl", "go_repositories")

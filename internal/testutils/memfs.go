@@ -1,6 +1,8 @@
 package testutils
 
 import (
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/afero"
@@ -15,6 +17,10 @@ type MapFile struct {
 func MemMapFsWith(files map[string]MapFile) (*afero.Fs, error) {
 	memfsys := afero.NewMemMapFs()
 	for fname, mfile := range files {
+		err := memfsys.MkdirAll(filepath.Dir(fname), os.ModeDir)
+		if err != nil {
+			return nil, err
+		}
 		afile, err := memfsys.Create(fname)
 		if err != nil {
 			return nil, err

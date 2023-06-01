@@ -3,6 +3,8 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "stores",
     srcs = [
+        "azure.go",
+        "azureblob_client.go",
         "gcs.go",
         "options.go",
         "s3.go",
@@ -16,6 +18,10 @@ go_library(
         "@com_github_aws_aws_sdk_go_v2_config//:config",
         "@com_github_aws_aws_sdk_go_v2_feature_s3_manager//:manager",
         "@com_github_aws_aws_sdk_go_v2_service_s3//:s3",
+        "@com_github_azure_azure_sdk_for_go//sdk/azcore/runtime",
+        "@com_github_azure_azure_sdk_for_go//sdk/azidentity",
+        "@com_github_azure_azure_sdk_for_go//sdk/storage/azblob",
+        "@com_github_azure_azure_sdk_for_go//sdk/storage/azblob/service",
         "@com_github_google_logger//:logger",
         "@com_github_hashicorp_go_multierror//:go-multierror",
         "@com_github_spf13_afero//:afero",

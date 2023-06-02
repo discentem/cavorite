@@ -1,13 +1,30 @@
 package metadata
 
 import (
+	"bytes"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestSHA256FromReader(t *testing.T) {
+	r := bytes.NewReader([]byte(`blah`))
+	got, err := SHA256FromReader(r)
+	require.NoError(t, err)
+
+	require.Equal(t,
+		`8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52`,
+		got,
+	)
+}
+
+func TestGenerateFromReader(t *testing.T) {
+
+}
 
 func TestParseCFile(t *testing.T) {
 	fsys := afero.NewMemMapFs()

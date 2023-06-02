@@ -33,6 +33,15 @@ type Store interface {
 	GetFsys() afero.Fs
 }
 
+var (
+	// ensure AzureblobStore meets Store interface
+	_ = Store(&AzureBlobStore{})
+	// ensure S3Store meets Store interface
+	_ = Store(&S3Store{})
+	// ensure GCSStore meets Store interface
+	_ = Store(&GCSStore{})
+)
+
 func openOrCreateFile(fsys afero.Fs, filename string) (afero.File, error) {
 	file, err := fsys.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {

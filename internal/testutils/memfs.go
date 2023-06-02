@@ -1,6 +1,8 @@
 package testutils
 
 import (
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -16,6 +18,9 @@ type MapFile struct {
 // memMapFsWith creates a afero.MemMapFs from a map[string]mapFile
 func MemMapFsWith(files map[string]MapFile) (*afero.Fs, error) {
 	memfsys := afero.NewMemMapFs()
+
+	mfs := memfsys.(*afero.MemMapFs)
+
 	for fname, mfile := range files {
 		err := memfsys.MkdirAll(filepath.Dir(fname), os.ModeDir)
 		if err != nil {
@@ -35,6 +40,13 @@ func MemMapFsWith(files map[string]MapFile) (*afero.Fs, error) {
 				return nil, err
 			}
 		}
+	}
+	fmt.Println("listing mfs")
+	err := afero.Walk(mfs, "/", func(path string, info fs.FileInfo, err error) error {
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return &memfsys, nil
 }

@@ -110,6 +110,69 @@ go_repository(
     version = "v1.1.0",
 )
 
+go_repository(
+    name = "com_github_azure_azure_sdk_for_go",
+    importpath = "github.com/Azure/azure-sdk-for-go",
+    sum = "h1:fcYLmCpyNYRnvJbPerq7U0hS+6+I79yEDJBqVNcqUzU=",
+    version = "v68.0.0+incompatible",
+)
+
+go_repository(
+    name = "com_github_azure_azure_sdk_for_go_sdk_storage_azblob",
+    importpath = "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob",
+    sum = "h1:u/LLAOFgsMv7HmNL4Qufg58y+qElGOt5qv0z1mURkRY=",
+    version = "v1.0.0",
+)
+
+go_repository(
+    name = "com_github_azure_azure_sdk_for_go_sdk_azidentity",
+    importpath = "github.com/Azure/azure-sdk-for-go/sdk/azidentity",
+    sum = "h1:vcYCAze6p19qBW7MhZybIsqD8sMV8js0NyQM8JDnVtg=",
+    version = "v1.3.0",
+)
+
+go_repository(
+    name = "com_github_azure_azure_sdk_for_go_sdk_azcore",
+    importpath = "github.com/Azure/azure-sdk-for-go/sdk/azcore",
+    sum = "h1:8kDqDngH+DmVBiCtIjCFTGa7MBnsIOkF9IccInFEbjk=",
+    version = "v1.6.0",
+)
+
+go_repository(
+    name = "com_github_azuread_microsoft_authentication_library_for_go",
+    importpath = "github.com/AzureAD/microsoft-authentication-library-for-go",
+    sum = "h1:OBhqkivkhkMqLPymWEppkm7vgPQY2XsHoEkaMQ0AdZY=",
+    version = "v1.0.0",
+)
+
+go_repository(
+    name = "com_github_azure_azure_sdk_for_go_sdk_internal",
+    importpath = "github.com/Azure/azure-sdk-for-go/sdk/internal",
+    sum = "h1:sXr+ck84g/ZlZUOZiNELInmMgOsuGwdjjVkEIde0OtY=",
+    version = "v1.3.0",
+)
+
+go_repository(
+    name = "com_github_kylelemons_godebug",
+    importpath = "github.com/kylelemons/godebug",
+    sum = "h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=",
+    version = "v1.1.0",
+)
+
+go_repository(
+    name = "com_github_pkg_browser",
+    importpath = "github.com/pkg/browser",
+    sum = "h1:KoWmjvw+nsYOo29YJK9vDA65RGE3NrOnUtO7a+RF9HU=",
+    version = "v0.0.0-20210911075715-681adbf594b8",
+)
+
+go_repository(
+    name = "com_github_golang_jwt_jwt_v4",
+    importpath = "github.com/golang-jwt/jwt/v4",
+    sum = "h1:7cYmW1XlMY7h7ii7UhUyChSgS5wUJEnm9uZVTGqOWzg=",
+    version = "v4.5.0",
+)
+
 bazel_skylib_workspace()
 
 load("//:repositories.bzl", "go_repositories")

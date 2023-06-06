@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -13,9 +14,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+	"github.com/discentem/cavorite/internal/fileutils"
 	"github.com/discentem/cavorite/internal/metadata"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
+
+	progressbar "github.com/schollz/progressbar/v3"
 )
 
 // azureBlobishClient is derived from https://github.com/Azure/azure-sdk-for-go/blob/sdk/storage/azblob/v1.0.0/sdk/storage/azblob/client.go#L34
@@ -24,16 +29,24 @@ type azureBlobishClient interface {
 	// UploadBuffer(ctx context.Context, containerName string, blobName string, buffer []byte, o *azblob.UploadBufferOptions) (azblob.UploadBufferResponse, error)
 	UploadStream(ctx context.Context, containerName string, blobName string, body io.Reader, o *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error)
 	DownloadStream(ctx context.Context, containerName string, blobName string, o *azblob.DownloadStreamOptions) (azblob.DownloadStreamResponse, error)
+	// NewBlobClient(blobName string) *blob.Client
 }
 
 type AzureBlobStore struct {
 	Options         Options
-	containerClient azureBlobishClient
+	containerClient *container.Client
 	fsys            afero.Fs
 }
 
 func (s *AzureBlobStore) GetOptions() Options { return s.Options }
 func (s *AzureBlobStore) GetFsys() afero.Fs   { return s.fsys }
+
+func bytesTransferredFn(w io.Writer, progbar *progressbar.ProgressBar) func(bytesTransferred int64) {
+	return func(bytesTransferred int64) {
+		progbar.Set64(bytesTransferred)
+		w.Write([]byte(progbar.String()))
+	}
+}
 
 func (s *AzureBlobStore) Upload(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
@@ -48,16 +61,27 @@ func (s *AzureBlobStore) Upload(ctx context.Context, objects ...string) error {
 		if err != nil {
 			return err
 		}
-		containerName := path.Base(s.Options.BackendAddress)
-		_, err = s.containerClient.UploadStream(
-			ctx,
-			containerName,
-			o,
-			f,
-			&blockblob.UploadStreamOptions{
-				Concurrency: 25,
-			},
-		)
+
+		blobClient := s.containerClient.NewBlockBlobClient(o)
+		stat, err := f.Stat()
+		if err != nil {
+			return err
+		}
+
+		if err != nil {
+			return err
+		}
+		b, err := fileutils.BytesFromAferoFile(f)
+		if err != nil {
+			return err
+		}
+		progbar := progressbar.DefaultBytesSilent(stat.Size(), o)
+
+		blobClient.UploadBuffer(ctx, b, &blockblob.UploadBufferOptions{
+			Progress: bytesTransferredFn(os.Stdout, progbar),
+		})
+		fmt.Println(progbar.String())
+
 		if err != nil {
 			if err := cleanupFn(); err != nil {
 				return err
@@ -90,19 +114,27 @@ func (s *AzureBlobStore) Retrieve(ctx context.Context, objects ...string) error 
 		} else {
 			containerName := path.Base(s.Options.BackendAddress)
 			logger.Infof("containerName: %s", containerName)
-			// Download the file
-			resp, err := s.containerClient.DownloadStream(
-				ctx,
-				containerName,
-				objectPath,
-				&blob.DownloadStreamOptions{})
+
+			blobClient := s.containerClient.NewBlobClient(o)
+			blobProps, err := blobClient.GetProperties(ctx, nil)
+			size := blobProps.ContentLength
 			if err != nil {
 				return err
 			}
-			if resp.Body == nil {
-				return fmt.Errorf("blob %q was nil", o)
+			if err := f.Truncate(*size); err != nil {
+				return err
 			}
-			b, err := io.ReadAll(resp.Body)
+
+			var b []byte
+			progbar := progressbar.DefaultBytesSilent(*size, o)
+
+			// Download the file
+			_, err = blobClient.DownloadBuffer(
+				ctx,
+				b,
+				&blob.DownloadBufferOptions{
+					Progress: bytesTransferredFn(os.Stdout, progbar),
+				})
 			if err != nil {
 				return err
 			}
@@ -138,7 +170,11 @@ func (s *AzureBlobStore) Retrieve(ctx context.Context, objects ...string) error 
 
 }
 
-func newAzureContainerClient(serviceURL string, options azblob.ClientOptions) (*azblob.Client, error) {
+func newAZContainerClient(backendAddress string) (*container.Client, error) {
+	u, err := url.Parse(backendAddress)
+	if err != nil {
+		return nil, err
+	}
 	// We only support Azure CLI authentication.
 	// In the future we could support multiple types with
 	// azidentity.NewChainedTokenCredential()
@@ -146,18 +182,13 @@ func newAzureContainerClient(serviceURL string, options azblob.ClientOptions) (*
 	if err != nil {
 		return nil, err
 	}
-	container, err := azblob.NewClient(
-		serviceURL,
+	containerURL := fmt.Sprintf("https://%s/%s", u.Host, path.Base(backendAddress))
+
+	container, err := container.NewClient(
+		// Construct container url
+		containerURL,
 		cred,
-		// &azblob.ClientOptions{
-		// 	ClientOptions: policy.ClientOptions{
-		// 		Retry: policy.RetryOptions{
-		// 			TryTimeout:    time.Second * 5,
-		// 			MaxRetryDelay: time.Second * 10,
-		// 		},
-		// 	},
-		// },
-		nil,
+		&container.ClientOptions{},
 	)
 	if err != nil {
 		return nil, err
@@ -166,13 +197,8 @@ func newAzureContainerClient(serviceURL string, options azblob.ClientOptions) (*
 }
 
 func NewAzureBlobStore(ctx context.Context, fsys afero.Fs, storeOpts Options, azureBlobOptions azblob.ClientOptions) (*AzureBlobStore, error) {
-	u, err := url.Parse(storeOpts.BackendAddress)
-	if err != nil {
-		return nil, err
-	}
-	containerClient, err := newAzureContainerClient(
-		fmt.Sprintf("https://%s/", u.Host),
-		azureBlobOptions,
+	containerClient, err := newAZContainerClient(
+		storeOpts.BackendAddress,
 	)
 	if err != nil {
 		return nil, err

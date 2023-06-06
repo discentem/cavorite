@@ -173,6 +173,34 @@ go_repository(
     version = "v4.5.0",
 )
 
+go_repository(
+    name = "com_github_schollz_progressbar_v3",
+    importpath = "github.com/schollz/progressbar/v3",
+    sum = "h1:o8rySDYiQ59Mwzy2FELeHY5ZARXZTVJC7iHD6PEFUiE=",
+    version = "v3.13.1",
+)
+
+go_repository(
+    name = "com_github_mattn_go_runewidth",
+    importpath = "github.com/mattn/go-runewidth",
+    sum = "h1:+xnbZSEeDbOIg5/mE6JF0w6n9duR1l3/WmbinWVwUuU=",
+    version = "v0.0.14",
+)
+
+go_repository(
+    name = "com_github_mitchellh_colorstring",
+    importpath = "github.com/mitchellh/colorstring",
+    sum = "h1:62I3jR2EmQ4l5rM/4FEfDWcRD+abF5XlKShorW5LRoQ=",
+    version = "v0.0.0-20190213212951-d06e56a500db",
+)
+
+go_repository(
+    name = "com_github_rivo_uniseg",
+    importpath = "github.com/rivo/uniseg",
+    sum = "h1:8TfxU8dW6PdqD27gjM8MVNuicgxIjxpm4K7x4jp8sis=",
+    version = "v0.4.4",
+)
+
 bazel_skylib_workspace()
 
 load("//:repositories.bzl", "go_repositories")

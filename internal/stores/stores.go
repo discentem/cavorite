@@ -20,6 +20,7 @@ const (
 	StoreTypeUndefined StoreType = "undefined"
 	StoreTypeS3        StoreType = "s3"
 	StoreTypeGCS       StoreType = "gcs"
+	StoreTypeAzureBlob StoreType = "azure"
 )
 
 var (

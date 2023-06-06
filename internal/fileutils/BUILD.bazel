@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "fileutils",
+    srcs = ["fileutils.go"],
+    importpath = "github.com/discentem/cavorite/internal/fileutils",
+    visibility = ["//:__subpackages__"],
+    deps = ["@com_github_spf13_afero//:afero"],
+)

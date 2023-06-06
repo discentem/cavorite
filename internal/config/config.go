@@ -64,6 +64,21 @@ func InitializeStoreTypeGCS(
 	}
 }
 
+func InitializeStoreTypeAzureBlob(
+	ctx context.Context,
+	fsys afero.Fs,
+	sourceRepo, backendAddress string,
+	opts stores.Options,
+) Config {
+	return Config{
+		StoreType: stores.StoreTypeAzureBlob,
+		Options:   opts,
+		Validate: func() error {
+			return nil
+		},
+	}
+}
+
 func (c *Config) Write(fsys afero.Fs, sourceRepo string) error {
 	if c.Validate == nil {
 		return ErrValidateNil

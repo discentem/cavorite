@@ -14,10 +14,17 @@ import (
 
 func initCmd() *cobra.Command {
 	initCmd := &cobra.Command{
-		Use:     "init",
-		Short:   fmt.Sprintf("Initialize a new %s repo", program.Name),
-		Long:    fmt.Sprintf("Initialize a new %s repo", program.Name),
-		Args:    cobra.ExactArgs(1),
+		Use:   "init",
+		Short: fmt.Sprintf("Initialize a new %s repo", program.Name),
+		Long:  fmt.Sprintf("Initialize a new %s repo", program.Name),
+		Args: func(cmd *cobra.Command, args []string) error {
+			fn := cobra.ExactArgs(1)
+			err := fn(cmd, args)
+			if err != nil {
+				return fmt.Errorf("you must specify a path to a repo you want %s to track", program.Name)
+			}
+			return nil
+		},
 		PreRunE: initPreExecFn,
 		RunE:    initFn,
 	}
@@ -93,6 +100,14 @@ func initFn(cmd *cobra.Command, args []string) error {
 		)
 	case stores.StoreTypeGCS:
 		cfg = config.InitializeStoreTypeGCS(
+			cmd.Context(),
+			fsys,
+			repoToInit,
+			backendAddress,
+			opts,
+		)
+	case stores.StoreTypeAzureBlob:
+		cfg = config.InitializeStoreTypeAzureBlob(
 			cmd.Context(),
 			fsys,
 			repoToInit,

@@ -36,5 +36,6 @@ func MemMapFsWith(files map[string]MapFile) (*afero.Fs, error) {
 			}
 		}
 	}
+
 	return &memfsys, nil
 }

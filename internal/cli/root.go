@@ -8,6 +8,7 @@ import (
 	"github.com/discentem/cavorite/internal/metadata"
 	"github.com/discentem/cavorite/internal/program"
 	"github.com/discentem/cavorite/internal/stores"
+	"github.com/google/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -73,6 +74,10 @@ func rootCmd() *cobra.Command {
 	// Defaults set here will be used if they do not exist in the config file
 	viper.SetDefault("store_type", stores.StoreTypeUndefined)
 	viper.SetDefault("metadata_file_extension", metadata.MetadataFileExtension)
+
+	if vv {
+		logger.SetLevel(2)
+	}
 
 	// Import subCmds into the rootCmd
 	rootCmd.AddCommand(

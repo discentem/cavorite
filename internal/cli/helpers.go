@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/discentem/cavorite/internal/config"
 	"github.com/discentem/cavorite/internal/stores"
 	"github.com/google/logger"
@@ -54,6 +55,17 @@ func initStoreFromConfig(ctx context.Context, cfg config.Config, fsys afero.Fs, 
 			return nil, fmt.Errorf("improper stores.GCSClient init: %v", err)
 		}
 		s = stores.Store(gcs)
+	case stores.StoreTypeAzureBlob:
+		az, err := stores.NewAzureBlobStore(
+			ctx,
+			fsys,
+			opts,
+			azblob.ClientOptions{},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("improper stores.AzureBlobStore init: %v", err)
+		}
+		s = stores.Store(az)
 	default:
 		return nil, fmt.Errorf("type %s is not supported", cfg.StoreType)
 	}

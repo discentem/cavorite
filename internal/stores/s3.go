@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"path"
 	"path/filepath"
 	"strings"
@@ -154,10 +155,17 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 		}
 
 		// Generate S3 struct for object and upload to S3 bucket
-		_, buck := path.Split(s.Options.BackendAddress)
+		logger.Infof("s3store upload: backend address: %s", s.Options.BackendAddress)
+		s3BucketUrl, err := url.Parse(s.Options.BackendAddress)
+		if err != nil {
+			logger.Errorf("error encountered parsing backend address: %v", err)
+			return err
+		}
+		logger.V(2).Infof("s3store upload: bucket: %s", s3BucketUrl.Host)
+
 		obj := s3.PutObjectInput{
-			Bucket: aws.String(buck),
-			Key:    &o,
+			Bucket: aws.String(s3BucketUrl.Host),
+			Key:    aws.String(o),
 			Body:   f,
 		}
 		out, err := s.s3Uploader.Upload(ctx, &obj)
@@ -193,13 +201,19 @@ func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 		if fileInfo.Size() > 0 {
 			logger.Infof("%s already exists", objectPath)
 		} else { // Create an S3 struct for the file to be retrieved
-			_, buck := path.Split(s.Options.BackendAddress)
+			logger.Infof("s3store retrieve: backend address: %s", s.Options.BackendAddress)
+			s3BucketUrl, err := url.Parse(s.Options.BackendAddress)
+			if err != nil {
+				logger.Errorf("error encountered parsing backend address: %v", err)
+				return err
+			}
+			logger.V(2).Infof("s3store retrieve: bucket: %s", s3BucketUrl.Host)
 			obj := &s3.GetObjectInput{
-				Bucket: aws.String(buck),
+				Bucket: aws.String(s3BucketUrl.Host),
 				Key:    aws.String(objectPath),
 			}
 			// Download the file
-			_, err := s.s3Downloader.Download(ctx, f, obj)
+			_, err = s.s3Downloader.Download(ctx, f, obj)
 			if err != nil {
 				return err
 			}

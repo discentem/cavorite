@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"path"
 	"path/filepath"
 	"strings"
@@ -154,10 +155,14 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 		}
 
 		// Generate S3 struct for object and upload to S3 bucket
-		_, buck := path.Split(s.Options.BackendAddress)
+		s3BucketName, err := s.getBucketName()
+		if err != nil {
+			logger.Errorf("error encountered parsing backend address: %v", err)
+			return err
+		}
 		obj := s3.PutObjectInput{
-			Bucket: aws.String(buck),
-			Key:    &o,
+			Bucket: aws.String(s3BucketName),
+			Key:    aws.String(o),
 			Body:   f,
 		}
 		out, err := s.s3Uploader.Upload(ctx, &obj)
@@ -193,13 +198,17 @@ func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 		if fileInfo.Size() > 0 {
 			logger.Infof("%s already exists", objectPath)
 		} else { // Create an S3 struct for the file to be retrieved
-			_, buck := path.Split(s.Options.BackendAddress)
+			s3BucketName, err := s.getBucketName()
+			if err != nil {
+				logger.Errorf("error encountered parsing backend address: %v", err)
+				return err
+			}
 			obj := &s3.GetObjectInput{
-				Bucket: aws.String(buck),
+				Bucket: aws.String(s3BucketName),
 				Key:    aws.String(objectPath),
 			}
 			// Download the file
-			_, err := s.s3Downloader.Download(ctx, f, obj)
+			_, err = s.s3Downloader.Download(ctx, f, obj)
 			if err != nil {
 				return err
 			}
@@ -227,4 +236,27 @@ func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 		}
 	}
 	return nil
+}
+
+func (s *S3Store) getBucketName() (string, error) {
+	var bucketName string
+	logger.Infof("s3store getBucketName: backend address: %s", s.Options.BackendAddress)
+	switch {
+	case strings.HasPrefix(s.Options.BackendAddress, "s3://"):
+		s3BucketUrl, err := url.Parse(s.Options.BackendAddress)
+		if err != nil {
+			logger.Errorf("error encountered parsing backend address: %v", err)
+			return "", err
+		}
+		bucketName = s3BucketUrl.Host
+	case strings.HasPrefix(s.Options.BackendAddress, "http://"):
+		fallthrough
+	case strings.HasPrefix(s.Options.BackendAddress, "https://"):
+		_, bucketName = path.Split(s.Options.BackendAddress)
+	default:
+		return "", fmt.Errorf("unsupported s3 backend address")
+	}
+
+	logger.V(2).Infof("s3store getBucketName: bucket: %s", bucketName)
+	return bucketName, nil
 }

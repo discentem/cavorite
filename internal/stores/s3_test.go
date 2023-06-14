@@ -229,3 +229,77 @@ func TestS3StoreRetrieve(t *testing.T) {
 	assert.Equal(t, `tla`, string(b))
 
 }
+
+func TestS3GetBucketNameWithS3Prefix(t *testing.T) {
+	expectedBackendAddress := "s3://aFakeBucket"
+
+	mTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")
+	memfs, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
+		"test": {
+			Content: []byte("bla"),
+			ModTime: &mTime,
+		},
+	})
+	assert.NoError(t, err)
+
+	fakeS3Server := aferoS3Server{
+		buckets: map[string]afero.Fs{
+			// create a bucket in our fake s3 server
+			"test": afero.NewMemMapFs(),
+		},
+	}
+
+	store := S3Store{
+		Options: Options{
+			BackendAddress:        expectedBackendAddress,
+			MetadataFileExtension: "cfile",
+		},
+		fsys:         *memfs,
+		awsRegion:    "us-east-1",
+		s3Uploader:   fakeS3Server,
+		s3Downloader: fakeS3Server,
+	}
+
+	bucketName, err := store.getBucketName()
+
+	assert.NoError(t, err)
+	assert.Equal(t, "aFakeBucket", bucketName)
+
+}
+
+func TestS3GetBucketNameWithHTTPPrefix(t *testing.T) {
+	expectedBackendAddress := "http://127.0.0.1:9000/aFakeBucket"
+
+	mTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")
+	memfs, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
+		"test": {
+			Content: []byte("bla"),
+			ModTime: &mTime,
+		},
+	})
+	assert.NoError(t, err)
+
+	fakeS3Server := aferoS3Server{
+		buckets: map[string]afero.Fs{
+			// create a bucket in our fake s3 server
+			"test": afero.NewMemMapFs(),
+		},
+	}
+
+	store := S3Store{
+		Options: Options{
+			BackendAddress:        expectedBackendAddress,
+			MetadataFileExtension: "cfile",
+		},
+		fsys:         *memfs,
+		awsRegion:    "us-east-1",
+		s3Uploader:   fakeS3Server,
+		s3Downloader: fakeS3Server,
+	}
+
+	bucketName, err := store.getBucketName()
+
+	assert.NoError(t, err)
+	assert.Equal(t, "aFakeBucket", bucketName)
+
+}

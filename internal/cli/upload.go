@@ -33,6 +33,7 @@ func uploadCmd() *cobra.Command {
 		RunE: uploadFn,
 	}
 
+	// uploadCmd.LocalFlags().Bool("store_type", "", "Storage backend to use")
 	return uploadCmd
 }
 

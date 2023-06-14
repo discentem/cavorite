@@ -3,7 +3,9 @@ package fileutils
 import (
 	"fmt"
 	"io"
+	"io/fs"
 
+	"github.com/discentem/cavorite/internal/bindetector"
 	"github.com/spf13/afero"
 )
 
@@ -22,4 +24,27 @@ func BytesFromAferoFile(f afero.File) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read bytes from objectHandle: %w", err)
 	}
 	return b, nil
+}
+
+func GetBinariesWalkPath(fsys afero.Afero, path string) ([]string, error) {
+	var paths []string
+
+	err := fsys.Walk(path, func(p string, info fs.FileInfo, err error) error {
+		isDir, err := fsys.IsDir(path)
+		if err != nil {
+			return err
+		}
+
+		if isDir {
+			return nil
+		}
+
+		if bindetector.IsBinary(p) {
+			paths = append(paths, p)
+		}
+
+		return nil
+	})
+
+	return paths, err
 }

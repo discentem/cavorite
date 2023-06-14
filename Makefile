@@ -10,7 +10,7 @@ bazel_build: gazelle
 	bazel build :cavorite
 	@echo Copy, past, and execute this in your shell for convenience:
 	@echo
-	@echo CAVORITE_BIN=$(CAVORITE_BIN)
+	@echo CAVORITE_BIN=$(PWD)/$(CAVORITE_BIN)
 
 lint:
 	docker build --tag cavoritelint -f _ci/lint/Dockerfile .

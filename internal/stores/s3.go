@@ -42,6 +42,7 @@ type S3Store struct {
 	Options      Options `json:"options" mapstructure:"options"`
 	fsys         afero.Fs
 	awsRegion    string
+	s3Client     *s3.Client
 	s3Uploader   S3Uploader
 	s3Downloader S3Downloader
 }
@@ -160,22 +161,25 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 			logger.Errorf("error encountered parsing backend address: %v", err)
 			return err
 		}
-		obj := s3.PutObjectInput{
+
+		putObjInput := s3.PutObjectInput{
 			Bucket: aws.String(s3BucketName),
 			Key:    aws.String(o),
 			Body:   f,
 		}
-		out, err := s.s3Uploader.Upload(ctx, &obj)
+		logger.Infof(`Uploading "%s" to S3`, o)
+		uploadOutput, err := s.s3Uploader.Upload(ctx, &putObjInput)
 		if err != nil {
 			if err := cleanupFn(); err != nil {
 				return fmt.Errorf("cleanup() failed after Upload failure: %w", err)
 			}
-			logger.Error(out)
+			logger.Error(uploadOutput)
 			return err
 		}
 		if err := f.Close(); err != nil {
 			return err
 		}
+		logger.Infof(`Upload Complete for "%s" to S3`, o)
 	}
 	return nil
 }
@@ -240,7 +244,7 @@ func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 
 func (s *S3Store) getBucketName() (string, error) {
 	var bucketName string
-	logger.Infof("s3store getBucketName: backend address: %s", s.Options.BackendAddress)
+	logger.V(2).Infof("s3store getBucketName: backend address: %s", s.Options.BackendAddress)
 	switch {
 	case strings.HasPrefix(s.Options.BackendAddress, "s3://"):
 		s3BucketUrl, err := url.Parse(s.Options.BackendAddress)

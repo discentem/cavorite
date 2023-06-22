@@ -49,6 +49,7 @@ func (s *AzureBlobStore) Upload(ctx context.Context, objects ...string) error {
 			return err
 		}
 		containerName := path.Base(s.Options.BackendAddress)
+		logger.Infof(`Uploading "%s" to Azure`, o)
 		_, err = s.containerClient.UploadStream(
 			ctx,
 			containerName,

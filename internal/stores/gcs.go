@@ -107,6 +107,7 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 			// return multiple errors
 			return multErr
 		}
+		logger.Infof(`Uploading "%s" to GCS`, o)
 		_, err = io.Copy(wc, f)
 		if err != nil {
 			multErr = multierror.Append(multErr, fmt.Errorf("io.Copy() error: %w", err))

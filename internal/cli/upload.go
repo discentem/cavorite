@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/discentem/cavorite/internal/fileutils"
 	"github.com/discentem/cavorite/internal/program"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
@@ -33,6 +34,7 @@ func uploadCmd() *cobra.Command {
 		RunE: uploadFn,
 	}
 
+	// uploadCmd.LocalFlags().Bool("store_type", "", "Storage backend to use")
 	return uploadCmd
 }
 
@@ -75,7 +77,10 @@ func uploadFn(cmd *cobra.Command, objects []string) error {
 	}
 
 	logger.Infof("Uploading to: %s", s.GetOptions().BackendAddress)
-	logger.Infof("Uploading file: %s", objects)
+	objects, err = fileutils.GetBinariesWalkPath(fsys, objects)
+	if err != nil {
+		return fmt.Errorf("walking binaries path error: %w", err)
+	}
 	if err := s.Upload(cmd.Context(), objects...); err != nil {
 		return err
 	}

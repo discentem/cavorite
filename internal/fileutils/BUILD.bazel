@@ -1,9 +1,20 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "fileutils",
     srcs = ["fileutils.go"],
     importpath = "github.com/discentem/cavorite/internal/fileutils",
     visibility = ["//:__subpackages__"],
-    deps = ["@com_github_spf13_afero//:afero"],
+    deps = [
+        "//internal/bindetector",
+        "@com_github_google_logger//:logger",
+        "@com_github_spf13_afero//:afero",
+    ],
+)
+
+go_test(
+    name = "fileutils_test",
+    srcs = ["fileutils_test.go"],
+    embed = [":fileutils"],
+    deps = ["@com_github_stretchr_testify//assert"],
 )

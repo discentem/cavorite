@@ -34,44 +34,15 @@ var (
 	ErrConfigDirNotExist             = errors.New("config directory does not exist")
 )
 
-func InitializeStoreTypeS3(
+func InitalizeStoreTypeOf(
 	ctx context.Context,
-	fsys afero.Fs,
-	sourceRepo, backendAddress, awsRegion string,
-	opts stores.Options,
-) Config {
-	return Config{
-		StoreType: stores.StoreTypeS3,
-		Options:   opts,
-		Validate: func() error {
-			return nil
-		},
-	}
-}
-
-func InitializeStoreTypeGCS(
-	ctx context.Context,
+	storeType stores.StoreType,
 	fsys afero.Fs,
 	sourceRepo, backendAddress string,
 	opts stores.Options,
 ) Config {
 	return Config{
-		StoreType: stores.StoreTypeGCS,
-		Options:   opts,
-		Validate: func() error {
-			return nil
-		},
-	}
-}
-
-func InitializeStoreTypeAzureBlob(
-	ctx context.Context,
-	fsys afero.Fs,
-	sourceRepo, backendAddress string,
-	opts stores.Options,
-) Config {
-	return Config{
-		StoreType: stores.StoreTypeAzureBlob,
+		StoreType: storeType,
 		Options:   opts,
 		Validate: func() error {
 			return nil

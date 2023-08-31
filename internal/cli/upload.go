@@ -74,7 +74,12 @@ func uploadFn(cmd *cobra.Command, objects []string) error {
 		return fmt.Errorf("upload error: %w", err)
 	}
 
-	logger.Infof("Uploading to: %s", s.GetOptions().BackendAddress)
+	opts, err := s.GetOptions()
+	if err != nil {
+		return err
+	}
+
+	logger.Infof("Uploading to: %s", opts.BackendAddress)
 	logger.Infof("Uploading file: %s", objects)
 	if err := s.Upload(cmd.Context(), objects...); err != nil {
 		return err

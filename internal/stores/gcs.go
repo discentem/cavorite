@@ -59,12 +59,12 @@ func NewGCSStoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*GCSSt
 	}, nil
 }
 
-func (s *GCSStore) GetOptions() Options {
-	return s.Options
+func (s *GCSStore) GetOptions() (Options, error) {
+	return s.Options, nil
 }
 
-func (s *GCSStore) GetFsys() afero.Fs {
-	return s.fsys
+func (s *GCSStore) GetFsys() (afero.Fs, error) {
+	return s.fsys, nil
 }
 
 // Upload generates the metadata, writes it s.fsys and uploads the file to the GCS bucket

@@ -102,7 +102,7 @@ func TestS3StoreUpload(t *testing.T) {
 		},
 	}
 
-	store := S3Store{
+	store := s3Store{
 		Options: Options{
 			BackendAddress:        "s3://test",
 			MetadataFileExtension: "cfile",
@@ -160,7 +160,7 @@ func TestS3StoreUploadFailCleanup(t *testing.T) {
 	// intentionally broken Uploads
 	S3ServerFail := s3FailServer{}
 
-	store := S3Store{
+	store := s3Store{
 		Options: Options{
 			BackendAddress:        "s3://test",
 			MetadataFileExtension: "cfile",
@@ -210,7 +210,7 @@ func TestS3StoreRetrieve(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	store := S3Store{
+	store := s3Store{
 		Options: Options{
 			BackendAddress:        "s3://aFakeBucket",
 			MetadataFileExtension: "cfile",
@@ -249,7 +249,7 @@ func TestS3GetBucketNameWithS3Prefix(t *testing.T) {
 		},
 	}
 
-	store := S3Store{
+	store := s3Store{
 		Options: Options{
 			BackendAddress:        expectedBackendAddress,
 			MetadataFileExtension: "cfile",
@@ -286,7 +286,7 @@ func TestS3GetBucketNameWithHTTPPrefix(t *testing.T) {
 		},
 	}
 
-	store := S3Store{
+	store := s3Store{
 		Options: Options{
 			BackendAddress:        expectedBackendAddress,
 			MetadataFileExtension: "cfile",

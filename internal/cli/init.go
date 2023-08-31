@@ -88,27 +88,19 @@ func initFn(cmd *cobra.Command, args []string) error {
 
 	fsys := afero.NewOsFs()
 
-	switch stores.StoreType(backend) {
+	sb := stores.StoreType(backend)
+
+	switch sb {
 	case stores.StoreTypeS3:
-		cfg = config.InitializeStoreTypeS3(
-			cmd.Context(),
-			fsys,
-			repoToInit,
-			backendAddress,
-			region,
-			opts,
-		)
+		fallthrough
 	case stores.StoreTypeGCS:
-		cfg = config.InitializeStoreTypeGCS(
-			cmd.Context(),
-			fsys,
-			repoToInit,
-			backendAddress,
-			opts,
-		)
+		fallthrough
 	case stores.StoreTypeAzureBlob:
-		cfg = config.InitializeStoreTypeAzureBlob(
+		fallthrough
+	case stores.StoreTypeGoPlugin:
+		cfg = config.InitalizeStoreTypeOf(
 			cmd.Context(),
+			sb,
 			fsys,
 			repoToInit,
 			backendAddress,

@@ -20,13 +20,13 @@ func (s simpleStore) Upload(ctx context.Context, objects ...string) error {
 func (s simpleStore) Retrieve(ctx context.Context, objects ...string) error {
 	return nil
 }
-func (s simpleStore) GetOptions() Options {
+func (s simpleStore) GetOptions() (Options, error) {
 	return Options{
 		MetadataFileExtension: "cfile",
-	}
+	}, nil
 }
-func (s simpleStore) GetFsys() afero.Fs {
-	return s.fsys
+func (s simpleStore) GetFsys() (afero.Fs, error) {
+	return s.fsys, nil
 }
 
 func TestWriteMetadataToFsys(t *testing.T) {

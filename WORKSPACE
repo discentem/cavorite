@@ -173,6 +173,34 @@ go_repository(
     version = "v4.5.0",
 )
 
+go_repository(
+    name = "com_github_hashicorp_go_plugin",
+    importpath = "github.com/hashicorp/go-plugin",
+    sum = "h1:g6Lj3USwF5LaB8HlvCxPjN2X4nFE08ko2BJNVpl7TIE=",
+    version = "v1.5.0",
+)
+
+go_repository(
+    name = "com_github_mitchellh_go_testing_interface",
+    importpath = "github.com/mitchellh/go-testing-interface",
+    sum = "h1:jrgshOhYAUVNMAJiKbEu7EqAwgJJ2JqpQmpLJOu07cU=",
+    version = "v1.14.1",
+)
+
+go_repository(
+    name = "com_github_oklog_run",
+    importpath = "github.com/oklog/run",
+    sum = "h1:GEenZ1cK0+q0+wsJew9qUg/DyD8k3JzYsZAi5gYi2mA=",
+    version = "v1.1.0",
+)
+
+go_repository(
+    name = "com_github_hashicorp_yamux",
+    importpath = "github.com/hashicorp/yamux",
+    sum = "h1:yrQxtgseBDrq9Y652vSRDvsKCJKOUD+GzTS4Y0Y8pvE=",
+    version = "v0.1.1",
+)
+
 bazel_skylib_workspace()
 
 load("//:repositories.bzl", "go_repositories")

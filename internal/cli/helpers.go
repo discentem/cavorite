@@ -66,6 +66,12 @@ func initStoreFromConfig(ctx context.Context, cfg config.Config, fsys afero.Fs, 
 			return nil, fmt.Errorf("improper stores.AzureBlobStore init: %v", err)
 		}
 		s = stores.Store(az)
+	case stores.StoreTypeGoPlugin:
+		ps, err := stores.StartPlugin(opts.BackendAddress)
+		if err != nil {
+			return nil, fmt.Errorf("improper plugin init: %v", err)
+		}
+		return ps, nil
 	default:
 		return nil, fmt.Errorf("type %s is not supported", cfg.StoreType)
 	}

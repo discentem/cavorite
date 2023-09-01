@@ -28,18 +28,22 @@ var (
 	_ = Store(&s3Store{})
 	_ = Store(&GCSStore{})
 	_ = Store(&AzureBlobStore{})
-	_ = Store(&GoPluginStore{})
+	_ = Store(&PluggableStore{})
 )
 
 var (
 	ErrRetrieveFailureHashMismatch = errors.New("hashes don't match, Retrieve aborted")
 )
 
+type StoreWithGetters interface {
+	Store
+	GetFsys() (afero.Fs, error)
+}
+
 type Store interface {
 	Upload(ctx context.Context, objects ...string) error
 	Retrieve(ctx context.Context, objects ...string) error
 	GetOptions() (Options, error)
-	GetFsys() (afero.Fs, error)
 }
 
 func openOrCreateFile(fsys afero.Fs, filename string) (afero.File, error) {
@@ -55,7 +59,7 @@ func inferObjPath(cfilePath string) string {
 }
 
 // WriteMetadata generates Cavorite metadata for obj and writes it to s.Fsys
-func WriteMetadataToFsys(s Store, obj string, f afero.File) (cleanup func() error, err error) {
+func WriteMetadataToFsys(s StoreWithGetters, obj string, f afero.File) (cleanup func() error, err error) {
 	opts, err := s.GetOptions()
 	if err != nil {
 		return nil, err

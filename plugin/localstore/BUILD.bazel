@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "localstore_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/discentem/cavorite/plugin/localstore",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//internal/stores",
+        "@com_github_google_logger//:logger",
+        "@com_github_hashicorp_go_plugin//:go-plugin",
+    ],
+)
+
+go_binary(
+    name = "localstore",
+    embed = [":localstore_lib"],
+    visibility = ["//visibility:public"],
+)

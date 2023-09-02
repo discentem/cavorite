@@ -21,7 +21,7 @@ var (
 	HandshakeConfig = plugin.HandshakeConfig{
 		ProtocolVersion:  1,
 		MagicCookieKey:   "BASIC_PLUGIN",
-		MagicCookieValue: "store",
+		MagicCookieValue: "blah",
 	}
 )
 
@@ -123,6 +123,11 @@ func StartPlugin(address string) (Store, error) {
 		HandshakeConfig: HandshakeConfig,
 		Plugins:         PluginSet,
 		Cmd:             exec.Command(address),
+		// Logger: hclog.New(&hclog.LoggerOptions{
+		// 	Name:   "plugin",
+		// 	Output: os.Stdout,
+		// 	Level:  hclog.Debug,
+		// }),
 	})
 
 	// connect to RPC

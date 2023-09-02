@@ -26,11 +26,14 @@ func (s *LocalStore) GetOptions() (stores.Options, error) {
 }
 
 func main() {
-	ls := &LocalStore{}
-	stores.PluginSet["store"] = &stores.StorePlugin{Store: ls}
+	ls := LocalStore{}
+	stores.PluginSet["store"] = &stores.StorePlugin{Store: &ls}
+
+	// logger.Info("", stores.PluginSet)
 
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: stores.HandshakeConfig,
 		Plugins:         stores.PluginSet,
+		// Logger:          logger,
 	})
 }

@@ -2,38 +2,49 @@ package main
 
 import (
 	"context"
+	"os"
 
 	"github.com/discentem/cavorite/internal/stores"
-	"github.com/google/logger"
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 )
 
-type LocalStore struct{}
+type LocalStore struct {
+	logger hclog.Logger
+}
 
 func (s *LocalStore) Upload(ctx context.Context, objects ...string) error {
-	logger.Info("logging for localStore plugin during Upload")
-	return nil
+	s.logger.Info("logging for localStore plugin during Upload")
+	err := os.WriteFile("/tmp/dat1", []byte("hello\nplugin\n"), 0644)
+	return err
 }
 func (s *LocalStore) Retrieve(ctx context.Context, objects ...string) error {
-	logger.Info("logging for localStore plugin during Retrieve")
+	s.logger.Info("logging for localStore plugin during Retrieve")
 	return nil
 }
 func (s *LocalStore) GetOptions() (stores.Options, error) {
-	logger.Info("logging for localStore plugin during GetOptions")
+	s.logger.Info("logging for localStore plugin during GetOptions")
 	return stores.Options{
 		Region: "plugin region",
 	}, nil
 }
 
 func main() {
-	ls := LocalStore{}
+	hlog := hclog.New(&hclog.LoggerOptions{
+		Level:      hclog.Trace,
+		Output:     os.Stderr,
+		JSONFormat: true,
+	})
+	ls := LocalStore{
+		logger: hlog,
+	}
 	stores.PluginSet["store"] = &stores.StorePlugin{Store: &ls}
 
-	// logger.Info("", stores.PluginSet)
+	hlog.Info("stuff", stores.PluginSet["store"])
 
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: stores.HandshakeConfig,
 		Plugins:         stores.PluginSet,
-		// Logger:          logger,
+		Logger:          hlog,
 	})
 }

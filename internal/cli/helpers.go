@@ -67,7 +67,8 @@ func initStoreFromConfig(ctx context.Context, cfg config.Config, fsys afero.Fs, 
 		}
 		s = stores.Store(az)
 	case stores.StoreTypeGoPlugin:
-		ps, err := stores.StartPlugin(opts.BackendAddress)
+		c := stores.GetClient(opts.BackendAddress)
+		ps, err := stores.DispensePlugin(c)
 		if err != nil {
 			return nil, fmt.Errorf("improper plugin init: %v", err)
 		}

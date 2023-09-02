@@ -23,6 +23,7 @@ go_library(
         "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//blob",
         "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//blockblob",
         "@com_github_google_logger//:logger",
+        "@com_github_hashicorp_go_hclog//:go-hclog",
         "@com_github_hashicorp_go_multierror//:go-multierror",
         "@com_github_hashicorp_go_plugin//:go-plugin",
         "@com_github_spf13_afero//:afero",

@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net/rpc"
+	"os"
 	"os/exec"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 )
 
@@ -23,6 +25,11 @@ var (
 		MagicCookieKey:   "BASIC_PLUGIN",
 		MagicCookieValue: "blah",
 	}
+	HLog = hclog.New(&hclog.LoggerOptions{
+		Name:   "plugin",
+		Output: os.Stdout,
+		Level:  hclog.Debug,
+	})
 )
 
 type ClientStore struct{ *rpc.Client }
@@ -39,7 +46,7 @@ type OptionsResp struct {
 func (p *ClientStore) Upload(ctx context.Context, objects ...string) error {
 	// context is not actually transferred
 	resp := new(ErrResp)
-	err := p.Call("Plugin.Upload", TransferArgs{Objects: objects}, resp)
+	err := p.Call("Plugin.Upload", TransferArgs{Objects: objects}, &resp)
 	if err != nil {
 		return fmt.Errorf("could not call rpc for Upload: %w", err)
 	}
@@ -52,7 +59,7 @@ func (p *ClientStore) Upload(ctx context.Context, objects ...string) error {
 func (p *ClientStore) Retrieve(ctx context.Context, objects ...string) error {
 	// context is not actually transferred
 	resp := new(ErrResp)
-	err := p.Call("Plugin.Retrieve", TransferArgs{Objects: objects}, resp)
+	err := p.Call("Plugin.Retrieve", TransferArgs{Objects: objects}, &resp)
 	if err != nil {
 		return fmt.Errorf("could not call rpc for Retrieve: %w", err)
 	}
@@ -63,11 +70,14 @@ func (p *ClientStore) Retrieve(ctx context.Context, objects ...string) error {
 }
 
 func (p *ClientStore) GetOptions() (Options, error) {
+	fmt.Println("ClientStore GetOptions")
 	resp := new(OptionsResp)
-	err := p.Call("Plugin.GetOptions", new(interface{}), resp)
+	fmt.Println("before Plugin.GetOptions")
+	err := p.Call("Plugin.GetOptions", new(interface{}), &resp)
 	if err != nil {
 		return Options{}, err
 	}
+	fmt.Println("after Plugin.GetOptions")
 	if resp.Err != "" {
 		return Options{}, errors.New(resp.Err)
 	}
@@ -78,7 +88,7 @@ type ServerStore struct {
 	Store
 }
 
-func (p *ServerStore) Upload(resp *ErrResp, objects ...string) error {
+func (p *ServerStore) Upload(objects []string, resp *ErrResp) error {
 	err := p.Store.Upload(context.Background(), objects...)
 	if err != nil {
 		resp.Err = err.Error()
@@ -86,7 +96,7 @@ func (p *ServerStore) Upload(resp *ErrResp, objects ...string) error {
 	return nil
 }
 
-func (p *ServerStore) Retrieve(resp *ErrResp, objects ...string) error {
+func (p *ServerStore) Retrieve(objects []string, resp *ErrResp) error {
 	err := p.Store.Retrieve(context.Background(), objects...)
 	if err != nil {
 		resp.Err = err.Error()
@@ -117,30 +127,27 @@ func (p *StorePlugin) Client(_ *plugin.MuxBroker, client *rpc.Client) (interface
 	return &ClientStore{Client: client}, nil
 }
 
-func StartPlugin(address string) (Store, error) {
+func GetClient(address string) *plugin.Client {
 	// start plugin
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: HandshakeConfig,
 		Plugins:         PluginSet,
 		Cmd:             exec.Command(address),
-		// Logger: hclog.New(&hclog.LoggerOptions{
-		// 	Name:   "plugin",
-		// 	Output: os.Stdout,
-		// 	Level:  hclog.Debug,
-		// }),
+		Logger:          HLog,
 	})
 
-	// connect to RPC
-	rpcClient, err := client.Client()
-	if err != nil {
-		client.Kill()
-		return nil, fmt.Errorf("could not create rpc client: %v", err)
-	}
+	return client
+}
 
-	// get plugin as <any>
-	raw, err := rpcClient.Dispense("store")
+func DispensePlugin(rpcClient *plugin.Client) (Store, error) {
+	client, err := rpcClient.Client()
 	if err != nil {
-		client.Kill()
+		return nil, err
+	}
+	// get plugin as <any>
+	raw, err := client.Dispense("store")
+	if err != nil {
+		rpcClient.Kill()
 		return nil, fmt.Errorf("could not get plugin: %v", err)
 	}
 	s := raw.(Store)
@@ -155,11 +162,16 @@ func (s *PluggableStore) Upload(ctx context.Context, objects ...string) error {
 	if err != nil {
 		return err
 	}
-	ps, err := StartPlugin(opts.BackendAddress)
+	c := GetClient(opts.BackendAddress)
+	defer c.Kill()
+	ps, err := DispensePlugin(c)
 	if err != nil {
 		return err
 	}
-	return ps.Upload(context.Background(), objects...)
+	fmt.Println("uploading from PluggableStore")
+	err = ps.Upload(context.Background(), objects...)
+	c.Kill()
+	return err
 }
 
 func (s *PluggableStore) Retrieve(ctx context.Context, objects ...string) error {
@@ -167,11 +179,14 @@ func (s *PluggableStore) Retrieve(ctx context.Context, objects ...string) error 
 	if err != nil {
 		return err
 	}
-	ps, err := StartPlugin(opts.BackendAddress)
+	c := GetClient(opts.BackendAddress)
+	ps, err := DispensePlugin(c)
 	if err != nil {
 		return err
 	}
-	return ps.Retrieve(ctx, objects...)
+	err = ps.Retrieve(ctx, objects...)
+	c.Kill()
+	return err
 }
 
 func (s *PluggableStore) GetOptions() (Options, error) {
@@ -179,7 +194,9 @@ func (s *PluggableStore) GetOptions() (Options, error) {
 	if err != nil {
 		return Options{}, nil
 	}
-	ps, err := StartPlugin(opts.BackendAddress)
+	c := GetClient(opts.BackendAddress)
+	defer c.Kill()
+	ps, err := DispensePlugin(c)
 	if err != nil {
 		return Options{}, err
 	}

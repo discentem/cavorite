@@ -33,9 +33,9 @@ Use " [command] --help" for more information about a command.
 
 ## Full testing workflow
 
-> These steps are also performed automatically by our integration test on each pull request and push: [.github/workflows/integration-test.yaml](.github/workflows/integration-test.yaml)
-
 ### Minio (S3)
+
+> These steps for Minio are also performed automatically by our integration test on each pull request and push: [.github/workflows/integration-test.yaml](.github/workflows/integration-test.yaml)
 
 1. Run minio server.
    ```shell
@@ -133,3 +133,44 @@ Use " [command] --help" for more information about a command.
    2022/10/18 21:57:53 Retrieving [~/some_git_project/googlechromebeta.dmg]
    ```
 
+### Test a plugin-based backend
+
+> This is not yet tested automatically in Github Actions.
+
+1. Compile `cavorite` with `make` and then compile some plugin. 
+
+If you want to compile the example plugin, run `make with_localstore_plugin`.
+
+1. Set environment variables for cavorite and the plugin you compiled. For example: 
+
+```bash
+CAVORITE_BIN=/Users/bk/cavorite/bazel-out/darwin_arm64-fastbuild/bin/cavorite_/cavorite
+CAVORITE_PLUGIN=/Users/bk/cavorite/bazel-out/darwin_arm64-fastbuild/bin/plugin/localstore/localstore_/localstore
+```
+
+1. Change directory to a git repository (or just a new folder):
+
+```bash
+cd ~/some_git_repo
+```
+
+1. Initialize cavorite in `~/some_git_repo` with the plugin: 
+
+```bash
+$CAVORITE_BIN init --store_type plugin --backend_address $CAVORITE_PLUGIN .
+```
+
+This should result in a configuration file that looks something like this. Your backend_address will be slightly different.
+
+```json
+{
+ "store_type": "plugin",
+ "options": {
+  "backend_address": "/Users/bk/cavorite/bazel-out/darwin_arm64-fastbuild/bin/plugin/localstore/localstore_/localstore",
+  "metadata_file_extension": "cfile",
+  "region": "us-east-1"
+ }
+}
+```
+
+1. 

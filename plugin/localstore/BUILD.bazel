@@ -8,7 +8,6 @@ go_library(
     deps = [
         "//internal/stores",
         "@com_github_hashicorp_go_hclog//:go-hclog",
-        "@com_github_hashicorp_go_plugin//:go-plugin",
     ],
 )
 

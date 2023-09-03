@@ -137,9 +137,7 @@ Use " [command] --help" for more information about a command.
 
 > This is not yet tested automatically in Github Actions.
 
-1. Compile `cavorite` with `make` and then compile some plugin. 
-
-If you want to compile the example plugin, run `make with_localstore_plugin`.
+1. Compile `cavorite` with `make` and then compile some plugin. If you want to compile the example plugin, run `make with_localstore_plugin`.
 
 1. Set environment variables for cavorite and the plugin you compiled. For example: 
 

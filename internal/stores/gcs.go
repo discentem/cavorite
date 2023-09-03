@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"cloud.google.com/go/storage"
 	gcsStorage "cloud.google.com/go/storage"
 	"github.com/discentem/cavorite/internal/metadata"
 	"github.com/google/logger"
@@ -93,7 +92,7 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 		gcsObject := s.gcsClient.Bucket(s.Options.BackendAddress).Object(o)
 		// ToDo(natewalck) Maybe expose this as a setting?
 		// Only allow the file to be written if it doesn't already exist.
-		wc := gcsObject.If(storage.Conditions{DoesNotExist: true}).NewWriter(ctx)
+		wc := gcsObject.If(gcsStorage.Conditions{DoesNotExist: true}).NewWriter(ctx)
 
 		// Reset to the start of the file because metadata generation has already read it once
 		_, seekErr := f.Seek(0, io.SeekStart)

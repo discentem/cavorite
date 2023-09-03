@@ -6,7 +6,6 @@ import (
 
 	"github.com/discentem/cavorite/internal/stores"
 	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-plugin"
 )
 
 type LocalStore struct {
@@ -29,22 +28,19 @@ func (s *LocalStore) GetOptions() (stores.Options, error) {
 	}, nil
 }
 
+func (s *LocalStore) Close() error {
+	return nil
+}
+
 func main() {
 	hlog := hclog.New(&hclog.LoggerOptions{
 		Level:      hclog.Trace,
 		Output:     os.Stderr,
 		JSONFormat: true,
 	})
-	ls := LocalStore{
+	ls := &LocalStore{
 		logger: hlog,
 	}
-	stores.PluginSet["store"] = &stores.StorePlugin{Store: &ls}
 
-	hlog.Info("stuff", stores.PluginSet["store"])
-
-	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: stores.HandshakeConfig,
-		Plugins:         stores.PluginSet,
-		Logger:          hlog,
-	})
+	stores.ListenAndServePlugin(ls, hlog)
 }

@@ -2,29 +2,31 @@ package stores
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/rpc"
 	"os"
 	"os/exec"
 
+	"github.com/discentem/cavorite/internal/stores/pluginproto"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
-
-type TransferArgs struct {
-	Objects []string
-}
 
 var (
 	PluginSet = plugin.PluginSet{
-		"store": &StorePlugin{},
+		"store": &storePlugin{},
 	}
+
 	HandshakeConfig = plugin.HandshakeConfig{
 		ProtocolVersion:  1,
 		MagicCookieKey:   "BASIC_PLUGIN",
-		MagicCookieValue: "blah",
+		MagicCookieValue: "cavorite",
 	}
+
+	// FIXME: make configurable?
 	HLog = hclog.New(&hclog.LoggerOptions{
 		Name:   "plugin",
 		Output: os.Stdout,
@@ -32,173 +34,148 @@ var (
 	})
 )
 
-type ClientStore struct{ *rpc.Client }
-
-type ErrResp struct {
-	Err string
+// clientStore is the client cavorite uses to communicate with the plugin
+type clientStore struct {
+	pluginproto.PluginClient
 }
 
-type OptionsResp struct {
-	Opts Options
-	ErrResp
+func (p *clientStore) Upload(ctx context.Context, objects ...string) error {
+	_, err := p.PluginClient.Upload(ctx, &pluginproto.Objects{Objects: objects})
+	return err
 }
 
-func (p *ClientStore) Upload(ctx context.Context, objects ...string) error {
-	// context is not actually transferred
-	resp := new(ErrResp)
-	err := p.Call("Plugin.Upload", TransferArgs{Objects: objects}, &resp)
-	if err != nil {
-		return fmt.Errorf("could not call rpc for Upload: %w", err)
-	}
-	if resp.Err != "" {
-		return errors.New(resp.Err)
-	}
-	return nil
+func (p *clientStore) Retrieve(ctx context.Context, objects ...string) error {
+	_, err := p.PluginClient.Retrieve(ctx, &pluginproto.Objects{Objects: objects})
+	return err
 }
 
-func (p *ClientStore) Retrieve(ctx context.Context, objects ...string) error {
-	// context is not actually transferred
-	resp := new(ErrResp)
-	err := p.Call("Plugin.Retrieve", TransferArgs{Objects: objects}, &resp)
-	if err != nil {
-		return fmt.Errorf("could not call rpc for Retrieve: %w", err)
-	}
-	if resp.Err != "" {
-		return errors.New(resp.Err)
-	}
-	return nil
-}
-
-func (p *ClientStore) GetOptions() (Options, error) {
-	fmt.Println("ClientStore GetOptions")
-	resp := new(OptionsResp)
-	fmt.Println("before Plugin.GetOptions")
-	err := p.Call("Plugin.GetOptions", new(interface{}), &resp)
+func (p *clientStore) GetOptions() (Options, error) {
+	opts, err := p.PluginClient.GetOptions(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return Options{}, err
 	}
-	fmt.Println("after Plugin.GetOptions")
-	if resp.Err != "" {
-		return Options{}, errors.New(resp.Err)
-	}
-	return resp.Opts, err
+
+	return Options{
+		BackendAddress:        opts.BackendAddress,
+		MetadataFileExtension: opts.MetadataFileExtension,
+		Region:                opts.Region,
+	}, nil
 }
 
-type ServerStore struct {
+func (p *clientStore) Close() error {
+	return nil
+}
+
+// serverStore is the server the plugin uses to communicate with cavorite
+type serverStore struct {
 	Store
+	pluginproto.UnimplementedPluginServer
 }
 
-func (p *ServerStore) Upload(objects []string, resp *ErrResp) error {
-	err := p.Store.Upload(context.Background(), objects...)
+func (p *serverStore) Upload(ctx context.Context, objects *pluginproto.Objects) (*emptypb.Empty, error) {
+	err := p.Store.Upload(ctx, objects.Objects...)
 	if err != nil {
-		resp.Err = err.Error()
+		if _, ok := status.FromError(err); ok {
+			return nil, err
+		}
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	return nil
+	return &emptypb.Empty{}, nil
 }
 
-func (p *ServerStore) Retrieve(objects []string, resp *ErrResp) error {
-	err := p.Store.Retrieve(context.Background(), objects...)
+func (p *serverStore) Retrieve(ctx context.Context, objects *pluginproto.Objects) (*emptypb.Empty, error) {
+	err := p.Store.Retrieve(ctx, objects.Objects...)
 	if err != nil {
-		resp.Err = err.Error()
+		if _, ok := status.FromError(err); ok {
+			return nil, err
+		}
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	return nil
+	return &emptypb.Empty{}, nil
 }
 
-func (p *ServerStore) GetOptions(resp *OptionsResp) error {
+func (p *serverStore) GetOptions(_ context.Context, _ *emptypb.Empty) (*pluginproto.Options, error) {
 	opts, err := p.Store.GetOptions()
 	if err != nil {
-		resp.Err = err.Error()
-		resp.Opts = Options{}
+		if _, ok := status.FromError(err); ok {
+			return nil, err
+		}
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	resp.Opts = opts
-	return nil
+
+	return &pluginproto.Options{
+		BackendAddress:        opts.BackendAddress,
+		MetadataFileExtension: opts.MetadataFileExtension,
+		Region:                opts.Region,
+	}, nil
 }
 
-// StorePlugin implements plugin.Plugin
-type StorePlugin struct {
+// storePlugin implements plugin.GRPCPlugin
+type storePlugin struct {
+	plugin.Plugin
 	Store
 }
 
-func (p *StorePlugin) Server(_ *plugin.MuxBroker) (interface{}, error) {
-	return &ServerStore{Store: p.Store}, nil
+func (p *storePlugin) GRPCServer(_ *plugin.GRPCBroker, server *grpc.Server) error {
+	pluginproto.RegisterPluginServer(server, &serverStore{Store: p.Store})
+	return nil
 }
 
-func (p *StorePlugin) Client(_ *plugin.MuxBroker, client *rpc.Client) (interface{}, error) {
-	return &ClientStore{Client: client}, nil
+func (p *storePlugin) GRPCClient(ctx context.Context, _ *plugin.GRPCBroker, client *grpc.ClientConn) (interface{}, error) {
+	return &clientStore{PluginClient: pluginproto.NewPluginClient(client)}, nil
 }
 
-func GetClient(address string) *plugin.Client {
-	// start plugin
+// PluggableStore is the Store used by cavorite that wraps go-plugin
+type PluggableStore struct {
+	client *plugin.Client
+	Store
+}
+
+func NewPluggableStore(cmd *exec.Cmd) (*PluggableStore, error) {
 	client := plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig: HandshakeConfig,
-		Plugins:         PluginSet,
-		Cmd:             exec.Command(address),
-		Logger:          HLog,
+		HandshakeConfig:  HandshakeConfig,
+		Plugins:          PluginSet,
+		Cmd:              cmd,
+		Logger:           HLog,
+		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
 	})
 
-	return client
-}
-
-func DispensePlugin(rpcClient *plugin.Client) (Store, error) {
-	client, err := rpcClient.Client()
+	// connect to RPC
+	rpcClient, err := client.Client()
 	if err != nil {
-		return nil, err
+		client.Kill()
+		return nil, fmt.Errorf("could not create rpc client: %w", err)
 	}
+
 	// get plugin as <any>
-	raw, err := client.Dispense("store")
+	raw, err := rpcClient.Dispense("store")
 	if err != nil {
-		rpcClient.Kill()
-		return nil, fmt.Errorf("could not get plugin: %v", err)
+		client.Kill()
+		return nil, fmt.Errorf("could not dispense plugin: %w", err)
 	}
-	s := raw.(Store)
-	return s, nil
 
+	// assert to Store
+	store := raw.(Store)
+
+	return &PluggableStore{
+		client: client,
+		Store:  store,
+	}, nil
 }
 
-type PluggableStore struct{}
-
-func (s *PluggableStore) Upload(ctx context.Context, objects ...string) error {
-	opts, err := s.GetOptions()
-	if err != nil {
-		return err
-	}
-	c := GetClient(opts.BackendAddress)
-	defer c.Kill()
-	ps, err := DispensePlugin(c)
-	if err != nil {
-		return err
-	}
-	fmt.Println("uploading from PluggableStore")
-	err = ps.Upload(context.Background(), objects...)
-	c.Kill()
-	return err
+func (p *PluggableStore) Close() error {
+	p.client.Kill()
+	return nil
 }
 
-func (s *PluggableStore) Retrieve(ctx context.Context, objects ...string) error {
-	opts, err := s.GetOptions()
-	if err != nil {
-		return err
-	}
-	c := GetClient(opts.BackendAddress)
-	ps, err := DispensePlugin(c)
-	if err != nil {
-		return err
-	}
-	err = ps.Retrieve(ctx, objects...)
-	c.Kill()
-	return err
-}
+// ListenAndServePlugin is used by plugins to start listening to requests
+func ListenAndServePlugin(store Store, logger hclog.Logger) {
+	PluginSet["store"] = &storePlugin{Store: store}
 
-func (s *PluggableStore) GetOptions() (Options, error) {
-	opts, err := s.GetOptions()
-	if err != nil {
-		return Options{}, nil
-	}
-	c := GetClient(opts.BackendAddress)
-	defer c.Kill()
-	ps, err := DispensePlugin(c)
-	if err != nil {
-		return Options{}, err
-	}
-	return ps.GetOptions()
+	plugin.Serve(&plugin.ServeConfig{
+		HandshakeConfig: HandshakeConfig,
+		Plugins:         PluginSet,
+		Logger:          logger,
+		GRPCServer:      plugin.DefaultGRPCServer,
+	})
 }

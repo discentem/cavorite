@@ -190,3 +190,8 @@ func (s *GCSStore) Retrieve(ctx context.Context, metaObjects ...string) error {
 	}
 	return nil
 }
+
+func (s *GCSStore) Close() error {
+	// FIXME: implement
+	return nil
+}

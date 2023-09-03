@@ -28,6 +28,9 @@ func (s simpleStore) GetOptions() (Options, error) {
 func (s simpleStore) GetFsys() (afero.Fs, error) {
 	return s.fsys, nil
 }
+func (s simpleStore) Close() error {
+	return nil
+}
 
 func TestWriteMetadataToFsys(t *testing.T) {
 	mTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")

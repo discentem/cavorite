@@ -181,3 +181,8 @@ func NewAzureBlobStore(ctx context.Context, fsys afero.Fs, storeOpts Options, az
 		fsys:            fsys,
 	}, nil
 }
+
+func (s *AzureBlobStore) Close() error {
+	// FIXME: implement
+	return nil
+}

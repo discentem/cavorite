@@ -58,6 +58,7 @@ func uploadFn(cmd *cobra.Command, objects []string) error {
 	if err != nil {
 		return err
 	}
+	defer s.Close()
 	sourceRepoRoot, err := rootOfSourceRepo()
 	if err != nil {
 		return err

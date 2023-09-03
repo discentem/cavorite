@@ -44,6 +44,7 @@ type Store interface {
 	Upload(ctx context.Context, objects ...string) error
 	Retrieve(ctx context.Context, objects ...string) error
 	GetOptions() (Options, error)
+	Close() error
 }
 
 func openOrCreateFile(fsys afero.Fs, filename string) (afero.File, error) {

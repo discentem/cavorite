@@ -259,3 +259,8 @@ func (s *s3Store) getBucketName() (string, error) {
 	logger.V(2).Infof("s3store getBucketName: bucket: %s", bucketName)
 	return bucketName, nil
 }
+
+func (s *s3Store) Close() error {
+	// FIXME: implement
+	return nil
+}

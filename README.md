@@ -6,30 +6,22 @@ This is not production ready nor feature complete. See [Issues](https://github.c
 
 A cli tool that makes it easy to track large, binary files in source control repositories.
 
-Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri, this is a re-write in Go with support for s3, minio, Google Cloud Storage, and possibly other storage systems. See [internal/stores](internal/stores) for information about implementing new storage drivers.
+Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri, this is a re-write in Go with support for s3, minio, Google Cloud Storage, and other storage systems through plugins. See [internal/stores](internal/stores) for information about implementing new storage drivers.
 
-## Man page
+## Development
 
-``` 
+See [MAKE](MAKE). 
 
-Usage:
-   [flags]
-   [command]
+### How to build
 
-Available Commands:
-  completion  Generate the autocompletion script for the specified shell
-  help        Help about any command
-  init        Initialize a new cavorite repo
-  retrieve    retrieve a file from cavorite
-  upload      Upload a file to cavorite
+- `make`
+- `make bazzel_build_docker`
 
-Flags:
-      --debug   Run in debug mode
-  -h, --help    help for this command
-      --vv      Run in verbose logging mode
+See [MAKE](MAKE) for more useful targets.
 
-Use " [command] --help" for more information about a command.
-```
+### Linting
+
+- `make lint`
 
 ## Full testing workflow
 
@@ -112,7 +104,7 @@ Use " [command] --help" for more information about a command.
    $ cat ~/some_git_project/googlechromebeta.dmg.cfile
    ```
 
-   ```
+   ```json
    {
       "name": "chrome/googlechromebeta.dmg",
       "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -133,7 +125,7 @@ Use " [command] --help" for more information about a command.
    2022/10/18 21:57:53 Retrieving [~/some_git_project/googlechromebeta.dmg]
    ```
 
-### Test a plugin-based backend
+### Testing a plugin-based backend
 
 > This is not yet tested automatically in Github Actions.
 
@@ -154,21 +146,31 @@ cd ~/some_git_repo
 
 1. Initialize cavorite in `~/some_git_repo` with the plugin: 
 
-```bash
-$CAVORITE_BIN init --store_type plugin --backend_address $CAVORITE_PLUGIN .
-```
+   ```bash
+   $CAVORITE_BIN init --store_type plugin --backend_address $CAVORITE_PLUGIN .
+   ```
 
-This should result in a configuration file that looks something like this. Your backend_address will be slightly different.
+   This should result in a configuration file that looks something like this. Your backend_address will be slightly different.
 
-```json
-{
- "store_type": "plugin",
- "options": {
-  "backend_address": "/Users/bk/cavorite/bazel-out/darwin_arm64-fastbuild/bin/plugin/localstore/localstore_/localstore",
-  "metadata_file_extension": "cfile",
-  "region": "us-east-1"
- }
-}
-```
+   ```json
+   {
+      "store_type": "plugin",
+      "options": {
+         "backend_address": "/Users/bk/cavorite/bazel-out/darwin_arm64-fastbuild/bin/plugin/localstore/localstore_/localstore",
+         "metadata_file_extension": "cfile",
+         "region": "us-east-1"
+      }
+   }
+   ```
 
-1. 
+1. `touch ~/some_file`
+
+1. `$CAVORITE_BIN upload ~/some_file`
+
+   What happens after this depends on how the plugin is implemented but generally you should expect to see log messages that an upload was successful.
+
+   For the example plugin in `plugin/localstore`, you'll see
+
+   ```
+   2023-09-04T16:22:35.349-0700 [INFO]  plugin.localstore: Uploading [some_file] via localstore plugin
+   ```

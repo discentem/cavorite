@@ -1,7 +1,7 @@
-FROM golangci/golangci-lint
+FROM golangci/golangci-lint:v1.54-alpine
 
 WORKDIR /app
 
 COPY . .
 
-ENTRYPOINT golangci-lint run --timeout=10m
+CMD golangci-lint run --timeout=10m

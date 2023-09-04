@@ -2,12 +2,16 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
     name = "io_bazel_rules_go",
-    sha256 = "56d8c5a5c91e1af73eca71a6fab2ced959b67c86d12ba37feedb0a2dfea441a6",
+    sha256 = "51dc53293afe317d2696d4d6433a4c33feedb7748a9e352072e2ec3c0dafd2c6",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.37.0/rules_go-v0.37.0.zip",
-        "https://github.com/bazelbuild/rules_go/releases/download/v0.37.0/rules_go-v0.37.0.zip",
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.40.1/rules_go-v0.40.1.zip",
+        "https://github.com/bazelbuild/rules_go/releases/download/v0.40.1/rules_go-v0.40.1.zip",
     ],
 )
+
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+
+go_rules_dependencies()
 
 http_archive(
     name = "bazel_gazelle",
@@ -18,7 +22,6 @@ http_archive(
     ],
 )
 
-load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 
 ############################################################
@@ -26,8 +29,6 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 # Else, dependencies declared by rules_go/gazelle will be used.
 # The first declaration of an external repository "wins".
 ############################################################
-
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
     name = "bazel_skylib",
@@ -207,21 +208,6 @@ load("//:repositories.bzl", "go_repositories")
 
 # gazelle:proto disable_global
 
-# Ref: https://github.com/rules-proto-grpc/rules_proto_grpc/blob/master/docs/overriding_deps.rst
-http_archive(
-    name = "com_google_protobuf",
-    sha256 = "8b28fdd45bab62d15db232ec404248901842e5340299a57765e48abe8a80d930",
-    strip_prefix = "protobuf-3.20.1",
-    urls = [
-        "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.20.1.tar.gz",
-        "https://github.com/protocolbuffers/protobuf/archive/v3.20.1.tar.gz",
-    ],
-)
-
-load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-
-protobuf_deps()
-
 # Ref: https://github.com/bazelbuild/bazel/issues/10270
 http_archive(
     name = "zlib",
@@ -307,6 +293,21 @@ go_repositories()
 
 go_rules_dependencies()
 
-go_register_toolchains(version = "1.19.5")
+go_register_toolchains(version = "1.20.5")
 
 gazelle_dependencies()
+
+# Ref: https://github.com/rules-proto-grpc/rules_proto_grpc/blob/master/docs/overriding_deps.rst
+http_archive(
+    name = "com_google_protobuf",
+    sha256 = "8b28fdd45bab62d15db232ec404248901842e5340299a57765e48abe8a80d930",
+    strip_prefix = "protobuf-3.20.1",
+    urls = [
+        "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.20.1.tar.gz",
+        "https://github.com/protocolbuffers/protobuf/archive/v3.20.1.tar.gz",
+    ],
+)
+
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
+protobuf_deps()

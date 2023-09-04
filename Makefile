@@ -3,16 +3,16 @@ LOCALSTORE_PLUGIN_BIN := $(shell bazel cquery plugin/localstore:localstore --out
 
 build: bazel_build
 
-with_localstore_plugin: bazel_build localstore_plugin_build
+with_localstore_plugin: bazel_build localstore_plugin
+	@echo CAVORITE_BIN=$(PWD)/$(CAVORITE_BIN)
+	@echo CAVORITE_PLUGIN=$(PWD)/$(LOCALSTORE_PLUGIN_BIN)
 
 bazel_build_docker:
 	docker build --tag cavoritebazelbuild -f _ci/bazel_build/Dockerfile .
 	docker run cavoritebazelbuild
 
-localstore_plugin_build:
+localstore_plugin:
 	bazel build plugin/localstore
-	@echo CAVORITE_BIN=$(PWD)/$(CAVORITE_BIN)
-	@echo CAVORITE_PLUGIN=$(PWD)/$(LOCALSTORE_PLUGIN_BIN)
 	
 
 bazel_build: gazelle

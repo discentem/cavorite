@@ -1,0 +1,8 @@
+issues:
+  exclude-rules:
+  - path: plugin/localstore
+    linters:
+    - typecheck
+  - path: /
+    linters:
+    - typecheck

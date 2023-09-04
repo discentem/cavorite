@@ -14,8 +14,7 @@ type LocalStore struct {
 
 func (s *LocalStore) Upload(ctx context.Context, objects ...string) error {
 	s.logger.Info("logging for localStore plugin during Upload")
-	err := os.WriteFile("/tmp/dat1", []byte("hello\nplugin\n"), 0644)
-	return err
+	return nil
 }
 func (s *LocalStore) Retrieve(ctx context.Context, objects ...string) error {
 	s.logger.Info("logging for localStore plugin during Retrieve")

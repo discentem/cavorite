@@ -21,17 +21,30 @@ const (
 	StoreTypeS3        StoreType = "s3"
 	StoreTypeGCS       StoreType = "gcs"
 	StoreTypeAzureBlob StoreType = "azure"
+	StoreTypeGoPlugin  StoreType = "plugin"
+)
+
+var (
+	_ = Store(&s3Store{})
+	_ = Store(&GCSStore{})
+	_ = Store(&AzureBlobStore{})
+	_ = Store(&PluggableStore{})
 )
 
 var (
 	ErrRetrieveFailureHashMismatch = errors.New("hashes don't match, Retrieve aborted")
 )
 
+type StoreWithGetters interface {
+	Store
+	GetFsys() (afero.Fs, error)
+}
+
 type Store interface {
 	Upload(ctx context.Context, objects ...string) error
 	Retrieve(ctx context.Context, objects ...string) error
-	GetOptions() Options
-	GetFsys() afero.Fs
+	GetOptions() (Options, error)
+	Close() error
 }
 
 func openOrCreateFile(fsys afero.Fs, filename string) (afero.File, error) {
@@ -47,12 +60,18 @@ func inferObjPath(cfilePath string) string {
 }
 
 // WriteMetadata generates Cavorite metadata for obj and writes it to s.Fsys
-func WriteMetadataToFsys(s Store, obj string, f afero.File) (cleanup func() error, err error) {
-	opts := s.GetOptions()
+func WriteMetadataToFsys(s StoreWithGetters, obj string, f afero.File) (cleanup func() error, err error) {
+	opts, err := s.GetOptions()
+	if err != nil {
+		return nil, err
+	}
 	if opts.MetadataFileExtension == "" {
 		return nil, metadata.ErrFileExtensionEmpty
 	}
-	fsys := s.GetFsys()
+	fsys, err := s.GetFsys()
+	if err != nil {
+		return nil, err
+	}
 	logger.V(2).Infof("object: %s", obj)
 
 	// generate metadata

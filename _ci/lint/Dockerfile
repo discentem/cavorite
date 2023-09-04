@@ -1,7 +1,8 @@
-FROM golangci/golangci-lint
-
+FROM golangci/golangci-lint:v1.54.1
 WORKDIR /app
 
 COPY . .
 
-ENTRYPOINT golangci-lint run --timeout=10m
+ENV GOFLAGS=-buildvcs=false
+
+ENTRYPOINT golangci-lint run -v --timeout=10m

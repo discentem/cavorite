@@ -81,35 +81,7 @@ func TestWrite(t *testing.T) {
 	t.Run("successful write", TestSuccessfulWrite)
 }
 
-func TestInitializeStoreTypeS3(t *testing.T) {
-	ctx := context.Background()
-	fsys := afero.NewMemMapFs()
-
-	opts := stores.Options{
-		BackendAddress:        "s3://blahaddress/bucket",
-		MetadataFileExtension: "cfile",
-		Region:                "us-east-9876",
-	}
-
-	cfg := InitializeStoreTypeS3(
-		ctx,
-		fsys,
-		"~/some_repo_root",
-		opts.BackendAddress,
-		opts.Region,
-		opts,
-	)
-
-	// Assert the S3Store Config matches all of the inputs
-	assert.Equal(t, cfg.StoreType, stores.StoreTypeS3)
-	assert.Equal(t, cfg.Options.BackendAddress, opts.BackendAddress)
-	assert.Equal(t, cfg.Options.MetadataFileExtension, opts.MetadataFileExtension)
-	assert.Equal(t, cfg.Options.Region, opts.Region)
-
-	assert.NoError(t, cfg.Validate())
-}
-
-func TestInitializeStoreTypeGCS(t *testing.T) {
+func TestInitializeStoreTypeOf(t *testing.T) {
 	ctx := context.Background()
 	fsys := afero.NewMemMapFs()
 
@@ -119,8 +91,9 @@ func TestInitializeStoreTypeGCS(t *testing.T) {
 		Region:                "us-east-9876",
 	}
 
-	cfg := InitializeStoreTypeGCS(
+	cfg := InitalizeStoreTypeOf(
 		ctx,
+		stores.StoreTypeGCS,
 		fsys,
 		"~/some_repo_root",
 		opts.BackendAddress,

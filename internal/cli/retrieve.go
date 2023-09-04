@@ -59,6 +59,7 @@ func retrieveFn(cmd *cobra.Command, objects []string) error {
 	if err != nil {
 		return err
 	}
+	defer s.Close()
 
 	sourceRepoRoot, err := rootOfSourceRepo()
 	if err != nil {
@@ -74,7 +75,12 @@ func retrieveFn(cmd *cobra.Command, objects []string) error {
 		return fmt.Errorf("retrieve error: %w", err)
 	}
 
-	logger.Infof("Downloading files from: %s", s.GetOptions().BackendAddress)
+	opts, err := s.GetOptions()
+	if err != nil {
+		return err
+	}
+
+	logger.Infof("Downloading files from: %s", opts.BackendAddress)
 	logger.Infof("Downloading file: %s", objects)
 	if err := s.Retrieve(cmd.Context(), objects...); err != nil {
 		return err

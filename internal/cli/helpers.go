@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -66,6 +67,14 @@ func initStoreFromConfig(ctx context.Context, cfg config.Config, fsys afero.Fs, 
 			return nil, fmt.Errorf("improper stores.AzureBlobStore init: %v", err)
 		}
 		s = stores.Store(az)
+	case stores.StoreTypeGoPlugin:
+		// FIXME: allow specifying command arguments for plugin
+		cmd := exec.Command(opts.BackendAddress)
+		ps, err := stores.NewPluggableStore(cmd)
+		if err != nil {
+			return nil, fmt.Errorf("improper plugin init: %v", err)
+		}
+		return ps, nil
 	default:
 		return nil, fmt.Errorf("type %s is not supported", cfg.StoreType)
 	}

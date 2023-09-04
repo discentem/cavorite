@@ -38,7 +38,7 @@ type S3Uploader interface {
 	)
 }
 
-type S3Store struct {
+type s3Store struct {
 	Options      Options `json:"options" mapstructure:"options"`
 	fsys         afero.Fs
 	awsRegion    string
@@ -46,7 +46,7 @@ type S3Store struct {
 	s3Downloader S3Downloader
 }
 
-func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Store, error) {
+func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*s3Store, error) {
 	cfg, err := getConfig(
 		ctx,
 		opts.Region,
@@ -71,7 +71,7 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Stor
 		},
 	)
 
-	return &S3Store{
+	return &s3Store{
 		Options:   opts,
 		fsys:      fsys,
 		awsRegion: opts.Region,
@@ -124,16 +124,16 @@ func getConfig(ctx context.Context, region string, address string) (*aws.Config,
 	return &cfg, nil
 }
 
-func (s *S3Store) GetOptions() Options {
-	return s.Options
+func (s *s3Store) GetOptions() (Options, error) {
+	return s.Options, nil
 }
 
-func (s *S3Store) GetFsys() afero.Fs {
-	return s.fsys
+func (s *s3Store) GetFsys() (afero.Fs, error) {
+	return s.fsys, nil
 }
 
 // Upload generates the metadata, writes it to disk and uploads the file to the S3 bucket
-func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
+func (s *s3Store) Upload(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
 		f, err := s.fsys.Open(o)
 		if err != nil {
@@ -181,7 +181,7 @@ func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 }
 
 // Retrieve gets the file from the S3 bucket, validates the hash is correct and writes it to disk
-func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
+func (s *s3Store) Retrieve(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
 		// For Retrieve, the object is the cfile itself, which we derive the actual filename from
 		objectPath := strings.TrimSuffix(o, filepath.Ext(o))
@@ -238,7 +238,7 @@ func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 	return nil
 }
 
-func (s *S3Store) getBucketName() (string, error) {
+func (s *s3Store) getBucketName() (string, error) {
 	var bucketName string
 	logger.Infof("s3store getBucketName: backend address: %s", s.Options.BackendAddress)
 	switch {
@@ -258,4 +258,9 @@ func (s *S3Store) getBucketName() (string, error) {
 
 	logger.V(2).Infof("s3store getBucketName: bucket: %s", bucketName)
 	return bucketName, nil
+}
+
+func (s *s3Store) Close() error {
+	// FIXME: implement
+	return nil
 }

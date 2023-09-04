@@ -49,7 +49,6 @@ func uploadCmd() *cobra.Command {
 */
 func uploadFn(cmd *cobra.Command, objects []string) error {
 	fsys := afero.NewOsFs()
-
 	s, err := initStoreFromConfig(
 		cmd.Context(),
 		cfg,
@@ -59,7 +58,7 @@ func uploadFn(cmd *cobra.Command, objects []string) error {
 	if err != nil {
 		return err
 	}
-
+	defer s.Close()
 	sourceRepoRoot, err := rootOfSourceRepo()
 	if err != nil {
 		return err
@@ -74,7 +73,14 @@ func uploadFn(cmd *cobra.Command, objects []string) error {
 		return fmt.Errorf("upload error: %w", err)
 	}
 
-	logger.Infof("Uploading to: %s", s.GetOptions().BackendAddress)
+	fmt.Println("before GetOptions")
+	opts, err := s.GetOptions()
+	if err != nil {
+		return err
+	}
+	fmt.Println("after GetOptions")
+
+	logger.Infof("Uploading to: %s", opts.BackendAddress)
 	logger.Infof("Uploading file: %s", objects)
 	if err := s.Upload(cmd.Context(), objects...); err != nil {
 		return err

@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"cloud.google.com/go/storage"
 	gcsStorage "cloud.google.com/go/storage"
 	"github.com/discentem/cavorite/internal/metadata"
 	"github.com/google/logger"
@@ -59,12 +58,12 @@ func NewGCSStoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*GCSSt
 	}, nil
 }
 
-func (s *GCSStore) GetOptions() Options {
-	return s.Options
+func (s *GCSStore) GetOptions() (Options, error) {
+	return s.Options, nil
 }
 
-func (s *GCSStore) GetFsys() afero.Fs {
-	return s.fsys
+func (s *GCSStore) GetFsys() (afero.Fs, error) {
+	return s.fsys, nil
 }
 
 // Upload generates the metadata, writes it s.fsys and uploads the file to the GCS bucket
@@ -93,7 +92,7 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 		gcsObject := s.gcsClient.Bucket(s.Options.BackendAddress).Object(o)
 		// ToDo(natewalck) Maybe expose this as a setting?
 		// Only allow the file to be written if it doesn't already exist.
-		wc := gcsObject.If(storage.Conditions{DoesNotExist: true}).NewWriter(ctx)
+		wc := gcsObject.If(gcsStorage.Conditions{DoesNotExist: true}).NewWriter(ctx)
 
 		// Reset to the start of the file because metadata generation has already read it once
 		_, seekErr := f.Seek(0, io.SeekStart)
@@ -188,5 +187,10 @@ func (s *GCSStore) Retrieve(ctx context.Context, metaObjects ...string) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (s *GCSStore) Close() error {
+	// FIXME: implement
 	return nil
 }

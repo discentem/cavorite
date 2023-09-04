@@ -1,0 +1,21 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+option go_package = "./pluginproto";
+
+package plugin;
+
+message Objects {
+  repeated string objects = 1;
+}
+
+message Options {
+  string backend_address = 1;
+  string metadata_file_extension = 2;
+  string region = 3;
+}
+
+service Plugin {
+  rpc Upload(Objects) returns (google.protobuf.Empty) {}
+  rpc Retrieve(Objects) returns (google.protobuf.Empty) {}
+  rpc GetOptions(google.protobuf.Empty) returns (Options) {}
+}

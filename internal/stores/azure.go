@@ -20,8 +20,6 @@ import (
 
 // azureBlobishClient is derived from https://github.com/Azure/azure-sdk-for-go/blob/sdk/storage/azblob/v1.0.0/sdk/storage/azblob/client.go#L34
 type azureBlobishClient interface {
-	// DownloadBuffer(ctx context.Context, containerName string, blobName string, buffer []byte, o *azblob.DownloadBufferOptions) (int64, error)
-	// UploadBuffer(ctx context.Context, containerName string, blobName string, buffer []byte, o *azblob.UploadBufferOptions) (azblob.UploadBufferResponse, error)
 	UploadStream(ctx context.Context, containerName string, blobName string, body io.Reader, o *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error)
 	DownloadStream(ctx context.Context, containerName string, blobName string, o *azblob.DownloadStreamOptions) (azblob.DownloadStreamResponse, error)
 }
@@ -32,8 +30,8 @@ type AzureBlobStore struct {
 	fsys            afero.Fs
 }
 
-func (s *AzureBlobStore) GetOptions() Options { return s.Options }
-func (s *AzureBlobStore) GetFsys() afero.Fs   { return s.fsys }
+func (s *AzureBlobStore) GetOptions() (Options, error) { return s.Options, nil }
+func (s *AzureBlobStore) GetFsys() (afero.Fs, error)   { return s.fsys, nil }
 
 func (s *AzureBlobStore) Upload(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
@@ -182,4 +180,9 @@ func NewAzureBlobStore(ctx context.Context, fsys afero.Fs, storeOpts Options, az
 		containerClient: containerClient,
 		fsys:            fsys,
 	}, nil
+}
+
+func (s *AzureBlobStore) Close() error {
+	// FIXME: implement
+	return nil
 }

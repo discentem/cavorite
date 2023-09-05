@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/discentem/cavorite/internal/stores"
@@ -13,15 +14,15 @@ type LocalStore struct {
 }
 
 func (s *LocalStore) Upload(ctx context.Context, objects ...string) error {
-	s.logger.Info("logging for localStore plugin during Upload")
+	s.logger.Info(fmt.Sprintf("Uploading %v via localstore plugin", objects))
 	return nil
 }
 func (s *LocalStore) Retrieve(ctx context.Context, objects ...string) error {
-	s.logger.Info("logging for localStore plugin during Retrieve")
+	s.logger.Info(fmt.Sprintf("Retrieving %v via localstore plugin", objects))
 	return nil
 }
 func (s *LocalStore) GetOptions() (stores.Options, error) {
-	s.logger.Info("logging for localStore plugin during GetOptions")
+	s.logger.Info("GetOptions() called on localstore plugin")
 	return stores.Options{
 		Region: "plugin region",
 	}, nil

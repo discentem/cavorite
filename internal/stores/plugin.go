@@ -62,8 +62,8 @@ func (p *clientStore) GetOptions() (Options, error) {
 	}, nil
 }
 
-func (p *clientStore) SetOptions(Options) error {
-	err := p.PluginClient.SetOptions()
+func (p *clientStore) SetOptions(ctx context.Context, opts Options) error {
+	_, err := p.PluginClient.SetOptions(ctx, &pluginproto.Options{})
 	if err != nil {
 		return err
 	}

@@ -32,6 +32,7 @@ func initCmd() *cobra.Command {
 	initCmd.PersistentFlags().String("backend_address", "", "Address for the storage backend")
 	initCmd.PersistentFlags().String("region", "us-east-1", "Default region for the storage backend")
 	initCmd.PersistentFlags().String("store_type", "", "Storage backend to use")
+	initCmd.PersistentFlags().String("plugin_adress", "", "Run in verbose logging mode")
 
 	return initCmd
 }
@@ -57,6 +58,9 @@ func initPreExecFn(cmd *cobra.Command, args []string) error {
 	}
 	if err := viper.BindPFlag("store_type", cmd.PersistentFlags().Lookup("store_type")); err != nil {
 		return errors.New("Failed to bind store_type to viper")
+	}
+	if err := viper.BindPFlag("store_type", cmd.PersistentFlags().Lookup("plugin_address")); err != nil {
+		return errors.New("Failed to bind plugin_address to viper")
 	}
 
 	return nil
@@ -84,6 +88,11 @@ func initFn(cmd *cobra.Command, args []string) error {
 		BackendAddress:        backendAddress,
 		MetadataFileExtension: fileExt,
 		Region:                region,
+	}
+
+	pluginAddress := viper.GetString("plugin_address")
+	if pluginAddress != "" {
+		opts.PluginAddress = pluginAddress
 	}
 
 	fsys := afero.NewOsFs()

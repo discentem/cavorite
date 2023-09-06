@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/logger"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -93,7 +92,7 @@ func initFn(cmd *cobra.Command, args []string) error {
 	}
 
 	pluginAddress := viper.GetString("plugin_address")
-	logger.Info("pluginAddress: %s", pluginAddress)
+	fmt.Println("pluginAddress: %s", pluginAddress)
 	if pluginAddress != "" {
 		opts.PluginAddress = pluginAddress
 	}

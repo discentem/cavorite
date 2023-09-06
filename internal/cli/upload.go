@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/discentem/cavorite/internal/program"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
+
+	"github.com/discentem/cavorite/internal/program"
 )
 
 func uploadCmd() *cobra.Command {
@@ -73,12 +74,13 @@ func uploadFn(cmd *cobra.Command, objects []string) error {
 		return fmt.Errorf("upload error: %w", err)
 	}
 
-	fmt.Println("before GetOptions")
+	logger.Info("before GetOptions")
 	opts, err := s.GetOptions()
 	if err != nil {
 		return err
 	}
-	fmt.Println("after GetOptions")
+	logger.Info(opts)
+	logger.Info("after GetOptions")
 
 	logger.Infof("Uploading to: %s", opts.BackendAddress)
 	logger.Infof("Uploading file: %s", objects)
@@ -86,5 +88,4 @@ func uploadFn(cmd *cobra.Command, objects []string) error {
 		return err
 	}
 	return nil
-
 }

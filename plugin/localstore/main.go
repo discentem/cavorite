@@ -10,6 +10,8 @@ import (
 	"github.com/discentem/cavorite/internal/stores"
 )
 
+var StatefulOptions = stores.Options{}
+
 type LocalStore struct {
 	logger hclog.Logger
 }
@@ -26,14 +28,11 @@ func (s *LocalStore) Retrieve(ctx context.Context, objects ...string) error {
 
 func (s *LocalStore) GetOptions() (stores.Options, error) {
 	s.logger.Info("GetOptions() called on localstore plugin")
-	return stores.Options{
-		Region: "plugin region",
-	}, nil
+	return StatefulOptions, nil
 }
 
 func (s *LocalStore) SetOptions(ctx context.Context, opts stores.Options) error {
-	s.logger.Info("SetOptions() called on localstore plugin")
-	s.logger.Info(opts.BackendAddress)
+	StatefulOptions = opts
 	return nil
 }
 

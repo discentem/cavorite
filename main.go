@@ -5,9 +5,10 @@ import (
 	"io"
 	"log"
 
+	"github.com/google/logger"
+
 	"github.com/discentem/cavorite/internal/cli"
 	"github.com/discentem/cavorite/internal/program"
-	"github.com/google/logger"
 )
 
 func main() {

@@ -4,6 +4,8 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 # gazelle:prefix github.com/discentem/cavorite
 # gazelle:exclude .sl
 # gazelle:proto disable_global
+# gazelle:proto package
+# gazelle:proto_group go_package
 gazelle(name = "gazelle")
 
 gazelle(

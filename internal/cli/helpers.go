@@ -69,7 +69,7 @@ func initStoreFromConfig(ctx context.Context, cfg config.Config, fsys afero.Fs, 
 		s = stores.Store(az)
 	case stores.StoreTypeGoPlugin:
 		// FIXME: allow specifying command arguments for plugin
-		cmd := exec.Command(opts.BackendAddress)
+		cmd := exec.Command(opts.PluginAddress)
 		ps, err := stores.NewPluggableStore(cmd)
 		if err != nil {
 			return nil, fmt.Errorf("improper plugin init: %v", err)

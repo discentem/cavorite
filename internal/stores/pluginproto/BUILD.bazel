@@ -1,20 +1,27 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
 
-go_library(
-    name = "pluginproto",
-    srcs = [
-        "plugin.go",
-        "plugin.pb.go",
-        "plugin_grpc.pb.go",
-    ],
-    importpath = "github.com/discentem/cavorite/internal/stores/pluginproto",
-    visibility = ["//:__subpackages__"],
+proto_library(
+    name = "plugin_proto",
+    srcs = ["plugin.proto"],
+    visibility = ["//visibility:public"],
     deps = [
-        "@org_golang_google_grpc//:grpc",
-        "@org_golang_google_grpc//codes",
-        "@org_golang_google_grpc//status",
-        "@org_golang_google_protobuf//reflect/protoreflect",
-        "@org_golang_google_protobuf//runtime/protoimpl",
-        "@org_golang_google_protobuf//types/known/emptypb",
+        "@com_google_protobuf//:empty_proto",
     ],
+)
+
+go_proto_library(
+    name = "go_default_library",
+    compilers = ["@io_bazel_rules_go//proto:go_grpc"],
+    importpath = "github.com/discentem/cavorite/internal/stores/pluginproto",
+    proto = ":plugin_proto",
+    visibility = ["//:__subpackages__"],
+)
+
+go_proto_library(
+    name = "pluginproto_go_proto",
+    compilers = ["@io_bazel_rules_go//proto:go_grpc"],
+    importpath = "./pluginproto",
+    proto = ":plugin_proto",
+    visibility = ["//:__subpackages__"],
 )

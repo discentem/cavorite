@@ -129,6 +129,8 @@ See [MAKE](MAKE) for more useful targets.
 
 > This is not yet tested automatically in Github Actions.
 
+> Special thanks to [korylprince](https://github.com/korylprince) for implementing go-plugin support in Cavorite!
+
 1. Compile `cavorite` with `make` and then compile some plugin. If you want to compile the example plugin, run `make with_localstore_plugin`.
 
 1. Set environment variables for cavorite and the plugin you compiled. For example: 

@@ -14,7 +14,7 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/metadata",
-        "//internal/stores/pluginproto:go_default_library",
+        "//internal/stores/pluginproto:pluginproto_go_proto",
         "@com_github_aws_aws_sdk_go_v2//aws",
         "@com_github_aws_aws_sdk_go_v2_config//:config",
         "@com_github_aws_aws_sdk_go_v2_feature_s3_manager//:manager",

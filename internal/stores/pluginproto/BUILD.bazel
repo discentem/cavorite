@@ -11,17 +11,9 @@ proto_library(
 )
 
 go_proto_library(
-    name = "go_default_library",
-    compilers = ["@io_bazel_rules_go//proto:go_grpc"],
-    importpath = "github.com/discentem/cavorite/internal/stores/pluginproto",
-    proto = ":plugin_proto",
-    visibility = ["//:__subpackages__"],
-)
-
-go_proto_library(
     name = "pluginproto_go_proto",
     compilers = ["@io_bazel_rules_go//proto:go_grpc"],
-    importpath = "./pluginproto",
+    importpath = "github.com/discentem/cavorite/internal/stores/pluginproto",
     proto = ":plugin_proto",
     visibility = ["//:__subpackages__"],
 )

@@ -1,6 +1,6 @@
 syntax = "proto3";
 import "google/protobuf/empty.proto";
-option go_package = "./pluginproto";
+option go_package = "github.com/discentem/cavorite/internal/stores/pluginproto";
 
 package plugin;
 

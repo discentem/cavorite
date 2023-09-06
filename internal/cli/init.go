@@ -92,7 +92,7 @@ func initFn(cmd *cobra.Command, args []string) error {
 	}
 
 	pluginAddress := viper.GetString("plugin_address")
-	fmt.Println("pluginAddress: %s", pluginAddress)
+	fmt.Printf("pluginAddress: %s\n", pluginAddress)
 	if pluginAddress != "" {
 		opts.PluginAddress = pluginAddress
 	}

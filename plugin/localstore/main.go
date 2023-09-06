@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/discentem/cavorite/internal/stores"
 	"github.com/hashicorp/go-hclog"
+
+	"github.com/discentem/cavorite/internal/stores"
 )
 
 type LocalStore struct {
@@ -17,15 +18,23 @@ func (s *LocalStore) Upload(ctx context.Context, objects ...string) error {
 	s.logger.Info(fmt.Sprintf("Uploading %v via localstore plugin", objects))
 	return nil
 }
+
 func (s *LocalStore) Retrieve(ctx context.Context, objects ...string) error {
 	s.logger.Info(fmt.Sprintf("Retrieving %v via localstore plugin", objects))
 	return nil
 }
+
 func (s *LocalStore) GetOptions() (stores.Options, error) {
 	s.logger.Info("GetOptions() called on localstore plugin")
 	return stores.Options{
 		Region: "plugin region",
 	}, nil
+}
+
+func (s *LocalStore) SetOptions(ctx context.Context, opts stores.Options) error {
+	s.logger.Info("SetOptions() called on localstore plugin")
+	s.logger.Info(opts.BackendAddress)
+	return nil
 }
 
 func (s *LocalStore) Close() error {

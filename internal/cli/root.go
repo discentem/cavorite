@@ -4,21 +4,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/logger"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
 	"github.com/discentem/cavorite/internal/config"
 	"github.com/discentem/cavorite/internal/metadata"
 	"github.com/discentem/cavorite/internal/program"
 	"github.com/discentem/cavorite/internal/stores"
-	"github.com/google/logger"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
 	// These vars are available to every sub command
-	debug         bool
-	vv            bool
-	cfg           config.Config
-	pluginAddress string
+	debug bool
+	vv    bool
+	cfg   config.Config
 
 	// TODO (@radsec) Update this to be dynamic with GH action on new release and tagging....
 	version string = "development"

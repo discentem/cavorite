@@ -202,6 +202,13 @@ go_repository(
     version = "v0.1.1",
 )
 
+go_repository(
+    name = "com_github_googleapis_googleapis",
+    importpath = "github.com/googleapis/googleapis",
+    sum = "h1:H/JKoEVPUZjvazqVLKO2fdSFTudVmozSgOpeMJHe5n8=",
+    version = "v0.0.0-20230907000724-75346295df28",
+)
+
 bazel_skylib_workspace()
 
 load("//:repositories.bzl", "go_repositories")
@@ -363,3 +370,18 @@ http_archive(
 load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies")
 
 aspect_bazel_lib_dependencies()
+
+http_archive(
+    name = "googleapis",
+    sha256 = "9d1a930e767c93c825398b8f8692eca3fe353b9aaadedfbcf1fca2282c85df88",
+    strip_prefix = "googleapis-64926d52febbf298cb82a8f472ade4a3969ba922",
+    urls = [
+        "https://github.com/googleapis/googleapis/archive/64926d52febbf298cb82a8f472ade4a3969ba922.zip",
+    ],
+)
+
+load("@googleapis//:repository_rules.bzl", "switched_rules_by_language")
+
+switched_rules_by_language(
+    name = "com_google_googleapis_imports",
+)

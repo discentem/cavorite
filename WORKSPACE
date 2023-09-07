@@ -340,3 +340,26 @@ load("@rules_proto_grpc//go:repositories.bzl", rules_proto_grpc_go_repos = "go_r
 rules_proto_grpc_go_repos()
 
 protobuf_deps()
+
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
+git_repository(
+    name = "com_github_ash2k_bazel_tools",
+    commit = "2add5bb84c2837a82a44b57e83c7414247aed43a",
+    remote = "https://github.com/ash2k/bazel-tools.git",
+)
+
+load("@com_github_ash2k_bazel_tools//golangcilint:deps.bzl", "golangcilint_dependencies")
+
+golangcilint_dependencies()
+
+http_archive(
+    name = "aspect_bazel_lib",
+    sha256 = "b44310bef17d33d0e34a624dbbc74de595d37adc16546bd612d6f178eac426e7",
+    strip_prefix = "bazel-lib-1.34.2",
+    url = "https://github.com/aspect-build/bazel-lib/releases/download/v1.34.2/bazel-lib-v1.34.2.tar.gz",
+)
+
+load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies")
+
+aspect_bazel_lib_dependencies()

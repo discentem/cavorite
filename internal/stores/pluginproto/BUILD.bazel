@@ -1,5 +1,6 @@
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//:tools/go_proto_library_source.bzl", "write_go_proto_srcs")
 
 proto_library(
     name = "plugin_proto",
@@ -16,4 +17,11 @@ go_proto_library(
     importpath = "github.com/discentem/cavorite/internal/stores/pluginproto",
     proto = ":plugin_proto",
     visibility = ["//:__subpackages__"],
+)
+
+# needed for golangci-lint to pass outside of bazel
+write_go_proto_srcs(
+    name = "write_generated_protos",
+    src = "plugin.pb.go",
+    go_proto_library = ":pluginproto_go_proto",
 )

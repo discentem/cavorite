@@ -17,6 +17,7 @@ import (
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 
+	"github.com/discentem/cavorite/internal/fileutils"
 	"github.com/discentem/cavorite/internal/metadata"
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
@@ -139,20 +140,6 @@ func (s *s3Store) Upload(ctx context.Context, objects ...string) error {
 		if err != nil {
 			return err
 		}
-		// cleanupFn is function that can be called if
-		// uploading to s3 fails. cleanupFn deletes the cfile
-		// so that we don't retain a cfile without a corresponding binary
-		cleanupFn, err := WriteMetadataToFsys(s, o, f)
-		if err != nil {
-			return err
-		}
-		_, err = f.Seek(0, io.SeekStart)
-		if err != nil {
-			if err := cleanupFn(); err != nil {
-				return err
-			}
-			return err
-		}
 
 		// Generate S3 struct for object and upload to S3 bucket
 		s3BucketName, err := s.getBucketName()
@@ -167,9 +154,6 @@ func (s *s3Store) Upload(ctx context.Context, objects ...string) error {
 		}
 		out, err := s.s3Uploader.Upload(ctx, &obj)
 		if err != nil {
-			if err := cleanupFn(); err != nil {
-				return fmt.Errorf("cleanup() failed after Upload failure: %w", err)
-			}
 			logger.Error(out)
 			return err
 		}
@@ -187,9 +171,13 @@ func (s *s3Store) Retrieve(ctx context.Context, objects ...string) error {
 		objectPath := strings.TrimSuffix(o, filepath.Ext(o))
 		// We will either read the file that already exists or download it because it
 		// is missing
-		f, err := openOrCreateFile(s.fsys, objectPath)
+		f, err := fileutils.OpenOrCreateFile(s.fsys, objectPath)
 		if err != nil {
 			return err
+		}
+		_, err = f.Seek(0, io.SeekStart)
+		if err != nil {
+			return nil
 		}
 		fileInfo, err := f.Stat()
 		if err != nil {

@@ -65,12 +65,14 @@ func TestGCSUpload(t *testing.T) {
 	err = store.Upload(context.Background(), "thing")
 	assert.NoError(t, err)
 
-	b, _ := afero.ReadFile(*memfs, "thing.cfile")
-	assert.Equal(t, string(b), `{
- "name": "thing",
- "checksum": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52",
- "date_modified": "2014-11-12T11:45:26.371Z"
-}`)
+	f, err := store.fsys.Open("thing")
+	assert.NoError(t, err)
+	fstat, err := f.Stat()
+	assert.NoError(t, err)
+	b := make([]byte, fstat.Size())
+	_, err = f.Read(b)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte(`blah`), b)
 
 }
 

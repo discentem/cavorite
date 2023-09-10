@@ -13,6 +13,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
+	"github.com/discentem/cavorite/internal/fileutils"
 	"github.com/discentem/cavorite/internal/metadata"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
@@ -39,12 +40,9 @@ func (s *AzureBlobStore) Upload(ctx context.Context, objects ...string) error {
 		if err != nil {
 			return err
 		}
-		// cleanupFn is function that can be called if
-		// uploading to blob storage fails. cleanupFn deletes the cfile
-		// so that we don't retain a cfile without a corresponding binary
-		cleanupFn, err := WriteMetadataToFsys(s, o, f)
+		_, err = f.Seek(0, io.SeekStart)
 		if err != nil {
-			return err
+			return nil
 		}
 		containerName := path.Base(s.Options.BackendAddress)
 		_, err = s.containerClient.UploadStream(
@@ -57,9 +55,6 @@ func (s *AzureBlobStore) Upload(ctx context.Context, objects ...string) error {
 			},
 		)
 		if err != nil {
-			if err := cleanupFn(); err != nil {
-				return err
-			}
 			return err
 		}
 		if err := f.Close(); err != nil {
@@ -75,7 +70,7 @@ func (s *AzureBlobStore) Retrieve(ctx context.Context, objects ...string) error 
 		objectPath := strings.TrimSuffix(o, filepath.Ext(o))
 		// We will either read the file that already exists or download it because it
 		// is missing
-		f, err := openOrCreateFile(s.fsys, objectPath)
+		f, err := fileutils.OpenOrCreateFile(s.fsys, objectPath)
 		if err != nil {
 			return err
 		}

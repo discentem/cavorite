@@ -2,10 +2,8 @@ package stores
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"os"
 	"testing"
 	"time"
 
@@ -116,68 +114,15 @@ func TestS3StoreUpload(t *testing.T) {
 	err = store.Upload(context.Background(), "test")
 	assert.NoError(t, err)
 
-	b, _ := afero.ReadFile(*memfs, "test.cfile")
-	assert.Equal(t, `{
- "name": "test",
- "checksum": "4df3c3f68fcc83b27e9d42c90431a72499f17875c81a599b566c9889b9696703",
- "date_modified": "2014-11-12T11:45:26.371Z"
-}`, string(b))
-}
-
-type s3FailServer struct{}
-
-func (s s3FailServer) Download(
-	ctx context.Context,
-	w io.WriterAt,
-	input *s3.GetObjectInput,
-	options ...func(*s3manager.Downloader)) (n int64, err error) {
-	return 0, errors.New("s3FailServer download failed")
-}
-
-func (s s3FailServer) Upload(ctx context.Context,
-	input *s3.PutObjectInput,
-	opts ...func(*s3manager.Uploader)) (
-	*s3manager.UploadOutput, error,
-) {
-	return nil, errors.New("s3FailServer upload failed")
-}
-
-func TestS3StoreUploadFailCleanup(t *testing.T) {
-	mTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")
-	memfs, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
-		"test": {
-			Content: []byte("bla"),
-			ModTime: &mTime,
-		},
-		// create .cfile to ensure when Upload fails that this gets cleaned up
-		"test.cfile": {
-			Content: []byte("bla"),
-			ModTime: &mTime,
-		},
-	})
+	buck := fakeS3Server.buckets["test"]
+	f, err := buck.Open("test")
 	assert.NoError(t, err)
-
-	// intentionally broken Uploads
-	S3ServerFail := s3FailServer{}
-
-	store := s3Store{
-		Options: Options{
-			BackendAddress:        "s3://test",
-			MetadataFileExtension: "cfile",
-		},
-		fsys:         *memfs,
-		awsRegion:    "us-east-1",
-		s3Uploader:   S3ServerFail,
-		s3Downloader: S3ServerFail,
-	}
-
-	// Upload expected to failed
-	err = store.Upload(context.Background(), "test")
-	assert.Error(t, err)
-
-	// Ensure this file doesn't exist to confirm cleanup() inside store.Upload succeeded
-	_, err = afero.ReadFile(*memfs, "test.cfile")
-	assert.Equal(t, true, os.IsNotExist(err))
+	fstat, err := f.Stat()
+	assert.NoError(t, err)
+	b := make([]byte, fstat.Size())
+	_, err = f.Read(b)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte(`bla`), b)
 }
 
 func TestS3StoreRetrieve(t *testing.T) {

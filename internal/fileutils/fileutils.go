@@ -3,6 +3,7 @@ package fileutils
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/spf13/afero"
 )
@@ -22,4 +23,12 @@ func BytesFromAferoFile(f afero.File) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read bytes from objectHandle: %w", err)
 	}
 	return b, nil
+}
+
+func OpenOrCreateFile(fsys afero.Fs, filename string) (afero.File, error) {
+	file, err := fsys.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0644)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
 }

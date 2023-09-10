@@ -4,26 +4,35 @@ This is not production ready nor feature complete. See [Issues](https://github.c
 
 ## What is this?
 
-A cli tool that makes it easy to track large, binary files in source control repositories.
+A cli tool that makes it easy to track large, binary files in source control repositories. Compatible with _any_ SCM system.
 
-Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri, this is a re-write in Go with support for s3, minio, Google Cloud Storage, and other storage systems through plugins. See [internal/stores](internal/stores) for information about implementing new storage drivers.
+Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri, this is a re-write in Go with support for s3, Minio, Google Cloud Storage, and other storage systems through plugins. See [internal/stores](internal/stores) for information about implementing new storage drivers.
 
 ## Development
 
-See [MAKE](MAKE). 
+### Prerequisites 
+
+Install [bazelisk](https://github.com/bazelbuild/bazelisk)
 
 ### How to build
 
-- `make`
-- `make bazzel_build_docker`
+#### with Bazel
 
-See [MAKE](MAKE) for more useful targets.
+`make`
+
+#### with go build
+
+`make go_build`
 
 ### Linting
 
-- `make lint`
+`make lint`
 
-## Full testing workflow
+### Unit Tests
+
+`make test`
+
+## End-to-end testing workflow
 
 ### Minio (S3)
 
@@ -125,13 +134,15 @@ See [MAKE](MAKE) for more useful targets.
    2022/10/18 21:57:53 Retrieving [~/some_git_project/googlechromebeta.dmg]
    ```
 
-### Testing a plugin-based backend
+### Testing a plugin-based backend (experimental)
 
 > This is not yet tested automatically in Github Actions.
 
 > Special thanks to [korylprince](https://github.com/korylprince) for implementing go-plugin support in Cavorite!
 
 1. Compile `cavorite` with `make` and then compile some plugin. If you want to compile the example plugin, run `make with_localstore_plugin`.
+
+   > Note: the [localstore](plugin/localstore/) may not be actually functional as a backend Cavorite at this time but is good enough for this demonstration.
 
 1. Set environment variables for cavorite and the plugin you compiled. For example: 
 

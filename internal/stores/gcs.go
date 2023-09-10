@@ -3,16 +3,15 @@ package stores
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"strings"
 	"time"
 
 	gcsStorage "cloud.google.com/go/storage"
+	"github.com/discentem/cavorite/internal/fileutils"
 	"github.com/discentem/cavorite/internal/metadata"
 	"github.com/google/logger"
-	"github.com/hashicorp/go-multierror"
 	"github.com/spf13/afero"
 	"google.golang.org/api/option"
 )
@@ -68,7 +67,6 @@ func (s *GCSStore) GetFsys() (afero.Fs, error) {
 
 // Upload generates the metadata, writes it s.fsys and uploads the file to the GCS bucket
 func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
-	var multErr error
 	for _, o := range objects {
 		logger.V(2).Infof("Object: %s\n", o)
 		f, err := s.fsys.Open(o)
@@ -76,13 +74,9 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 			return err
 		}
 		defer f.Close()
-
-		// cleanupFn is function that can be called if
-		// uploading to s3 fails. cleanupFn deletes the cfile
-		// so that we don't retain a cfile without a corresponding binary
-		cleanupFn, err := WriteMetadataToFsys(s, o, f)
+		_, err = f.Seek(0, io.SeekStart)
 		if err != nil {
-			return err
+			return nil
 		}
 
 		// ToDo(natewalck) Expose this timeout as a setting
@@ -95,24 +89,13 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 		wc := gcsObject.If(gcsStorage.Conditions{DoesNotExist: true}).NewWriter(ctx)
 
 		// Reset to the start of the file because metadata generation has already read it once
-		_, seekErr := f.Seek(0, io.SeekStart)
+		_, err = f.Seek(0, io.SeekStart)
 		if err != nil {
-			// seek failed, add this failure to multErr
-			multErr = multierror.Append(multErr, fmt.Errorf("f.Seek() error: %w", seekErr))
-			if cleanupErr := cleanupFn(); err != nil {
-				// cleanup also failed, add to multErr
-				multErr = multierror.Append(multErr, fmt.Errorf("cleanupFn() error: %w", cleanupErr))
-			}
-			// return multiple errors
-			return multErr
+			return err
 		}
 		_, err = io.Copy(wc, f)
 		if err != nil {
-			multErr = multierror.Append(multErr, fmt.Errorf("io.Copy() error: %w", err))
-			if cleanupErr := cleanupFn(); err != nil {
-				multErr = multierror.Append(multErr, fmt.Errorf("cleanupFn() error: %w", cleanupErr))
-			}
-			return multErr
+			return err
 		}
 
 		if err := wc.Close(); err != nil {
@@ -120,11 +103,7 @@ func (s *GCSStore) Upload(ctx context.Context, objects ...string) error {
 			if strings.Contains(err.Error(), "conditionNotMet") {
 				logger.Infof("%s already exists, skipping...", o)
 			} else {
-				multErr = multierror.Append(multErr, fmt.Errorf("wc.Close() err: %w", err))
-				if cleanupErr := cleanupFn(); err != nil {
-					multErr = multierror.Append(multErr, fmt.Errorf("cleanupFn() error: %w", cleanupErr))
-				}
-				return multErr
+				return err
 			}
 		}
 	}
@@ -138,7 +117,7 @@ func (s *GCSStore) Retrieve(ctx context.Context, metaObjects ...string) error {
 		objectPath := inferObjPath(mo)
 		// We will either read the file that already exists or download it because it
 		// is missing
-		f, err := openOrCreateFile(s.fsys, objectPath)
+		f, err := fileutils.OpenOrCreateFile(s.fsys, objectPath)
 		if err != nil {
 			return err
 		}

@@ -1,4 +1,4 @@
-package cli
+package config
 
 import (
 	"github.com/discentem/cavorite/internal/stores"
@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func loadConfig(fs afero.Fs) error {
+func Load(fs afero.Fs, cfgDest ...*Config) error {
 	// Defaults set here will be used if they do not exist in the config file
 	viper.SetFs(fs)
 	viper.SetDefault("store_type", stores.StoreTypeUndefined)
@@ -26,5 +26,9 @@ func loadConfig(fs afero.Fs) error {
 		return err
 	}
 
-	return viper.Unmarshal(&cfg)
+	// if cfgDest is passed, unmarshal into cfgDest[0]. cfgDest[1-len(cfgDest)] is always ignored.
+	if cfgDest != nil {
+		return viper.Unmarshal(cfgDest[0])
+	}
+	return viper.Unmarshal(&Cfg)
 }

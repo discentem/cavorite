@@ -77,12 +77,12 @@ func (p *clientStore) Close() error {
 
 // serverStore is the server the plugin uses to communicate with cavorite
 type serverStore struct {
-	StoreWithSetOptions
+	Store
 	pluginproto.UnimplementedPluginServer
 }
 
 func (p *serverStore) Upload(ctx context.Context, objects *pluginproto.Objects) (*emptypb.Empty, error) {
-	err := p.StoreWithSetOptions.Upload(ctx, objects.Objects...)
+	err := p.Store.Upload(ctx, objects.Objects...)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
 			return nil, err
@@ -93,7 +93,7 @@ func (p *serverStore) Upload(ctx context.Context, objects *pluginproto.Objects) 
 }
 
 func (p *serverStore) Retrieve(ctx context.Context, objects *pluginproto.Objects) (*emptypb.Empty, error) {
-	err := p.StoreWithSetOptions.Retrieve(ctx, objects.Objects...)
+	err := p.Store.Retrieve(ctx, objects.Objects...)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
 			return nil, err
@@ -104,7 +104,7 @@ func (p *serverStore) Retrieve(ctx context.Context, objects *pluginproto.Objects
 }
 
 func (p *serverStore) GetOptions(_ context.Context, _ *emptypb.Empty) (*pluginproto.Options, error) {
-	opts, err := p.StoreWithSetOptions.GetOptions()
+	opts, err := p.Store.GetOptions()
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
 			return nil, err
@@ -119,32 +119,14 @@ func (p *serverStore) GetOptions(_ context.Context, _ *emptypb.Empty) (*pluginpr
 	}, nil
 }
 
-func (p *serverStore) SetOptions(ctx context.Context, opts *pluginproto.Options) (*emptypb.Empty, error) {
-	so := Options{
-		BackendAddress:        opts.BackendAddress,
-		PluginAddress:         opts.PluginAddress,
-		MetadataFileExtension: opts.MetadataFileExtension,
-		Region:                opts.Region,
-	}
-	err := p.StoreWithSetOptions.SetOptions(ctx, so)
-	if err != nil {
-		if _, ok := status.FromError(err); ok {
-			return &emptypb.Empty{}, err
-		}
-		return &emptypb.Empty{}, status.Error(codes.Unknown, err.Error())
-	}
-
-	return &emptypb.Empty{}, nil
-}
-
 // storePlugin implements plugin.GRPCPlugin
 type storePlugin struct {
 	plugin.Plugin
-	StoreWithSetOptions
+	Store
 }
 
 func (p *storePlugin) GRPCServer(_ *plugin.GRPCBroker, server *grpc.Server) error {
-	pluginproto.RegisterPluginServer(server, &serverStore{StoreWithSetOptions: p.StoreWithSetOptions})
+	pluginproto.RegisterPluginServer(server, &serverStore{Store: p.Store})
 	return nil
 }
 
@@ -155,15 +137,7 @@ func (p *storePlugin) GRPCClient(ctx context.Context, _ *plugin.GRPCBroker, clie
 // PluggableStore is the Store used by cavorite that wraps go-plugin
 type PluggableStore struct {
 	client *plugin.Client
-	StoreWithSetOptions
-}
-
-type StoreWithSetOptions interface {
-	Upload(ctx context.Context, objects ...string) error
-	Retrieve(ctx context.Context, objects ...string) error
-	GetOptions() (Options, error)
-	SetOptions(context.Context, Options) error
-	Close() error
+	Store
 }
 
 func NewPluggableStore(ctx context.Context, opts Options) (*PluggableStore, error) {
@@ -190,20 +164,14 @@ func NewPluggableStore(ctx context.Context, opts Options) (*PluggableStore, erro
 		return nil, fmt.Errorf("could not dispense plugin: %w", err)
 	}
 	// assert to StoreWithOptions
-	swo := raw.(StoreWithSetOptions)
-
-	HLog.Info("options:", opts)
-
-	if err := swo.SetOptions(ctx, opts); err != nil {
-		return nil, err
-	}
+	s := raw.(Store)
 
 	// assert to Store
 	// store := raw.(Store)
 
 	return &PluggableStore{
-		client:              client,
-		StoreWithSetOptions: swo,
+		client: client,
+		Store:  s,
 	}, nil
 }
 
@@ -213,8 +181,8 @@ func (p *PluggableStore) Close() error {
 }
 
 // ListenAndServePlugin is used by plugins to start listening to requests
-func ListenAndServePlugin(store StoreWithSetOptions, logger hclog.Logger) {
-	PluginSet["store"] = &storePlugin{StoreWithSetOptions: store}
+func ListenAndServePlugin(store Store, logger hclog.Logger) {
+	PluginSet["store"] = &storePlugin{Store: store}
 
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: HandshakeConfig,

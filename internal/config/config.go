@@ -20,6 +20,10 @@ type Config struct {
 	Validate  func() error     `json:"-"`
 }
 
+var (
+	Cfg Config
+)
+
 type dirExpander func(string) (string, error)
 
 var (

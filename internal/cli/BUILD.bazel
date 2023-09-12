@@ -5,7 +5,6 @@ go_library(
     srcs = [
         "helpers.go",
         "init.go",
-        "loader.go",
         "retrieve.go",
         "root.go",
         "upload.go",
@@ -31,7 +30,6 @@ go_test(
     srcs = [
         "helpers_test.go",
         "init_test.go",
-        "loader_test.go",
         "retrieve_test.go",
         "root_test.go",
         "upload_test.go",

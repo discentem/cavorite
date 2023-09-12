@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/discentem/cavorite/internal/config"
 	"github.com/discentem/cavorite/internal/program"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
@@ -28,7 +29,7 @@ func retrieveCmd() *cobra.Command {
 			// All functions get the same args, the arguments after the command name.
 		*/
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return loadConfig(afero.NewOsFs())
+			return config.Load(afero.NewOsFs())
 		},
 		RunE: retrieveFn,
 	}
@@ -52,9 +53,9 @@ func retrieveFn(cmd *cobra.Command, objects []string) error {
 
 	s, err := initStoreFromConfig(
 		cmd.Context(),
-		cfg,
+		config.Cfg,
 		fsys,
-		cfg.Options,
+		config.Cfg.Options,
 	)
 	if err != nil {
 		return err

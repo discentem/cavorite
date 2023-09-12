@@ -6,7 +6,9 @@ import (
 	"os"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/spf13/afero"
 
+	"github.com/discentem/cavorite/internal/config"
 	"github.com/discentem/cavorite/internal/stores"
 )
 
@@ -27,8 +29,12 @@ func (s *LocalStore) Retrieve(ctx context.Context, objects ...string) error {
 }
 
 func (s *LocalStore) GetOptions() (stores.Options, error) {
-	s.logger.Info("GetOptions() called on localstore plugin")
-	return StatefulOptions, nil
+	cfg := config.Config{}
+	err := config.Load(afero.NewOsFs(), &cfg)
+	if err != nil {
+		return stores.Options{}, err
+	}
+	return cfg.Options, nil
 }
 
 func (s *LocalStore) SetOptions(ctx context.Context, opts stores.Options) error {

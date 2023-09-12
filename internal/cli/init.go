@@ -109,7 +109,7 @@ func initFn(cmd *cobra.Command, args []string) error {
 	case stores.StoreTypeAzureBlob:
 		fallthrough
 	case stores.StoreTypeGoPlugin:
-		cfg = config.InitalizeStoreTypeOf(
+		config.Cfg = config.InitalizeStoreTypeOf(
 			cmd.Context(),
 			sb,
 			fsys,
@@ -120,5 +120,5 @@ func initFn(cmd *cobra.Command, args []string) error {
 	default:
 		return config.ErrUnsupportedStore
 	}
-	return cfg.Write(fsys, repoToInit)
+	return config.Cfg.Write(fsys, repoToInit)
 }

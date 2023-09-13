@@ -3,17 +3,11 @@ LOCALSTORE_PLUGIN_BIN := $(shell bazel cquery plugin/localstore:localstore --out
 
 build: bazel_build
 
-with_localstore_plugin: bazel_build localstore_plugin
-	@echo CAVORITE_BIN=$(PWD)/$(CAVORITE_BIN)
-	@echo CAVORITE_PLUGIN=$(PWD)/$(LOCALSTORE_PLUGIN_BIN)
+go_build: 
+	go build
 
-bazel_build_docker:
-	docker build --tag cavoritebazelbuild -f _ci/bazel_build/Dockerfile .
-	docker run cavoritebazelbuild
-
-localstore_plugin:
-	bazel build plugin/localstore
-	
+gazelle:
+	bazel run :gazelle
 
 bazel_build: gazelle
 	bazel build :cavorite
@@ -21,12 +15,23 @@ bazel_build: gazelle
 	@echo
 	@echo CAVORITE_BIN=$(PWD)/$(CAVORITE_BIN)
 
+bazel_build_docker:
+	docker build --tag cavoritebazelbuild -f _ci/bazel_build/Dockerfile .
+	docker run cavoritebazelbuild
+
+localstore_plugin:
+	bazel build plugin/localstore
+
+with_localstore_plugin: bazel_build localstore_plugin
+	@echo CAVORITE_BIN=$(PWD)/$(CAVORITE_BIN)
+	@echo CAVORITE_PLUGIN=$(PWD)/$(LOCALSTORE_PLUGIN_BIN)
+
 lint:
 	docker build --tag cavoritelint -f _ci/lint/Dockerfile .
 	docker run cavoritelint
 
-gazelle:
-	bazel run :gazelle
+test: gazelle
+	bazel test //internal/...
 
 minio:
 	docker run -p 9000:9000 -p 9001:9001 quay.io/minio/minio server /data --console-address ":9001"

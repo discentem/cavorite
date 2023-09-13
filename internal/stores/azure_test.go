@@ -107,12 +107,17 @@ func TestAzureBlobStoreUpload(t *testing.T) {
 	}
 	err = store.Upload(context.Background(), "test")
 	require.NoError(t, err)
-	b, _ := afero.ReadFile(*memfs, "test.cfile")
-	assert.Equal(t, `{
- "name": "test",
- "checksum": "dc9c5edb8b2d479e697b4b0b8ab874f32b325138598ce9e7b759eb8292110622",
- "date_modified": "2014-11-12T11:45:26.371Z"
-}`, string(b))
+
+	buck := fakeAzureBlobServer.containers["test"]
+	f, err := buck.Open("test")
+	assert.NoError(t, err)
+	fstat, err := f.Stat()
+	assert.NoError(t, err)
+	b := make([]byte, fstat.Size())
+	_, err = f.Read(b)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte(`tree`), b)
+
 }
 
 func TestAzureBlobStoreRetrieve(t *testing.T) {

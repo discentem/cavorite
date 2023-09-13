@@ -13,6 +13,7 @@ go_library(
     importpath = "github.com/discentem/cavorite/internal/stores",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/fileutils",
         "//internal/metadata",
         "//internal/stores/pluginproto:pluginproto_go_proto",
         "@com_github_aws_aws_sdk_go_v2//aws",
@@ -25,7 +26,6 @@ go_library(
         "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//blockblob",
         "@com_github_google_logger//:logger",
         "@com_github_hashicorp_go_hclog//:go-hclog",
-        "@com_github_hashicorp_go_multierror//:go-multierror",
         "@com_github_hashicorp_go_plugin//:go-plugin",
         "@com_github_spf13_afero//:afero",
         "@com_google_cloud_go_storage//:storage",
@@ -43,7 +43,6 @@ go_test(
         "azure_test.go",
         "gcs_test.go",
         "s3_test.go",
-        "stores_test.go",
     ],
     embed = [":stores"],
     deps = [

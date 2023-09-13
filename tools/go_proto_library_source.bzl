@@ -1,3 +1,4 @@
+# Adapted from https://github.com/bazelbuild/rules_go/issues/2111#issuecomment-1355927231
 load("@aspect_bazel_lib//lib:write_source_files.bzl", "write_source_files")
 load(
     "@io_bazel_rules_go//go:def.bzl",

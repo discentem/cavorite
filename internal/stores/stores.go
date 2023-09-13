@@ -2,15 +2,10 @@ package stores
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/discentem/cavorite/internal/metadata"
-	"github.com/google/logger"
 	"github.com/spf13/afero"
 )
 
@@ -47,54 +42,6 @@ type Store interface {
 	Close() error
 }
 
-func openOrCreateFile(fsys afero.Fs, filename string) (afero.File, error) {
-	file, err := fsys.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0644)
-	if err != nil {
-		return nil, err
-	}
-	return file, nil
-}
-
 func inferObjPath(cfilePath string) string {
 	return strings.TrimSuffix(cfilePath, filepath.Ext(cfilePath))
-}
-
-// WriteMetadata generates Cavorite metadata for obj and writes it to s.Fsys
-func WriteMetadataToFsys(s StoreWithGetters, obj string, f afero.File) (cleanup func() error, err error) {
-	opts, err := s.GetOptions()
-	if err != nil {
-		return nil, err
-	}
-	if opts.MetadataFileExtension == "" {
-		return nil, metadata.ErrFileExtensionEmpty
-	}
-	fsys, err := s.GetFsys()
-	if err != nil {
-		return nil, err
-	}
-	logger.V(2).Infof("object: %s", obj)
-
-	// generate metadata
-	m, err := metadata.GenerateFromFile(f)
-	if err != nil {
-		return nil, err
-	}
-	logger.V(2).Infof("%s has a checksum of %q", obj, m.Checksum)
-	// convert metadata to json
-	blob, err := json.MarshalIndent(m, "", " ")
-	if err != nil {
-		return nil, err
-	}
-	// Write metadata to disk
-	metadataPath := fmt.Sprintf("%s.%s", obj, opts.MetadataFileExtension)
-	logger.V(2).Infof("writing metadata to %s", metadataPath)
-	if err := afero.WriteFile(fsys, metadataPath, blob, 0644); err != nil {
-		return nil, err
-	}
-
-	cleanup = func() error {
-		return fsys.Remove(metadataPath)
-	}
-
-	return cleanup, nil
 }

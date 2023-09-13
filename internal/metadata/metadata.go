@@ -8,6 +8,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/google/logger"
 	"github.com/spf13/afero"
 )
 
@@ -68,4 +69,35 @@ func ParseCfile(fsys afero.Fs, obj string) (*ObjectMetaData, error) {
 func ParseCfileWithExtension(fsys afero.Fs, obj, ext string) (*ObjectMetaData, error) {
 	cfile := fmt.Sprintf("%s.%s", obj, ext)
 	return ParseCfile(fsys, cfile)
+}
+
+type FsysWriteRequest struct {
+	Object    string
+	Fsys      afero.Fs
+	Fi        afero.File
+	Extension string
+}
+
+// WriteMetadata generates Cavorite metadata for obj and writes it to s.Fsys
+func WriteToFsys(req FsysWriteRequest) (err error) {
+	logger.V(2).Infof("object: %s", req.Object)
+	// generate metadata
+	m, err := GenerateFromFile(req.Fi)
+	if err != nil {
+		return err
+	}
+	logger.V(2).Infof("%s has a checksum of %q", req.Object, m.Checksum)
+	// convert metadata to json
+	blob, err := json.MarshalIndent(m, "", " ")
+	if err != nil {
+		return err
+	}
+	// Write metadata to disk
+	metadataPath := fmt.Sprintf("%s.%s", req.Object, req.Extension)
+	logger.V(2).Infof("writing metadata to %s", metadataPath)
+	if err := afero.WriteFile(req.Fsys, metadataPath, blob, 0644); err != nil {
+		return err
+	}
+
+	return nil
 }

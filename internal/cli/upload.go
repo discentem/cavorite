@@ -1,14 +1,19 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/google/logger"
+	multierr "github.com/hashicorp/go-multierror"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
+	"github.com/discentem/cavorite/internal/metadata"
 	"github.com/discentem/cavorite/internal/program"
+	"github.com/discentem/cavorite/internal/stores"
 )
 
 func uploadCmd() *cobra.Command {
@@ -48,6 +53,50 @@ func uploadCmd() *cobra.Command {
 	//   * PersistentPostRunE()
 	// All functions get the same args, the arguments after the command name.
 */
+
+var (
+	ErrWriteMetadataToFsys = errors.New("failed to write metadata to fsys")
+	ErrOpen                = errors.New("failed to open")
+	ErrUpload              = errors.New("failed to upload")
+)
+
+func upload(ctx context.Context, fsys afero.Fs, s stores.Store, objects ...string) error {
+	opts, err := s.GetOptions()
+	if err != nil {
+		return err
+	}
+	logger.Info("Options:", opts)
+
+	logger.Infof("Uploading to: %s", opts.BackendAddress)
+	logger.Infof("Uploading file: %s", objects)
+	if err := s.Upload(ctx, objects...); err != nil {
+		logger.Error(err)
+		return fmt.Errorf("%w for %v", ErrUpload, objects)
+	}
+
+	var errResult error
+	for _, obj := range objects {
+		f, err := fsys.Open(obj)
+		if err != nil {
+			errResult = multierr.Append(fmt.Errorf("%w for %s", ErrOpen, obj))
+			continue
+		}
+		_, err = f.Seek(0, io.SeekStart)
+		if err != nil {
+			errResult = multierr.Append(err)
+		}
+		err = metadata.WriteToFsys(metadata.FsysWriteRequest{
+			Object:    obj,
+			Fsys:      fsys,
+			Fi:        f,
+			Extension: opts.MetadataFileExtension,
+		})
+		if err != nil {
+			errResult = multierr.Append(fmt.Errorf("%w for %s", ErrWriteMetadataToFsys, obj))
+		}
+	}
+	return errResult
+}
 func uploadFn(cmd *cobra.Command, objects []string) error {
 	fsys := afero.NewOsFs()
 	s, err := initStoreFromConfig(
@@ -73,19 +122,5 @@ func uploadFn(cmd *cobra.Command, objects []string) error {
 	if err != nil {
 		return fmt.Errorf("upload error: %w", err)
 	}
-
-	logger.Info("before GetOptions")
-	opts, err := s.GetOptions()
-	if err != nil {
-		return err
-	}
-	logger.Info(opts)
-	logger.Info("after GetOptions")
-
-	logger.Infof("Uploading to: %s", opts.BackendAddress)
-	logger.Infof("Uploading file: %s", objects)
-	if err := s.Upload(cmd.Context(), objects...); err != nil {
-		return err
-	}
-	return nil
+	return upload(cmd.Context(), fsys, s, objects...)
 }

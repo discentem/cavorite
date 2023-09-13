@@ -48,6 +48,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.13.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.19 // indirect
 	github.com/aws/smithy-go v1.13.3 // indirect
+	github.com/carolynvs/aferox v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect

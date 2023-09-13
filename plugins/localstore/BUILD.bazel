@@ -1,14 +1,15 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 
 go_library(
     name = "localstore_lib",
     srcs = ["main.go"],
-    importpath = "github.com/discentem/cavorite/plugin/localstore",
+    importpath = "github.com/discentem/cavorite/plugins/localstore",
     visibility = ["//visibility:private"],
     deps = [
         "//internal/config",
         "//internal/stores",
         "@com_github_hashicorp_go_hclog//:go-hclog",
+        "@com_github_hashicorp_go_multierror//:go-multierror",
         "@com_github_spf13_afero//:afero",
     ],
 )
@@ -17,4 +18,17 @@ go_binary(
     name = "localstore",
     embed = [":localstore_lib"],
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "localstore_test",
+    srcs = ["main_test.go"],
+    embed = [":localstore_lib"],
+    deps = [
+        "//internal/stores",
+        "//internal/testutils",
+        "@com_github_carolynvs_aferox//:aferox",
+        "@com_github_hashicorp_go_hclog//:go-hclog",
+        "@com_github_stretchr_testify//assert",
+    ],
 )

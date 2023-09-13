@@ -21,12 +21,16 @@ func MemMapFsWith(files map[string]MapFile) (*afero.Fs, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		afile, err := memfsys.Create(fname)
 		if err != nil {
 			return nil, err
 		}
 		_, err = afile.Write(mfile.Content)
 		if err != nil {
+			return nil, err
+		}
+		if err := afero.WriteReader(memfsys, fname, afile); err != nil {
 			return nil, err
 		}
 		if mfile.ModTime != nil {

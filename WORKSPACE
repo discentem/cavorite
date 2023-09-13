@@ -209,6 +209,13 @@ go_repository(
     version = "v0.0.0-20230907000724-75346295df28",
 )
 
+go_repository(
+    name = "com_github_carolynvs_aferox",
+    importpath = "github.com/carolynvs/aferox",
+    sum = "h1:CMT50zX88amTMbFfFIWSTKRVRaOw6sejUMbbKiCD4zE=",
+    version = "v0.3.0",
+)
+
 bazel_skylib_workspace()
 
 load("//:repositories.bzl", "go_repositories")

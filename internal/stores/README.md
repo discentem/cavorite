@@ -1,9 +1,11 @@
 # Stores
 `Store` is the interface by which files are uploaded/retrieved from a storage backend.
 
-## How to implement
+## How to implement support for a new artifact store
 
-Instead of forking Cavorite to add support for a new storage backend via a new implementation of `Store`, the recommended strategy is to implement a plugin. See [the localstore plugin](../../plugin/localstore/) as an example.
+If you want to use Cavorite with artifact storage that isn't compatible with S3, GCS, or Azure
+
+Instead of forking Cavorite to add support for a new storage backend, the recommended strategy is to implement a plugin. See [the localstore plugin](../../plugin/localstore/) as an example.
 
 You must implement all the methods of `Store`.
 
@@ -17,9 +19,16 @@ In your implemention of `Upload()`, the following tasks need to be handled:
     import (
         "github.com/discentem/cavorite/internal/config"
     )
+    type SomeStore struct {
+	    logger hclog.Logger
+	    fsys   afero.Fs
+    }
     // ...
-    func (s *LocalStore) GetOptions() (stores.Options, error) {
-        return config.LoadOptions(afero.NewOsFs())
+    func (s *SomeStore) GetOptions() (stores.Options, error) {
+        if s.fsys == nil {
+            f := afero.NewOsFs() // replace with afero.NewMemMapFs() in tests
+        }
+        return config.LoadOptions(f)
     }
     ```
 
@@ -28,13 +37,13 @@ In your implemention of `Upload()`, the following tasks need to be handled:
     > This implementation is more complicated than GetOptions() and depends entirely on what artifact store you are using. See [internal/stores/s3](../stores/s3.go) for a detailed example.
     
     ```go
-    func (s *LocalStore) Upload(ctx context.Context, objects ...string) error {
+    func (s *SomeStore) Upload(ctx context.Context, objects ...string) error {
 	    opts, err := s.GetOptions()
         if err != nil {
             return err
         }
         backendAddress := opts.BackendAddress
-        s.logger.Info(fmt.Sprintf("Uploading %v via localstore plugin", objects))
+        s.logger.Info(fmt.Sprintf("Uploading %v via magicstore plugin", objects))
         // call your artifact storage provider's API and pass objects
         return UploadToMagicalStore(backendAddress, ...objects)
     }

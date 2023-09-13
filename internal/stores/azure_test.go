@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"testing"
 	"time"
 
@@ -85,11 +86,18 @@ func TestAzureBlobStoreUpload(t *testing.T) {
 	mTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")
 	memfs, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
 		"test": {
-			Content: []byte("tree"),
+			Content: []byte(`tree`),
 			ModTime: &mTime,
 		},
 	})
 	assert.NoError(t, err)
+
+	err = afero.Walk(*memfs, "", func(path string, info fs.FileInfo, err error) error {
+		b, _ := afero.ReadFile(*memfs, path)
+		fmt.Printf("content: %v\n", string(b))
+		fmt.Println(path)
+		return nil
+	})
 
 	fakeAzureBlobServer := aferoAzureBlobServer{
 		containers: map[string]afero.Fs{

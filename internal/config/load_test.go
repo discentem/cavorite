@@ -1,8 +1,9 @@
-package cli
+package config
 
 import (
 	"testing"
 
+	"github.com/discentem/cavorite/internal/stores"
 	"github.com/discentem/cavorite/internal/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -21,6 +22,8 @@ func TestLoadConfig(t *testing.T) {
 	file, err := fs.Create(testutils.AbsFilePath(t, ".cavorite/config"))
 	require.NoError(t, err)
 
+	cfg := Config{}
+
 	_, err = file.Write([]byte(`{
 		"store_type": "s3",
 		"options": {
@@ -33,6 +36,12 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	file.Close()
 
-	err = loadConfig(fs)
+	err = Load(fs, &cfg)
 	assert.NoError(t, err)
+
+	assert.Equal(t, stores.StoreType("s3"), cfg.StoreType)
+	assert.Equal(t, "s3://blahaddress/bucket", cfg.Options.BackendAddress)
+	assert.Equal(t, "", cfg.Options.MetadataFileExtension)
+	assert.Equal(t, "us-east-9876", cfg.Options.Region)
+
 }

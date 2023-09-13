@@ -85,6 +85,7 @@ func upload(ctx context.Context, fsys afero.Fs, s stores.Store, objects ...strin
 		_, err = f.Seek(0, io.SeekStart)
 		if err != nil {
 			errResult = multierr.Append(err)
+			continue
 		}
 		err = metadata.WriteToFsys(metadata.FsysWriteRequest{
 			Object:    obj,

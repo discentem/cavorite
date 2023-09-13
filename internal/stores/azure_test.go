@@ -85,7 +85,7 @@ func TestAzureBlobStoreUpload(t *testing.T) {
 	mTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")
 	memfs, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
 		"test": {
-			Content: []byte("tree"),
+			Content: []byte(`tree`),
 			ModTime: &mTime,
 		},
 	})

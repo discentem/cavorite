@@ -12,8 +12,8 @@ import (
 	multierr "github.com/hashicorp/go-multierror"
 	"github.com/spf13/afero"
 
-	"github.com/discentem/cavorite/internal/config"
-	"github.com/discentem/cavorite/internal/stores"
+	"github.com/discentem/cavorite/config"
+	"github.com/discentem/cavorite/stores"
 )
 
 type LocalStore struct {

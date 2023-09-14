@@ -8,9 +8,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/discentem/cavorite/internal/config"
-	"github.com/discentem/cavorite/internal/program"
-	"github.com/discentem/cavorite/internal/stores"
+	"github.com/discentem/cavorite/config"
+	"github.com/discentem/cavorite/program"
+	"github.com/discentem/cavorite/stores"
 )
 
 func initCmd() *cobra.Command {

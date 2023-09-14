@@ -1,0 +1,23 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+option go_package = "github.com/discentem/cavorite/stores/pluginproto";
+
+package plugin;
+
+message Objects {
+  repeated string objects = 1;
+}
+
+message Options {
+  string backend_address = 1;
+  string plugin_address = 2;
+  string metadata_file_extension = 3;
+  string region = 4;
+}
+
+service Plugin {
+  rpc Upload(Objects) returns (google.protobuf.Empty) {}
+  rpc Retrieve(Objects) returns (google.protobuf.Empty) {}
+  rpc GetOptions(google.protobuf.Empty) returns (Options) {}
+  rpc SetOptions(Options) returns (google.protobuf.Empty) {}
+}

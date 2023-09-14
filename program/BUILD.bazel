@@ -1,8 +1,8 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "exec",
-    srcs = ["exec.go"],
-    importpath = "github.com/discentem/cavorite/internal/exec",
+    name = "program",
+    srcs = ["main.go"],
+    importpath = "github.com/discentem/cavorite/program",
     visibility = ["//:__subpackages__"],
 )

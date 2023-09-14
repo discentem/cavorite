@@ -8,7 +8,7 @@ import (
 	"github.com/google/logger"
 
 	"github.com/discentem/cavorite/internal/cli"
-	"github.com/discentem/cavorite/internal/program"
+	"github.com/discentem/cavorite/program"
 )
 
 func main() {

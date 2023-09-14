@@ -12,8 +12,8 @@ import (
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 
-	"github.com/discentem/cavorite/internal/config"
-	"github.com/discentem/cavorite/internal/stores"
+	"github.com/discentem/cavorite/config"
+	"github.com/discentem/cavorite/stores"
 )
 
 func rootOfSourceRepo() (*string, error) {

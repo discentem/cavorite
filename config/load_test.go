@@ -3,8 +3,8 @@ package config
 import (
 	"testing"
 
-	"github.com/discentem/cavorite/internal/stores"
-	"github.com/discentem/cavorite/internal/testutils"
+	"github.com/discentem/cavorite/stores"
+	"github.com/discentem/cavorite/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

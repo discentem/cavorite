@@ -9,7 +9,7 @@ import (
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/discentem/cavorite/internal/testutils"
+	"github.com/discentem/cavorite/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

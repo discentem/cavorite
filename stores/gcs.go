@@ -9,8 +9,8 @@ import (
 	"time"
 
 	gcsStorage "cloud.google.com/go/storage"
-	"github.com/discentem/cavorite/internal/fileutils"
-	"github.com/discentem/cavorite/internal/metadata"
+	"github.com/discentem/cavorite/fileutils"
+	"github.com/discentem/cavorite/metadata"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 	"google.golang.org/api/option"

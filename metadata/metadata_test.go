@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/discentem/cavorite/internal/testutils"
+	"github.com/discentem/cavorite/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

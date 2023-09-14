@@ -6,8 +6,8 @@ go_library(
     importpath = "github.com/discentem/cavorite/plugins/localstore",
     visibility = ["//visibility:private"],
     deps = [
-        "//internal/config",
-        "//internal/stores",
+        "//config",
+        "//stores",
         "@com_github_hashicorp_go_hclog//:go-hclog",
         "@com_github_hashicorp_go_multierror//:go-multierror",
         "@com_github_spf13_afero//:afero",
@@ -25,8 +25,8 @@ go_test(
     srcs = ["main_test.go"],
     embed = [":localstore_lib"],
     deps = [
-        "//internal/stores",
-        "//internal/testutils",
+        "//stores",
+        "//testutils",
         "@com_github_carolynvs_aferox//:aferox",
         "@com_github_hashicorp_go_hclog//:go-hclog",
         "@com_github_stretchr_testify//assert",

@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/discentem/cavorite/internal/stores"
+	"github.com/discentem/cavorite/stores"
 	"github.com/spf13/afero"
 	"github.com/spf13/viper"
 )

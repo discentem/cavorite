@@ -17,8 +17,8 @@ import (
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 
-	"github.com/discentem/cavorite/internal/fileutils"
-	"github.com/discentem/cavorite/internal/metadata"
+	"github.com/discentem/cavorite/fileutils"
+	"github.com/discentem/cavorite/metadata"
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 )

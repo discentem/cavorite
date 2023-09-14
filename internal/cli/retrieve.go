@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/discentem/cavorite/internal/config"
-	"github.com/discentem/cavorite/internal/program"
+	"github.com/discentem/cavorite/config"
+	"github.com/discentem/cavorite/program"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"

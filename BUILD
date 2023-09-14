@@ -26,7 +26,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//internal/cli",
-        "//internal/program",
+        "//program",
         "@com_github_google_logger//:logger",
     ],
 )

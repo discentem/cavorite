@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/discentem/cavorite/internal/stores"
-	"github.com/discentem/cavorite/internal/testutils"
+	"github.com/discentem/cavorite/stores"
+	"github.com/discentem/cavorite/testutils"
 	"github.com/gonuts/go-shellquote"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"

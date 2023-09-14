@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/discentem/cavorite/internal/stores"
+	"github.com/discentem/cavorite/stores"
 	"github.com/google/logger"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/afero"

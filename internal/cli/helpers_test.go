@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/discentem/cavorite/internal/config"
-	"github.com/discentem/cavorite/internal/metadata"
-	"github.com/discentem/cavorite/internal/stores"
+	"github.com/discentem/cavorite/config"
+	"github.com/discentem/cavorite/metadata"
+	"github.com/discentem/cavorite/stores"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

@@ -13,8 +13,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
-	"github.com/discentem/cavorite/internal/fileutils"
-	"github.com/discentem/cavorite/internal/metadata"
+	"github.com/discentem/cavorite/fileutils"
+	"github.com/discentem/cavorite/metadata"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 )

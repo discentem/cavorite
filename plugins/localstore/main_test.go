@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/carolynvs/aferox"
-	"github.com/discentem/cavorite/internal/stores"
-	"github.com/discentem/cavorite/internal/testutils"
+	"github.com/discentem/cavorite/stores"
+	"github.com/discentem/cavorite/testutils"
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/assert"
 )

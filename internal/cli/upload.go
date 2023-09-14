@@ -11,10 +11,10 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
-	"github.com/discentem/cavorite/internal/config"
-	"github.com/discentem/cavorite/internal/metadata"
-	"github.com/discentem/cavorite/internal/program"
-	"github.com/discentem/cavorite/internal/stores"
+	"github.com/discentem/cavorite/config"
+	"github.com/discentem/cavorite/metadata"
+	"github.com/discentem/cavorite/program"
+	"github.com/discentem/cavorite/stores"
 )
 
 func uploadCmd() *cobra.Command {

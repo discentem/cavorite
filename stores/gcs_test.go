@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/api/option"
 
-	"github.com/discentem/cavorite/internal/testutils"
+	"github.com/discentem/cavorite/testutils"
 )
 
 func fakeBucketClient(

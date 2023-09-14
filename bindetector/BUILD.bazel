@@ -7,7 +7,7 @@ go_library(
         "bindetector_unix.go",
         "bindetector_windows.go",
     ],
-    importpath = "github.com/discentem/cavorite/internal/bindetector",
+    importpath = "github.com/discentem/cavorite/bindetector",
     visibility = ["//:__subpackages__"],
     deps = ["@com_github_google_logger//:logger"],
 )

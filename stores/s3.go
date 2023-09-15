@@ -239,7 +239,14 @@ func (s *s3Store) getBucketName() (string, error) {
 	case strings.HasPrefix(s.Options.BackendAddress, "http://"):
 		fallthrough
 	case strings.HasPrefix(s.Options.BackendAddress, "https://"):
-		_, bucketName = path.Split(s.Options.BackendAddress)
+		up, err := url.Parse(s.Options.BackendAddress)
+		if err != nil {
+			return "", err
+		}
+		p := strings.SplitN(up.Path, "/", 2)[1]
+		fragments := strings.Split(p, "/")
+		bucket := fragments[0]
+		return bucket, nil
 	default:
 		return "", fmt.Errorf("unsupported s3 backend address")
 	}

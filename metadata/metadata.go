@@ -78,7 +78,7 @@ type FsysWriteRequest struct {
 	Extension string
 }
 
-// WriteMetadata generates Cavorite metadata for obj and writes it to s.Fsys
+// WriteToFsys generates Cavorite metadata for req.Object and writes it to req.Fsys
 func WriteToFsys(req FsysWriteRequest) (err error) {
 	logger.V(2).Infof("object: %s", req.Object)
 	// generate metadata

@@ -213,38 +213,58 @@ func TestS3GetBucketNameWithS3Prefix(t *testing.T) {
 }
 
 func TestS3GetBucketNameWithHTTPPrefix(t *testing.T) {
-	expectedBackendAddress := "http://127.0.0.1:9000/aFakeBucket"
-
-	mTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")
-	memfs, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
-		"test": {
-			Content: []byte("bla"),
-			ModTime: &mTime,
+	type test struct {
+		name        string
+		addressName string
+		want        string
+	}
+	tests := []test{
+		{
+			name:        "simple address",
+			addressName: "http://127.0.0.1:9000/aFakeBucket",
+			want:        "aFakeBucket",
 		},
-	})
-	assert.NoError(t, err)
-
-	fakeS3Server := aferoS3Server{
-		buckets: map[string]afero.Fs{
-			// create a bucket in our fake s3 server
-			"test": afero.NewMemMapFs(),
+		{
+			name:        "complex address",
+			addressName: "http://127.0.0.1:9000/aFakeBucket/a/b/c",
+			want:        "aFakeBucket",
 		},
 	}
 
-	store := s3Store{
-		Options: Options{
-			BackendAddress:        expectedBackendAddress,
-			MetadataFileExtension: "cfile",
-		},
-		fsys:         *memfs,
-		awsRegion:    "us-east-1",
-		s3Uploader:   fakeS3Server,
-		s3Downloader: fakeS3Server,
+	for _, test := range tests {
+		expectedBackendAddress := test.addressName
+
+		mTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")
+		memfs, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
+			"test": {
+				Content: []byte("bla"),
+				ModTime: &mTime,
+			},
+		})
+		assert.NoError(t, err)
+
+		fakeS3Server := aferoS3Server{
+			buckets: map[string]afero.Fs{
+				// create a bucket in our fake s3 server
+				"test": afero.NewMemMapFs(),
+			},
+		}
+
+		store := s3Store{
+			Options: Options{
+				BackendAddress:        expectedBackendAddress,
+				MetadataFileExtension: "cfile",
+			},
+			fsys:         *memfs,
+			awsRegion:    "us-east-1",
+			s3Uploader:   fakeS3Server,
+			s3Downloader: fakeS3Server,
+		}
+
+		bucketName, err := store.getBucketName()
+
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, bucketName)
 	}
-
-	bucketName, err := store.getBucketName()
-
-	assert.NoError(t, err)
-	assert.Equal(t, "aFakeBucket", bucketName)
 
 }

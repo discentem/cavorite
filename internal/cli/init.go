@@ -34,6 +34,9 @@ func initCmd() *cobra.Command {
 	initCmd.PersistentFlags().String("region", "us-east-1", "Default region for the storage backend")
 	initCmd.PersistentFlags().String("store_type", "", "Storage backend to use")
 	initCmd.PersistentFlags().String("plugin_address", "", "Address for go-plugin that provides implementation for Store")
+	initCmd.PersistentFlags().String("object_key_prefix",
+		"",
+		"Prefixed added to backend upload and retrieve requests. This does not affect the location of written metadata for objects.")
 
 	return initCmd
 }
@@ -62,6 +65,9 @@ func initPreExecFn(cmd *cobra.Command, args []string) error {
 	}
 	if err := viper.BindPFlag("plugin_address", cmd.PersistentFlags().Lookup("plugin_address")); err != nil {
 		return errors.New("Failed to bind plugin_address to viper")
+	}
+	if err := viper.BindPFlag("object_key_prefix", cmd.PersistentFlags().Lookup("object_key_prefix")); err != nil {
+		return errors.New("Failed to bind object_key_prefix to viper")
 	}
 
 	return nil

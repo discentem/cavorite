@@ -43,6 +43,7 @@ go_test(
         "azure_test.go",
         "gcs_test.go",
         "s3_test.go",
+        "stores_test.go",
     ],
     embed = [":stores"],
     deps = [

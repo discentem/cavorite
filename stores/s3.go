@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/logger"
@@ -45,6 +44,48 @@ type s3Store struct {
 	awsRegion    string
 	s3Uploader   S3Uploader
 	s3Downloader S3Downloader
+}
+
+func getConfig(ctx context.Context, region string, address string) (*aws.Config, error) {
+	var cfg aws.Config
+	var err error
+
+	switch {
+	case strings.HasPrefix(address, "s3://"):
+		cfg, err = awsConfig.LoadDefaultConfig(
+			ctx,
+			awsConfig.WithRegion(region),
+		)
+		if err != nil {
+			return nil, err
+		}
+	case strings.HasPrefix(address, "http://"):
+		fallthrough
+	case strings.HasPrefix(address, "https://"):
+		server, _ := path.Split(address)
+		// https://stackoverflow.com/questions/67575681/is-aws-go-sdk-v2-integrated-with-local-minio-server
+		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
+			return aws.Endpoint{
+				PartitionID:       "aws",
+				URL:               server,
+				SigningRegion:     region,
+				HostnameImmutable: true,
+			}, nil
+		})
+
+		cfg, err = awsConfig.LoadDefaultConfig(
+			ctx,
+			awsConfig.WithRegion(region),
+			awsConfig.WithEndpointResolverWithOptions(resolver),
+		)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("address did not contain s3://, http://, or https:// prefix")
+	}
+
+	return &cfg, nil
 }
 
 func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*s3Store, error) {
@@ -81,48 +122,6 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*s3Stor
 		// s3Downloader meets our interface for S3Downloader
 		s3Downloader: s3Downloader,
 	}, nil
-}
-
-func getConfig(ctx context.Context, region string, address string) (*aws.Config, error) {
-	var cfg aws.Config
-	var err error
-
-	switch {
-	case strings.HasPrefix(address, "s3://"):
-		cfg, err = awsConfig.LoadDefaultConfig(
-			ctx,
-			config.WithRegion(region),
-		)
-		if err != nil {
-			return nil, err
-		}
-	case strings.HasPrefix(address, "http://"):
-		fallthrough
-	case strings.HasPrefix(address, "https://"):
-		server, _ := path.Split(address)
-		// https://stackoverflow.com/questions/67575681/is-aws-go-sdk-v2-integrated-with-local-minio-server
-		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				PartitionID:       "aws",
-				URL:               server,
-				SigningRegion:     region,
-				HostnameImmutable: true,
-			}, nil
-		})
-
-		cfg, err = config.LoadDefaultConfig(
-			ctx,
-			config.WithRegion(region),
-			config.WithEndpointResolverWithOptions(resolver),
-		)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		return nil, errors.New("address did not contain s3://, http://, or https:// prefix")
-	}
-
-	return &cfg, nil
 }
 
 func (s *s3Store) GetOptions() (Options, error) {

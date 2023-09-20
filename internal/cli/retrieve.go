@@ -1,12 +1,19 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/discentem/cavorite/config"
+	"github.com/discentem/cavorite/fileutils"
+	"github.com/discentem/cavorite/metadata"
 	"github.com/discentem/cavorite/program"
+	"github.com/discentem/cavorite/stores"
 	"github.com/google/logger"
+	multierr "github.com/hashicorp/go-multierror"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -35,6 +42,43 @@ func retrieveCmd() *cobra.Command {
 	}
 
 	return retrieveCmd
+}
+
+func shouldRetrieve(fsys afero.Fs, m *metadata.ObjectMetaData, cfile string) (bool, error) {
+	expectedHash := m.Checksum
+	f, err := fileutils.OpenOrCreateFile(fsys, strings.TrimSuffix(cfile, filepath.Ext(cfile)))
+	if err != nil {
+		return false, err
+	}
+	actualHash, err := metadata.SHA256FromReader(f)
+	if err != nil {
+		return false, err
+	}
+	if actualHash != expectedHash {
+		return true, nil
+	}
+	return false, nil
+
+}
+
+func retrieve(ctx context.Context, fsys afero.Fs, s stores.Store, cfiles ...string) error {
+	var result error
+	for _, cfile := range cfiles {
+		m, err := metadata.ParseCfile(fsys, cfile)
+		if err != nil {
+			return err
+		}
+		doRetrieve, err := shouldRetrieve(fsys, m, cfile)
+		if err != nil {
+			result = multierr.Append(result, err)
+			continue
+		}
+		if !doRetrieve {
+			continue
+		}
+
+	}
+
 }
 
 // retrieveFn is the execution runtime for the retrieveCmd functionality

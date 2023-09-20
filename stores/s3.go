@@ -7,17 +7,14 @@ import (
 	"io"
 	"net/url"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/logger"
 	"github.com/spf13/afero"
 
-	"github.com/discentem/cavorite/fileutils"
 	"github.com/discentem/cavorite/metadata"
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
@@ -45,6 +42,48 @@ type s3Store struct {
 	awsRegion    string
 	s3Uploader   S3Uploader
 	s3Downloader S3Downloader
+}
+
+func getConfig(ctx context.Context, region string, address string) (*aws.Config, error) {
+	var cfg aws.Config
+	var err error
+
+	switch {
+	case strings.HasPrefix(address, "s3://"):
+		cfg, err = awsConfig.LoadDefaultConfig(
+			ctx,
+			awsConfig.WithRegion(region),
+		)
+		if err != nil {
+			return nil, err
+		}
+	case strings.HasPrefix(address, "http://"):
+		fallthrough
+	case strings.HasPrefix(address, "https://"):
+		server, _ := path.Split(address)
+		// https://stackoverflow.com/questions/67575681/is-aws-go-sdk-v2-integrated-with-local-minio-server
+		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
+			return aws.Endpoint{
+				PartitionID:       "aws",
+				URL:               server,
+				SigningRegion:     region,
+				HostnameImmutable: true,
+			}, nil
+		})
+
+		cfg, err = awsConfig.LoadDefaultConfig(
+			ctx,
+			awsConfig.WithRegion(region),
+			awsConfig.WithEndpointResolverWithOptions(resolver),
+		)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("address did not contain s3://, http://, or https:// prefix")
+	}
+
+	return &cfg, nil
 }
 
 func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*s3Store, error) {
@@ -81,48 +120,6 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*s3Stor
 		// s3Downloader meets our interface for S3Downloader
 		s3Downloader: s3Downloader,
 	}, nil
-}
-
-func getConfig(ctx context.Context, region string, address string) (*aws.Config, error) {
-	var cfg aws.Config
-	var err error
-
-	switch {
-	case strings.HasPrefix(address, "s3://"):
-		cfg, err = awsConfig.LoadDefaultConfig(
-			ctx,
-			config.WithRegion(region),
-		)
-		if err != nil {
-			return nil, err
-		}
-	case strings.HasPrefix(address, "http://"):
-		fallthrough
-	case strings.HasPrefix(address, "https://"):
-		server, _ := path.Split(address)
-		// https://stackoverflow.com/questions/67575681/is-aws-go-sdk-v2-integrated-with-local-minio-server
-		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				PartitionID:       "aws",
-				URL:               server,
-				SigningRegion:     region,
-				HostnameImmutable: true,
-			}, nil
-		})
-
-		cfg, err = config.LoadDefaultConfig(
-			ctx,
-			config.WithRegion(region),
-			config.WithEndpointResolverWithOptions(resolver),
-		)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		return nil, errors.New("address did not contain s3://, http://, or https:// prefix")
-	}
-
-	return &cfg, nil
 }
 
 func (s *s3Store) GetOptions() (Options, error) {
@@ -168,38 +165,19 @@ func (s *s3Store) Upload(ctx context.Context, objects ...string) error {
 func (s *s3Store) Retrieve(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
 		// For Retrieve, the object is the cfile itself, which we derive the actual filename from
-		objectPath := strings.TrimSuffix(o, filepath.Ext(o))
-		// We will either read the file that already exists or download it because it
-		// is missing
-		f, err := fileutils.OpenOrCreateFile(s.fsys, objectPath)
+		s3BucketName, err := s.getBucketName()
 		if err != nil {
+			logger.Errorf("error encountered parsing backend address: %v", err)
 			return err
 		}
-		_, err = f.Seek(0, io.SeekStart)
-		if err != nil {
-			return nil
+		obj := &s3.GetObjectInput{
+			Bucket: aws.String(s3BucketName),
+			Key:    aws.String(o),
 		}
-		fileInfo, err := f.Stat()
+		// Download the file
+		_, err = s.s3Downloader.Download(ctx, f, obj)
 		if err != nil {
 			return err
-		}
-		if fileInfo.Size() > 0 {
-			logger.Infof("%s already exists", objectPath)
-		} else { // Create an S3 struct for the file to be retrieved
-			s3BucketName, err := s.getBucketName()
-			if err != nil {
-				logger.Errorf("error encountered parsing backend address: %v", err)
-				return err
-			}
-			obj := &s3.GetObjectInput{
-				Bucket: aws.String(s3BucketName),
-				Key:    aws.String(objectPath),
-			}
-			// Download the file
-			_, err = s.s3Downloader.Download(ctx, f, obj)
-			if err != nil {
-				return err
-			}
 		}
 		// Get the hash for the downloaded file
 		hash, err := metadata.SHA256FromReader(f)

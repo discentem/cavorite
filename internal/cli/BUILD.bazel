@@ -14,6 +14,7 @@ go_library(
     deps = [
         "//config",
         "//metadata",
+        "//objects",
         "//program",
         "//stores",
         "@com_github_azure_azure_sdk_for_go_sdk_storage_azblob//:azblob",

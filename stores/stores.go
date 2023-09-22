@@ -20,7 +20,7 @@ const (
 )
 
 var (
-	_ = Store(&s3Store{})
+	_ = Store(&S3Store{})
 	_ = Store(&GCSStore{})
 	_ = Store(&AzureBlobStore{})
 	_ = Store(&PluggableStore{})

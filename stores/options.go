@@ -12,7 +12,7 @@ type Options struct {
 			- `cavorite upload whatever/thing` will be written to `team-bucket/whatever/thing`
 			- `cavorite retrieve whatever/thing` will request `team-bucket/whatever/thing`
 	*/
-	ObjectKeyPrefix string `json:"object_key_prefix" mapstructure:"object_key_prefix"`
+	ObjectKeyPrefix string `json:"object_key_prefix,omitempty" mapstructure:"object_key_prefix"`
 }
 
 var ErrMetadataFileExtensionEmpty = fmt.Errorf("options.MetadatafileExtension cannot be %q", "")

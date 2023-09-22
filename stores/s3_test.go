@@ -166,7 +166,7 @@ func TestS3StoreRetrieve(t *testing.T) {
 		s3Downloader: fakeS3Server,
 	}
 
-	err = store.Retrieve(context.Background(), "someObject.cfile")
+	err = store.Retrieve(context.Background(), "someObject")
 	assert.NoError(t, err)
 
 	// ensure the content of the file is correct

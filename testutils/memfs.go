@@ -11,9 +11,20 @@ import (
 	"github.com/spf13/afero"
 )
 
+/*
+type Writer interface {
+        Write(p []byte) (n int, err error)
+}
+*/
+
 type MapFile struct {
 	Content []byte
 	ModTime *time.Time
+}
+
+func (f MapFile) Write(p []byte) (n int, err error) {
+	f.Content = p
+	return len(p), nil
 }
 
 // memMapFsWith creates a afero.MemMapFs from a map[string]mapFile

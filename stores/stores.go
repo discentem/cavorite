@@ -20,7 +20,7 @@ const (
 )
 
 var (
-	_ = Store(&s3Store{})
+	_ = Store(&S3Store{})
 	_ = Store(&GCSStore{})
 	_ = Store(&AzureBlobStore{})
 	_ = Store(&PluggableStore{})
@@ -36,8 +36,8 @@ type StoreWithGetters interface {
 }
 
 type Store interface {
-	Upload(ctx context.Context, objects ...string) error
-	Retrieve(ctx context.Context, objects ...string) error
+	Upload(ctx context.Context, keys ...string) error
+	Retrieve(ctx context.Context, keys ...string) error
 	GetOptions() (Options, error)
 	Close() error
 }

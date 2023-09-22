@@ -100,7 +100,6 @@ func upload(ctx context.Context, fsys afero.Fs, s stores.Store, objects ...strin
 			continue
 		}
 		mon := prefixOp.Modify(obj)
-		fmt.Println("mon:", mon)
 		err = metadata.WriteToFsys(metadata.FsysWriteRequest{
 			Object:       mon,
 			Fsys:         fsys,

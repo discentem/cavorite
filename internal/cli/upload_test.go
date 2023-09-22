@@ -3,13 +3,14 @@ package cli
 import (
 	"context"
 	"fmt"
-	"os"
+	"io"
 	"testing"
 	"time"
 
 	"github.com/discentem/cavorite/stores"
 	"github.com/discentem/cavorite/testutils"
 	"github.com/gonuts/go-shellquote"
+	"github.com/google/logger"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,6 +66,7 @@ func (s simpleStore) Close() error {
 
 // TestUpload tests whether metadata gets generated correctly
 func TestUpload(t *testing.T) {
+	logger.Init("TestUpload", false, false, io.Discard)
 	mTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")
 	objs := []string{"someFile", "someOtherFile"}
 	sourceFsys, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
@@ -91,7 +93,6 @@ func TestUpload(t *testing.T) {
 	err = upload(context.Background(), *sourceFsys, sStore, objs...)
 	assert.NoError(t, err)
 
-	err = testutils.WalkFs(*sourceFsys, os.Stdout)
 	require.NoError(t, err)
 
 	sopts, err := sStore.GetOptions()
@@ -137,7 +138,6 @@ func TestUploadWithPrefix(t *testing.T) {
 	err = upload(context.Background(), *sourceFsys, sStore, "someFile", "someOtherFile")
 	require.NoError(t, err)
 
-	err = testutils.WalkFs(*sourceFsys, os.Stdout)
 	require.NoError(t, err)
 
 	sopts, err := sStore.GetOptions()
@@ -152,9 +152,9 @@ func TestUploadWithPrefix(t *testing.T) {
 			objkey = fmt.Sprintf(f)
 		}
 		expected := fmt.Sprintf(`{
-  "name": "%s",
-  "checksum": "35bafb1ce99aef3ab068afbaabae8f21fd9b9f02d3a9442e364fa92c0b3eeef0",
-  "date_modified": "2014-11-12T11:45:26.371Z"
+ "name": "%s",
+ "checksum": "35bafb1ce99aef3ab068afbaabae8f21fd9b9f02d3a9442e364fa92c0b3eeef0",
+ "date_modified": "2014-11-12T11:45:26.371Z"
 }`, objkey)
 		assert.Equal(t, expected, string(b))
 	}
@@ -162,6 +162,7 @@ func TestUploadWithPrefix(t *testing.T) {
 
 // TestUploadPartialFail tests whether metadata generation will succeed for n+1 even if n fails
 func TestUploadPartialFail(t *testing.T) {
+	logger.Init("TestUpload", false, false, io.Discard)
 	mTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")
 	sourceFsys, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
 		"someFile": {
@@ -177,7 +178,6 @@ func TestUploadPartialFail(t *testing.T) {
 		bucketFsys: *bucket,
 	}
 	err = upload(context.Background(), *sourceFsys, sStore, "someOtherFileThatDoesntExist", "someFile")
-	fmt.Println(err)
 
 	// upload is expected for fail for someOtherFileThatDoesntExist as it does not exist in sourceFsys
 	require.ErrorIs(t, err, ErrOpen)

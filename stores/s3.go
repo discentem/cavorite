@@ -38,7 +38,7 @@ type S3Uploader interface {
 	)
 }
 
-type s3Store struct {
+type S3Store struct {
 	Options      Options `json:"options" mapstructure:"options"`
 	fsys         afero.Fs
 	awsRegion    string
@@ -77,6 +77,7 @@ func getConfig(ctx context.Context, region string, address string) (*aws.Config,
 			ctx,
 			awsConfig.WithRegion(region),
 			awsConfig.WithEndpointResolverWithOptions(resolver),
+			awsConfig.WithClientLogMode(aws.LogRequest),
 		)
 		if err != nil {
 			return nil, err
@@ -88,7 +89,7 @@ func getConfig(ctx context.Context, region string, address string) (*aws.Config,
 	return &cfg, nil
 }
 
-func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*s3Store, error) {
+func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Store, error) {
 	cfg, err := getConfig(
 		ctx,
 		opts.Region,
@@ -113,7 +114,7 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*s3Stor
 		},
 	)
 
-	return &s3Store{
+	return &S3Store{
 		Options:   opts,
 		fsys:      fsys,
 		awsRegion: opts.Region,
@@ -124,16 +125,16 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*s3Stor
 	}, nil
 }
 
-func (s *s3Store) GetOptions() (Options, error) {
+func (s *S3Store) GetOptions() (Options, error) {
 	return s.Options, nil
 }
 
-func (s *s3Store) GetFsys() (afero.Fs, error) {
+func (s *S3Store) GetFsys() (afero.Fs, error) {
 	return s.fsys, nil
 }
 
 // Upload generates the metadata, writes it to disk and uploads the file to the S3 bucket
-func (s *s3Store) Upload(ctx context.Context, objects ...string) error {
+func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
 		f, err := s.fsys.Open(o)
 		if err != nil {
@@ -164,12 +165,11 @@ func (s *s3Store) Upload(ctx context.Context, objects ...string) error {
 }
 
 // Retrieve gets the file from the S3 bucket, validates the hash is correct and writes it to disk
-func (s *s3Store) Retrieve(ctx context.Context, objects ...string) error {
+func (s *S3Store) Retrieve(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
-		// For Retrieve, the object is the cfile itself, which we derive the actual filename from
-		objectPath := strings.TrimSuffix(o, filepath.Ext(o))
 		// We will either read the file that already exists or download it because it
 		// is missing
+		objectPath := strings.TrimSuffix(o, filepath.Ext(o))
 		f, err := fileutils.OpenOrCreateFile(s.fsys, objectPath)
 		if err != nil {
 			return err
@@ -213,7 +213,7 @@ func (s *s3Store) Retrieve(ctx context.Context, objects ...string) error {
 		// If the hash of the downloaded file does not match the retrieved file, return an error
 		if hash != m.Checksum {
 			logger.V(2).Infof("Hash mismatch, got %s but expected %s", hash, m.Checksum)
-			if err := s.fsys.Remove(objectPath); err != nil {
+			if err := s.fsys.Remove(o); err != nil {
 				return err
 			}
 			return ErrRetrieveFailureHashMismatch
@@ -225,7 +225,7 @@ func (s *s3Store) Retrieve(ctx context.Context, objects ...string) error {
 	return nil
 }
 
-func (s *s3Store) getBucketName() (string, error) {
+func (s *S3Store) getBucketName() (string, error) {
 	var bucketName string
 	logger.Infof("s3store getBucketName: backend address: %s", s.Options.BackendAddress)
 	switch {
@@ -254,7 +254,7 @@ func (s *s3Store) getBucketName() (string, error) {
 	return bucketName, nil
 }
 
-func (s *s3Store) Close() error {
+func (s *S3Store) Close() error {
 	// FIXME: implement
 	return nil
 }

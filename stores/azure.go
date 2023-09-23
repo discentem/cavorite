@@ -121,7 +121,7 @@ func (s *AzureBlobStore) Retrieve(ctx context.Context, objects ...string) error 
 			if err := s.fsys.Remove(objectPath); err != nil {
 				return err
 			}
-			return ErrRetrieveFailureHashMismatch
+			return metadata.ErrRetrieveFailureHashMismatch
 		}
 		if err := f.Close(); err != nil {
 			return err

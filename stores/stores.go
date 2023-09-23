@@ -2,10 +2,10 @@ package stores
 
 import (
 	"context"
-	"errors"
 	"path/filepath"
 	"strings"
 
+	"github.com/discentem/cavorite/metadata"
 	"github.com/spf13/afero"
 )
 
@@ -20,14 +20,10 @@ const (
 )
 
 var (
-	_ = Store(&s3Store{})
+	_ = Store(&S3Store{})
 	_ = Store(&GCSStore{})
 	_ = Store(&AzureBlobStore{})
 	_ = Store(&PluggableStore{})
-)
-
-var (
-	ErrRetrieveFailureHashMismatch = errors.New("hashes don't match, Retrieve aborted")
 )
 
 type StoreWithGetters interface {
@@ -36,8 +32,8 @@ type StoreWithGetters interface {
 }
 
 type Store interface {
-	Upload(ctx context.Context, objects ...string) error
-	Retrieve(ctx context.Context, objects ...string) error
+	Upload(ctx context.Context, keys ...string) error
+	Retrieve(ctx context.Context, mmap metadata.CfileMetadataMap, keys ...string) error
 	GetOptions() (Options, error)
 	Close() error
 }

@@ -1,6 +1,9 @@
 package testutils
 
 import (
+	"bytes"
+	"io"
+	iofs "io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -8,9 +11,20 @@ import (
 	"github.com/spf13/afero"
 )
 
+/*
+type Writer interface {
+        Write(p []byte) (n int, err error)
+}
+*/
+
 type MapFile struct {
 	Content []byte
 	ModTime *time.Time
+}
+
+func (f MapFile) Write(p []byte) (n int, err error) {
+	f.Content = p
+	return len(p), nil
 }
 
 // memMapFsWith creates a afero.MemMapFs from a map[string]mapFile
@@ -38,4 +52,22 @@ func MemMapFsWith(files map[string]MapFile) (*afero.Fs, error) {
 	}
 
 	return &memfsys, nil
+}
+
+func WalkFs(fs afero.Fs, w io.Writer) error {
+	return afero.Walk(fs, "", func(path string, info iofs.FileInfo, _ error) error {
+		b, err := afero.ReadFile(fs, path)
+		if bytes.Equal(b, []byte(``)) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		p := info.Name() + "\n" + string(b) + "\n"
+		_, err = w.Write([]byte(p))
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }

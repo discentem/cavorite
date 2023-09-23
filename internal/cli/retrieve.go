@@ -1,15 +1,62 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/discentem/cavorite/config"
+	"github.com/discentem/cavorite/metadata"
 	"github.com/discentem/cavorite/program"
+	"github.com/discentem/cavorite/stores"
 	"github.com/google/logger"
+	multierr "github.com/hashicorp/go-multierror"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
+
+func shouldRetrieve(fsys afero.Fs, m *metadata.ObjectMetaData, cfile string) (bool, error) {
+	expectedHash := m.Checksum
+	f, err := fsys.Open(strings.TrimSuffix(cfile, filepath.Ext(cfile)))
+	if err != nil {
+		return true, err
+	}
+	actualHash, err := metadata.SHA256FromReader(f)
+	if err != nil {
+		return false, err
+	}
+	if actualHash != expectedHash {
+		return true, nil
+	}
+	return false, nil
+}
+
+func Retrieve(ctx context.Context, fsys afero.Fs, s stores.Store, cfiles ...string) error {
+	var result *multierr.Error
+	cmap := make(metadata.CfileMetadataMap)
+	for _, cfile := range cfiles {
+		m, err := metadata.ParseCfile(fsys, cfile)
+		if err != nil {
+			result = multierr.Append(result, err)
+			continue
+		}
+		doRetrieve, err := shouldRetrieve(fsys, m, cfile)
+		if !doRetrieve {
+			if err != nil {
+				result = multierr.Append(result, err)
+			}
+			// we don't need to retrieve because we already have it
+			continue
+		}
+		cmap[cfile] = *m
+	}
+	// pass cfiles
+	retrieveErr := s.Retrieve(ctx, cmap, cfiles...)
+	return multierr.Append(result, retrieveErr).ErrorOrNil()
+
+}
 
 func retrieveCmd() *cobra.Command {
 	retrieveCmd := &cobra.Command{
@@ -83,8 +130,5 @@ func retrieveFn(cmd *cobra.Command, objects []string) error {
 
 	logger.Infof("Downloading files from: %s", opts.BackendAddress)
 	logger.Infof("Downloading file: %s", objects)
-	if err := s.Retrieve(cmd.Context(), objects...); err != nil {
-		return err
-	}
-	return nil
+	return Retrieve(cmd.Context(), fsys, s, objects...)
 }

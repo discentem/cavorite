@@ -7,11 +7,9 @@ import (
 	"io"
 	"net/url"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/logger"
@@ -19,6 +17,7 @@ import (
 
 	"github.com/discentem/cavorite/fileutils"
 	"github.com/discentem/cavorite/metadata"
+	multierr "github.com/hashicorp/go-multierror"
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 )
@@ -39,7 +38,7 @@ type S3Uploader interface {
 	)
 }
 
-type s3Store struct {
+type S3Store struct {
 	Options      Options `json:"options" mapstructure:"options"`
 	fsys         afero.Fs
 	awsRegion    string
@@ -47,7 +46,50 @@ type s3Store struct {
 	s3Downloader S3Downloader
 }
 
-func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*s3Store, error) {
+func getConfig(ctx context.Context, region string, address string) (*aws.Config, error) {
+	var cfg aws.Config
+	var err error
+
+	switch {
+	case strings.HasPrefix(address, "s3://"):
+		cfg, err = awsConfig.LoadDefaultConfig(
+			ctx,
+			awsConfig.WithRegion(region),
+		)
+		if err != nil {
+			return nil, err
+		}
+	case strings.HasPrefix(address, "http://"):
+		fallthrough
+	case strings.HasPrefix(address, "https://"):
+		server, _ := path.Split(address)
+		// https://stackoverflow.com/questions/67575681/is-aws-go-sdk-v2-integrated-with-local-minio-server
+		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
+			return aws.Endpoint{
+				PartitionID:       "aws",
+				URL:               server,
+				SigningRegion:     region,
+				HostnameImmutable: true,
+			}, nil
+		})
+
+		cfg, err = awsConfig.LoadDefaultConfig(
+			ctx,
+			awsConfig.WithRegion(region),
+			awsConfig.WithEndpointResolverWithOptions(resolver),
+			awsConfig.WithClientLogMode(aws.LogRequest|aws.LogRequestWithBody),
+		)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("address did not contain s3://, http://, or https:// prefix")
+	}
+
+	return &cfg, nil
+}
+
+func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Store, error) {
 	cfg, err := getConfig(
 		ctx,
 		opts.Region,
@@ -72,7 +114,7 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*s3Stor
 		},
 	)
 
-	return &s3Store{
+	return &S3Store{
 		Options:   opts,
 		fsys:      fsys,
 		awsRegion: opts.Region,
@@ -83,58 +125,16 @@ func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*s3Stor
 	}, nil
 }
 
-func getConfig(ctx context.Context, region string, address string) (*aws.Config, error) {
-	var cfg aws.Config
-	var err error
-
-	switch {
-	case strings.HasPrefix(address, "s3://"):
-		cfg, err = awsConfig.LoadDefaultConfig(
-			ctx,
-			config.WithRegion(region),
-		)
-		if err != nil {
-			return nil, err
-		}
-	case strings.HasPrefix(address, "http://"):
-		fallthrough
-	case strings.HasPrefix(address, "https://"):
-		server, _ := path.Split(address)
-		// https://stackoverflow.com/questions/67575681/is-aws-go-sdk-v2-integrated-with-local-minio-server
-		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				PartitionID:       "aws",
-				URL:               server,
-				SigningRegion:     region,
-				HostnameImmutable: true,
-			}, nil
-		})
-
-		cfg, err = config.LoadDefaultConfig(
-			ctx,
-			config.WithRegion(region),
-			config.WithEndpointResolverWithOptions(resolver),
-		)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		return nil, errors.New("address did not contain s3://, http://, or https:// prefix")
-	}
-
-	return &cfg, nil
-}
-
-func (s *s3Store) GetOptions() (Options, error) {
+func (s *S3Store) GetOptions() (Options, error) {
 	return s.Options, nil
 }
 
-func (s *s3Store) GetFsys() (afero.Fs, error) {
+func (s *S3Store) GetFsys() (afero.Fs, error) {
 	return s.fsys, nil
 }
 
 // Upload generates the metadata, writes it to disk and uploads the file to the S3 bucket
-func (s *s3Store) Upload(ctx context.Context, objects ...string) error {
+func (s *S3Store) Upload(ctx context.Context, objects ...string) error {
 	for _, o := range objects {
 		f, err := s.fsys.Open(o)
 		if err != nil {
@@ -165,68 +165,63 @@ func (s *s3Store) Upload(ctx context.Context, objects ...string) error {
 }
 
 // Retrieve gets the file from the S3 bucket, validates the hash is correct and writes it to disk
-func (s *s3Store) Retrieve(ctx context.Context, objects ...string) error {
+func (s *S3Store) Retrieve(ctx context.Context, mmap metadata.CfileMetadataMap, objects ...string) error {
+	var result *multierr.Error
 	for _, o := range objects {
-		// For Retrieve, the object is the cfile itself, which we derive the actual filename from
-		objectPath := strings.TrimSuffix(o, filepath.Ext(o))
 		// We will either read the file that already exists or download it because it
 		// is missing
+		objectPath := o
 		f, err := fileutils.OpenOrCreateFile(s.fsys, objectPath)
 		if err != nil {
-			return err
+			result = multierr.Append(result, err)
+			continue
 		}
 		_, err = f.Seek(0, io.SeekStart)
 		if err != nil {
-			return nil
+			result = multierr.Append(result, err)
+			continue
 		}
-		fileInfo, err := f.Stat()
+		s3BucketName, err := s.getBucketName()
 		if err != nil {
-			return err
+			e := fmt.Errorf("error encountered parsing backend address: %v", err)
+			result = multierr.Append(result, e)
+			continue
 		}
-		if fileInfo.Size() > 0 {
-			logger.Infof("%s already exists", objectPath)
-		} else { // Create an S3 struct for the file to be retrieved
-			s3BucketName, err := s.getBucketName()
-			if err != nil {
-				logger.Errorf("error encountered parsing backend address: %v", err)
-				return err
-			}
-			obj := &s3.GetObjectInput{
-				Bucket: aws.String(s3BucketName),
-				Key:    aws.String(objectPath),
-			}
-			// Download the file
-			_, err = s.s3Downloader.Download(ctx, f, obj)
-			if err != nil {
-				return err
-			}
+		logger.V(2).Infof("mmap: %s", mmap)
+		m, ok := mmap[o]
+		if !ok {
+			result = multierr.Append(result, fmt.Errorf("%q not found in mmap", o))
+			continue
 		}
-		// Get the hash for the downloaded file
-		hash, err := metadata.SHA256FromReader(f)
+		obj := &s3.GetObjectInput{
+			Bucket: aws.String(s3BucketName),
+			Key:    aws.String(m.Name),
+		}
+		// Download the file
+		_, err = s.s3Downloader.Download(ctx, f, obj)
 		if err != nil {
-			return err
+			result = multierr.Append(result, err)
+			continue
 		}
-		// Get the metadata from the metadata file
-		m, err := metadata.ParseCfile(s.fsys, o)
+
+		matches, err := metadata.HashFromCfileMatches(s.fsys, o, m.Checksum)
 		if err != nil {
-			return err
+			result = multierr.Append(result, err)
+			continue
 		}
-		// If the hash of the downloaded file does not match the retrieved file, return an error
-		if hash != m.Checksum {
-			logger.V(2).Infof("Hash mismatch, got %s but expected %s", hash, m.Checksum)
-			if err := s.fsys.Remove(objectPath); err != nil {
-				return err
+		if !matches {
+			if err := s.fsys.Remove(o); err != nil {
+				result = multierr.Append(result, err)
+				continue
 			}
-			return ErrRetrieveFailureHashMismatch
-		}
-		if err := f.Close(); err != nil {
-			return err
+			result = multierr.Append(result, metadata.ErrRetrieveFailureHashMismatch)
+			continue
 		}
 	}
-	return nil
+	return result.ErrorOrNil()
 }
 
-func (s *s3Store) getBucketName() (string, error) {
+func (s *S3Store) getBucketName() (string, error) {
 	var bucketName string
 	logger.Infof("s3store getBucketName: backend address: %s", s.Options.BackendAddress)
 	switch {
@@ -255,7 +250,7 @@ func (s *s3Store) getBucketName() (string, error) {
 	return bucketName, nil
 }
 
-func (s *s3Store) Close() error {
+func (s *S3Store) Close() error {
 	// FIXME: implement
 	return nil
 }

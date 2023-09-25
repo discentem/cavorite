@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/discentem/cavorite/config"
+	"github.com/discentem/cavorite/metadata"
 	"github.com/discentem/cavorite/stores"
 )
 
@@ -21,6 +22,10 @@ type LocalStore struct {
 	fsys   afero.Fs
 	opts   *stores.Options
 }
+
+var (
+	_ = stores.Store(&LocalStore{})
+)
 
 func (s *LocalStore) Upload(ctx context.Context, objects ...string) error {
 	s.logger.Info(fmt.Sprintf("Uploading %v via localstore plugin", objects))
@@ -56,7 +61,7 @@ func (s *LocalStore) Upload(ctx context.Context, objects ...string) error {
 	return result.ErrorOrNil()
 }
 
-func (s *LocalStore) Retrieve(ctx context.Context, objects ...string) error {
+func (s *LocalStore) Retrieve(ctx context.Context, mmap metadata.CfileMetadataMap, objects ...string) error {
 	s.logger.Info(fmt.Sprintf("Retrieving %v via localstore plugin", objects))
 	return nil
 }

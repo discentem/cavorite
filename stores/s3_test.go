@@ -2,6 +2,7 @@ package stores
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"testing"
@@ -9,9 +10,12 @@ import (
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/discentem/cavorite/metadata"
 	"github.com/discentem/cavorite/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	// "github.com/discentem/cavorite/internal/cli"
 )
 
 type aferoS3Server struct {
@@ -100,7 +104,7 @@ func TestS3StoreUpload(t *testing.T) {
 		},
 	}
 
-	store := s3Store{
+	store := S3Store{
 		Options: Options{
 			BackendAddress:        "s3://test",
 			MetadataFileExtension: "cfile",
@@ -134,7 +138,7 @@ func TestS3StoreRetrieve(t *testing.T) {
 			ModTime: &mTime,
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	fakeS3Server := aferoS3Server{
 		buckets: map[string]afero.Fs{
@@ -142,20 +146,21 @@ func TestS3StoreRetrieve(t *testing.T) {
 			"aFakeBucket": *bucketfs,
 		},
 	}
+	som := `{
+		"name": "someObject",
+		"checksum": "59e5ad2a03d2499749f7943c9dded0f303ad7542befef6d0aead8a7888587f66",
+		"date_modified": "2014-11-12T11:45:26.371Z"
+	   }`
 
 	localFs, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
 		"someObject.cfile": {
-			Content: []byte(`{
-				"name": "someObject",
-				"checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-				"date_modified": "2014-11-12T11:45:26.371Z"
-			   }`),
+			Content: []byte(som),
 			ModTime: &mTime,
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	store := s3Store{
+	store := S3Store{
 		Options: Options{
 			BackendAddress:        "s3://aFakeBucket",
 			MetadataFileExtension: "cfile",
@@ -165,13 +170,19 @@ func TestS3StoreRetrieve(t *testing.T) {
 		s3Uploader:   fakeS3Server,
 		s3Downloader: fakeS3Server,
 	}
+	var meta metadata.ObjectMetaData
+	merr := json.Unmarshal([]byte(som), &meta)
+	require.NoError(t, merr)
 
-	err = store.Retrieve(context.Background(), "someObject.cfile")
-	assert.NoError(t, err)
+	err = store.Retrieve(context.Background(), metadata.CfileMetadataMap{
+		"someObject.cfile": meta,
+	}, "someObject")
+	require.NoError(t, err)
 
 	// ensure the content of the file is correct
-	b, _ := afero.ReadFile(*localFs, "someObject")
-	assert.Equal(t, `tla`, string(b))
+	b, err := afero.ReadFile(*localFs, "someObject")
+	require.NoError(t, err)
+	require.Equal(t, `tla`, string(b))
 
 }
 
@@ -194,7 +205,7 @@ func TestS3GetBucketNameWithS3Prefix(t *testing.T) {
 		},
 	}
 
-	store := s3Store{
+	store := S3Store{
 		Options: Options{
 			BackendAddress:        expectedBackendAddress,
 			MetadataFileExtension: "cfile",
@@ -250,7 +261,7 @@ func TestS3GetBucketNameWithHTTPPrefix(t *testing.T) {
 			},
 		}
 
-		store := s3Store{
+		store := S3Store{
 			Options: Options{
 				BackendAddress:        expectedBackendAddress,
 				MetadataFileExtension: "cfile",

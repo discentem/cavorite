@@ -13,6 +13,7 @@ import (
 
 	"github.com/discentem/cavorite/config"
 	"github.com/discentem/cavorite/metadata"
+	cavoriteObjLib "github.com/discentem/cavorite/objects"
 	"github.com/discentem/cavorite/program"
 	"github.com/discentem/cavorite/stores"
 )
@@ -70,7 +71,18 @@ func upload(ctx context.Context, fsys afero.Fs, s stores.Store, objects ...strin
 
 	logger.Infof("Uploading to: %s", opts.BackendAddress)
 	logger.Infof("Uploading file: %s", objects)
-	if err := s.Upload(ctx, objects...); err != nil {
+
+	var derivedKeys []string
+	prefixOp := cavoriteObjLib.AddPrefixToKey{Prefix: opts.ObjectKeyPrefix}
+	derivedKeys = objects
+	if opts.ObjectKeyPrefix != "" {
+		derivedKeys = cavoriteObjLib.ModifyMultipleKeys(
+			prefixOp,
+			objects...,
+		)
+	}
+
+	if err := s.Upload(ctx, derivedKeys...); err != nil {
 		logger.Error(err)
 		return fmt.Errorf("%w for %v", ErrUpload, objects)
 	}
@@ -87,11 +99,13 @@ func upload(ctx context.Context, fsys afero.Fs, s stores.Store, objects ...strin
 			errResult = multierr.Append(err)
 			continue
 		}
+		mon := prefixOp.Modify(obj)
 		err = metadata.WriteToFsys(metadata.FsysWriteRequest{
-			Object:    obj,
-			Fsys:      fsys,
-			Fi:        f,
-			Extension: opts.MetadataFileExtension,
+			Object:       mon,
+			Fsys:         fsys,
+			Fi:           f,
+			MetadataPath: obj,
+			Extension:    opts.MetadataFileExtension,
 		})
 		if err != nil {
 			errResult = multierr.Append(fmt.Errorf("%w for %s", ErrWriteMetadataToFsys, obj))

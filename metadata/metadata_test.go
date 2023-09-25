@@ -51,16 +51,17 @@ func TestWriteMetadataToFsys(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = WriteToFsys(FsysWriteRequest{
-		Object:    "thing/a/whatever",
-		Fsys:      fs,
-		Fi:        fi,
-		Extension: "cfile",
+		Object:       "thing/a/whatever",
+		Fsys:         fs,
+		Fi:           fi,
+		Extension:    "cfile",
+		MetadataPath: "thing/a/whatever",
 	})
 	assert.NoError(t, err)
 
 	b, _ := afero.ReadFile(*memfs, "thing/a/whatever.cfile")
 	assert.Equal(t, string(b), `{
- "name": "whatever",
+ "name": "thing/a/whatever",
  "checksum": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52",
  "date_modified": "2014-11-12T11:45:26.371Z"
 }`)

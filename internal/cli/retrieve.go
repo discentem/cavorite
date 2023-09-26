@@ -52,6 +52,10 @@ func Retrieve(ctx context.Context, fsys afero.Fs, s stores.Store, cfiles ...stri
 		}
 		cmap[cfile] = *m
 	}
+	if len(cmap) == 0 {
+		logger.Infof("retrieval not needed, all requested files are present from %v", cfiles)
+		return nil
+	}
 	retrieveErr := s.Retrieve(ctx, cmap, cfiles...)
 	return multierr.Append(result, retrieveErr).ErrorOrNil()
 

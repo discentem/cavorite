@@ -1,5 +1,6 @@
 syntax = "proto3";
 import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
 option go_package = "github.com/discentem/cavorite/stores/pluginproto";
 
 package plugin;
@@ -15,9 +16,19 @@ message Options {
   string region = 4;
 }
 
+message ObjectMetadata {
+  string name = 1;
+  string checksum = 2;
+  google.protobuf.Timestamp date_modified = 3;
+}
+
+message ObjectsAndMetadataMap {
+  Objects objects = 1;
+  map<string, ObjectMetadata> map = 2;
+}
+
 service Plugin {
   rpc Upload(Objects) returns (google.protobuf.Empty) {}
-  rpc Retrieve(Objects) returns (google.protobuf.Empty) {}
+  rpc Retrieve(ObjectsAndMetadataMap) returns (google.protobuf.Empty) {}
   rpc GetOptions(google.protobuf.Empty) returns (Options) {}
-  rpc SetOptions(Options) returns (google.protobuf.Empty) {}
 }

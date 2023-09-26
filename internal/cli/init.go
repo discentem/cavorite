@@ -117,6 +117,9 @@ func initFn(cmd *cobra.Command, args []string) error {
 	case stores.StoreTypeAzureBlob:
 		fallthrough
 	case stores.StoreTypeGoPlugin:
+		if pluginAddress == "" {
+			return fmt.Errorf("--store_type was %q but --plugin_address was not specified", string(sb))
+		}
 		config.Cfg = config.InitalizeStoreTypeOf(
 			cmd.Context(),
 			sb,

@@ -42,7 +42,7 @@ func rootCmd() *cobra.Command {
 			//   * PersistentPostRun()
 			// All functions get the same args, the arguments after the command name.
 		*/
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		PersistentPreRun: func(_ *cobra.Command, _ []string) {
 			setLoggerOpts()
 		},
 		// RunE
@@ -56,7 +56,7 @@ func rootCmd() *cobra.Command {
 			//   * PersistentPostRunE()
 			// All functions get the same args, the arguments after the command name.
 		*/
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := cmd.Help(); err != nil {
 				return err
 			}

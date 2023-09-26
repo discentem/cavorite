@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/fs"
@@ -13,6 +14,7 @@ import (
 	"github.com/discentem/cavorite/stores"
 	"github.com/discentem/cavorite/testutils"
 	"github.com/gonuts/go-shellquote"
+	"github.com/google/logger"
 	multierr "github.com/hashicorp/go-multierror"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -157,5 +159,49 @@ func TestRetrieve(t *testing.T) {
 		"someFile.cfile",
 		"someOtherFile.cfile",
 	)
+	// TODO(discentem):
 	assert.NoError(t, err)
+}
+
+func TestRetrieveAlreadyHaveAllFileLocally(t *testing.T) {
+	w := bytes.NewBufferString("")
+	logger.Init("TestRetrieveAlreadyHaveAllFileLocally", true, false, w)
+	mTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")
+	sourceFsys, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
+		"someFile.cfile": {
+			ModTime: &mTime,
+			Content: []byte(`{
+  "name": "repo/someFile",
+  "checksum": "4df3c3f68fcc83b27e9d42c90431a72499f17875c81a599b566c9889b9696703",
+  "date_modified": "2014-11-12T11:45:26.371Z"
+}`),
+		},
+		"someFile": {
+			Content: []byte(`bla`),
+			ModTime: &mTime,
+		},
+	})
+	assert.NoError(t, err)
+
+	bucket, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
+		"repo/someFile": {
+			Content: []byte(`bla`),
+			ModTime: &mTime,
+		},
+	})
+	assert.NoError(t, err)
+	err = Retrieve(
+		context.Background(),
+		*sourceFsys,
+		simpleStoreForRetrieve{
+			sourceFsys: *sourceFsys,
+			bucketFsys: *bucket,
+			options: stores.Options{
+				MetadataFileExtension: "cfile",
+			},
+		},
+		"someFile.cfile",
+	)
+	assert.NoError(t, err)
+	assert.True(t, strings.Contains(w.String(), "retrieval not needed, all requested files are present from"))
 }

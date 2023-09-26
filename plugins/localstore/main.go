@@ -8,19 +8,27 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/google/logger"
 	"github.com/hashicorp/go-hclog"
 	multierr "github.com/hashicorp/go-multierror"
 	"github.com/spf13/afero"
 
 	"github.com/discentem/cavorite/config"
+	"github.com/discentem/cavorite/fileutils"
+	"github.com/discentem/cavorite/metadata"
 	"github.com/discentem/cavorite/stores"
 )
 
 type LocalStore struct {
-	logger hclog.Logger
-	fsys   afero.Fs
-	opts   *stores.Options
+	logger  hclog.Logger
+	fsys    afero.Fs
+	scmRepo string
+	opts    *stores.Options
 }
+
+var (
+	_ = stores.Store(&LocalStore{})
+)
 
 func (s *LocalStore) Upload(ctx context.Context, objects ...string) error {
 	s.logger.Info(fmt.Sprintf("Uploading %v via localstore plugin", objects))
@@ -56,9 +64,54 @@ func (s *LocalStore) Upload(ctx context.Context, objects ...string) error {
 	return result.ErrorOrNil()
 }
 
-func (s *LocalStore) Retrieve(ctx context.Context, objects ...string) error {
-	s.logger.Info(fmt.Sprintf("Retrieving %v via localstore plugin", objects))
-	return nil
+func (s *LocalStore) Retrieve(ctx context.Context, mmap metadata.CfileMetadataMap, cfiles ...string) error {
+	var result *multierr.Error
+	for _, cfile := range cfiles {
+		sf, err := s.fsys.Open(mmap[cfile].Name)
+		if err != nil {
+			result = multierr.Append(result, err)
+			continue
+		}
+		_, err = sf.Seek(0, io.SeekStart)
+		if err != nil {
+			result = multierr.Append(result, err)
+			continue
+		}
+		// create the destination file
+		df, err := fileutils.OpenOrCreateFile(s.fsys, mmap[cfile].Name)
+		if err != nil {
+			result = multierr.Append(result, err)
+			continue
+		}
+		logger.V(2).Infof("mmap: %s", mmap)
+		m, ok := mmap[cfile]
+		if !ok {
+			result = multierr.Append(result, fmt.Errorf("%q not found in mmap", cfile))
+			continue
+		}
+		// copy from backend
+		_, err = io.Copy(df, sf)
+		if err != nil {
+			result = multierr.Append(result, err)
+			continue
+		}
+
+		matches, err := metadata.HashFromCfileMatches(s.fsys, cfile, m.Checksum)
+		if err != nil {
+			result = multierr.Append(result, err)
+			continue
+		}
+		if !matches {
+			logger.V(2).Infof("hash for %s did not match expected hash (%q) in %q", mmap[cfile].Name, mmap[cfile].Checksum, cfile)
+			if err := s.fsys.Remove(m.Name); err != nil {
+				result = multierr.Append(result, err)
+				continue
+			}
+			result = multierr.Append(result, metadata.ErrRetrieveFailureHashMismatch)
+			continue
+		}
+	}
+	return result.ErrorOrNil()
 }
 
 func (s *LocalStore) GetOptions() (stores.Options, error) {

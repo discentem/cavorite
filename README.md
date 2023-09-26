@@ -142,8 +142,6 @@ Install [bazelisk](https://github.com/bazelbuild/bazelisk)
 
 1. Compile `cavorite` with `make` and then compile some plugin. If you want to compile the example plugin, run `make with_localstore_plugin`.
 
-   > Note: the [localstore](plugin/localstore/) may not be actually functional as a backend Cavorite at this time but is good enough for this demonstration.
-
 1. Set environment variables for cavorite and the plugin you compiled. For example: 
 
       ```bash
@@ -156,34 +154,67 @@ Install [bazelisk](https://github.com/bazelbuild/bazelisk)
    ```bash
    cd ~/some_git_repo
    ```
+1. _If you are testing the localstorage plugin_: 
+
+   Create a folder to "upload" your objects to: 
+
+   ```bash
+   mkdir ~/fake_artifact_storage
+   ```
+
+1. Create a thing you want to upload
+
+   ```bash
+   echo "i'm a blob" >> ~/some_git_repo/blob.txt
+   ```
 
 1. Initialize cavorite in `~/some_git_repo` with the plugin: 
 
    ```bash
-   $CAVORITE_BIN init --store_type plugin --backend_address $CAVORITE_PLUGIN .
+   $CAVORITE_BIN init --store_type plugin --backend_address ~/fake_artifact_storage --plugin_address $CAVORITE_PLUGIN .
    ```
 
-   This should result in a configuration file that looks something like this. Your backend_address will be slightly different.
+   This should result in a configuration file that looks something like this. Your backend_address may be slightly different.
 
    ```json
    {
       "store_type": "plugin",
       "options": {
-         "backend_address": "/Users/bk/cavorite/bazel-out/darwin_arm64-fastbuild/bin/plugin/localstore/localstore_/localstore",
+         "backend_address": "/Users/bk/fake_artifact_storage",
+         "plugin_address": "/Users/bk/cavorite/bazel-out/darwin_arm64-fastbuild/bin/plugin/localstore/localstore_/localstore",
          "metadata_file_extension": "cfile",
          "region": "us-east-1"
       }
    }
    ```
 
-1. `touch ~/some_file`
-
-1. `$CAVORITE_BIN upload ~/some_file`
+1. `$CAVORITE_BIN upload blob.txt`
 
    What happens after this depends on how the plugin is implemented but generally you should expect to see log messages that an upload was successful.
 
    For the example plugin in `plugin/localstore`, you'll see
 
    ```
-   2023-09-04T16:22:35.349-0700 [INFO]  plugin.localstore: Uploading [some_file] via localstore plugin
+   2023-09-04T16:22:35.349-0700 [INFO]  plugin.localstore: Uploading [blob.txt] via localstore plugin
    ```
+
+1. Check that metadata was generated: `cat blob.txt.cfile`
+
+   ```json
+   {
+      "name": "blob.txt",
+      "checksum": "17ead08bfb84cd914e1ec5700e1d9e8a7f5e89c8517a32164a6f4cb8fcdb1901",
+      "date_modified": "2023-09-25T22:25:41.783231729-07:00"
+   }
+   ```
+
+1. Check that the file was uploaded.
+
+   If you are testing the localstore plugin:
+
+   ```bash
+   cat ~/fake_artifact_storage/blob.txt 
+   i'm a blob
+   ```
+
+1. `$CAVORITE_BIN retrieve blob.txt.cfile`

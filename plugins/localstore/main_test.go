@@ -22,7 +22,10 @@ func localStore() *LocalStore {
 		"/artifactStorage/blah": {
 			Content: []byte(`someContent`),
 		},
-		"/git_repo/thing": {
+		"/git_repo/thing2": {
+			Content: []byte(`blah`),
+		},
+		"/scratchpad/thing1": {
 			Content: []byte(`blah`),
 		},
 	})
@@ -38,8 +41,12 @@ func localStore() *LocalStore {
 
 func TestUpload(t *testing.T) {
 	s := localStore()
-	err := s.Upload(context.Background(), "thing")
+	err := s.Upload(context.Background(), "/scratchpad/thing1")
 	assert.NoError(t, err)
-	t.Log(s.fsys.Stat("/artifactStorage/thing"))
+	t.Log(s.fsys.Stat("/artifactStorage/thing1"))
+
+	err = s.Upload(context.Background(), "thing2")
+	assert.NoError(t, err)
+	t.Log(s.fsys.Stat("/artifactStorage/thing1"))
 
 }

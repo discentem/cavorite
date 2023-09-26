@@ -12,7 +12,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/discentem/cavorite/metadata"
 	"github.com/discentem/cavorite/stores/pluginproto"
 )
 
@@ -45,8 +47,40 @@ func (p *clientStore) Upload(ctx context.Context, objects ...string) error {
 	return err
 }
 
-func (p *clientStore) Retrieve(ctx context.Context, objects ...string) error {
-	_, err := p.PluginClient.Retrieve(ctx, &pluginproto.Objects{Objects: objects})
+func MetadataMapToPluginProtoMap(mmap metadata.CfileMetadataMap) map[string]*pluginproto.ObjectMetadata {
+	ppmm := make(map[string]*pluginproto.ObjectMetadata)
+	for k, v := range mmap {
+		ppmm[k] = &pluginproto.ObjectMetadata{
+			Name:         v.Name,
+			Checksum:     v.Checksum,
+			DateModified: timestamppb.New(v.DateModified),
+		}
+	}
+	return ppmm
+}
+
+func PluginProtoMapToMetadataMap(ppm *pluginproto.ObjectsAndMetadataMap) metadata.CfileMetadataMap {
+	mm := make(metadata.CfileMetadataMap)
+	for k, v := range ppm.Map {
+		mm[k] = metadata.ObjectMetaData{
+			Name:         v.Name,
+			Checksum:     v.Checksum,
+			DateModified: v.DateModified.AsTime(),
+		}
+	}
+	return mm
+}
+
+func (p *clientStore) Retrieve(ctx context.Context, mmap metadata.CfileMetadataMap, objects ...string) error {
+	_, err := p.PluginClient.Retrieve(
+		ctx,
+		&pluginproto.ObjectsAndMetadataMap{
+			Objects: &pluginproto.Objects{
+				Objects: objects,
+			},
+			Map: MetadataMapToPluginProtoMap(mmap),
+		},
+	)
 	return err
 }
 
@@ -61,14 +95,6 @@ func (p *clientStore) GetOptions() (Options, error) {
 		MetadataFileExtension: opts.MetadataFileExtension,
 		Region:                opts.Region,
 	}, nil
-}
-
-func (p *clientStore) SetOptions(ctx context.Context, opts Options) error {
-	_, err := p.PluginClient.SetOptions(ctx, &pluginproto.Options{})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (p *clientStore) Close() error {
@@ -92,8 +118,8 @@ func (p *serverStore) Upload(ctx context.Context, objects *pluginproto.Objects) 
 	return &emptypb.Empty{}, nil
 }
 
-func (p *serverStore) Retrieve(ctx context.Context, objects *pluginproto.Objects) (*emptypb.Empty, error) {
-	err := p.Store.Retrieve(ctx, objects.Objects...)
+func (p *serverStore) Retrieve(ctx context.Context, mmap *pluginproto.ObjectsAndMetadataMap) (*emptypb.Empty, error) {
+	err := p.Store.Retrieve(ctx, PluginProtoMapToMetadataMap(mmap), mmap.Objects.Objects...)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
 			return nil, err
@@ -140,7 +166,7 @@ type PluggableStore struct {
 	Store
 }
 
-func NewPluggableStore(ctx context.Context, opts Options) (*PluggableStore, error) {
+func NewPluggableStore(_ context.Context, opts Options) (*PluggableStore, error) {
 	cmd := exec.Command(opts.PluginAddress)
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig:  HandshakeConfig,

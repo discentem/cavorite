@@ -7,7 +7,10 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//config",
+        "//fileutils",
+        "//metadata",
         "//stores",
+        "@com_github_google_logger//:logger",
         "@com_github_hashicorp_go_hclog//:go-hclog",
         "@com_github_hashicorp_go_multierror//:go-multierror",
         "@com_github_spf13_afero//:afero",
@@ -25,10 +28,12 @@ go_test(
     srcs = ["main_test.go"],
     embed = [":localstore_lib"],
     deps = [
+        "//metadata",
         "//stores",
         "//testutils",
         "@com_github_carolynvs_aferox//:aferox",
         "@com_github_hashicorp_go_hclog//:go-hclog",
-        "@com_github_stretchr_testify//assert",
+        "@com_github_spf13_afero//:afero",
+        "@com_github_stretchr_testify//require",
     ],
 )

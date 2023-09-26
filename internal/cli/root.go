@@ -16,7 +16,7 @@ import (
 var (
 	// These vars are available to every sub command
 	debug bool
-	vv    bool
+	VV    bool
 
 	// TODO (@radsec) Update this to be dynamic with GH action on new release and tagging....
 	version string = "development"
@@ -42,7 +42,7 @@ func rootCmd() *cobra.Command {
 			//   * PersistentPostRun()
 			// All functions get the same args, the arguments after the command name.
 		*/
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		PersistentPreRun: func(_ *cobra.Command, _ []string) {
 			setLoggerOpts()
 		},
 		// RunE
@@ -56,7 +56,7 @@ func rootCmd() *cobra.Command {
 			//   * PersistentPostRunE()
 			// All functions get the same args, the arguments after the command name.
 		*/
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := cmd.Help(); err != nil {
 				return err
 			}
@@ -68,13 +68,13 @@ func rootCmd() *cobra.Command {
 
 	// At the rootCmd level, set these global flags that will be available to downstream cmds
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Run in debug mode")
-	rootCmd.PersistentFlags().BoolVar(&vv, "vv", false, "Run in verbose logging mode")
+	rootCmd.PersistentFlags().BoolVar(&VV, "vv", false, "Run in verbose logging mode")
 
 	// Defaults set here will be used if they do not exist in the config file
 	viper.SetDefault("store_type", stores.StoreTypeUndefined)
 	viper.SetDefault("metadata_file_extension", metadata.MetadataFileExtension)
 
-	if vv {
+	if VV {
 		logger.SetLevel(2)
 	}
 

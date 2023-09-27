@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -26,14 +27,20 @@ func (p AddPrefixToKey) Modify(original string) string {
 }
 
 func (p AddPrefixToKey) Original(modified string) string {
+	if p.Prefix == "" {
+		return modified
+	}
 	prefix := fmt.Sprintf("%s/", p.Prefix)
-	return strings.ReplaceAll(modified, prefix, "")
+	return strings.Replace(modified, prefix, "", 1)
 }
 
-func ModifyMultipleKeys(modder KeyModifier, originalKeys ...string) []string {
+func ModifyMultipleKeys(modder KeyModifier, originalKeys ...string) ([]string, error) {
+	if modder == nil {
+		return []string{}, errors.New("modder cannot be nil")
+	}
 	newKeys := []string{}
 	for _, key := range originalKeys {
 		newKeys = append(newKeys, modder.Modify(key))
 	}
-	return newKeys
+	return newKeys, nil
 }

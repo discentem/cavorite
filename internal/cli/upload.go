@@ -76,10 +76,13 @@ func upload(ctx context.Context, fsys afero.Fs, s stores.Store, objects ...strin
 	prefixOp := cavoriteObjLib.AddPrefixToKey{Prefix: opts.ObjectKeyPrefix}
 	derivedKeys = objects
 	if opts.ObjectKeyPrefix != "" {
-		derivedKeys = cavoriteObjLib.ModifyMultipleKeys(
+		derivedKeys, err = cavoriteObjLib.ModifyMultipleKeys(
 			prefixOp,
 			objects...,
 		)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := s.Upload(ctx, derivedKeys...); err != nil {

@@ -93,6 +93,7 @@ func TestRetrieve(t *testing.T) {
 	}, "someObject.cfile")
 	require.NoError(t, err)
 	_, err = s.fsys.Stat("/git_repo/someObject")
+	// TODO(discentem): check hash of someObject matches someObject.cfile
 	require.NoError(t, err)
 }
 

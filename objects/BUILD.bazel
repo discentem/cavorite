@@ -11,5 +11,8 @@ go_test(
     name = "objects_test",
     srcs = ["objects_test.go"],
     embed = [":objects"],
-    deps = ["@com_github_stretchr_testify//assert"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
 )

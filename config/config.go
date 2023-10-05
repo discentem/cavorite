@@ -42,7 +42,7 @@ func InitalizeStoreTypeOf(
 	ctx context.Context,
 	storeType stores.StoreType,
 	fsys afero.Fs,
-	sourceRepo, backendAddress string,
+	sourceRepo string,
 	opts stores.Options,
 ) Config {
 	return Config{

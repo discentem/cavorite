@@ -115,7 +115,6 @@ func initFn(cmd *cobra.Command, args []string) error {
 			sb,
 			fsys,
 			repoToInit,
-			backendAddress,
 			opts,
 		)
 	}

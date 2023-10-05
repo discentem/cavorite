@@ -1,24 +1,30 @@
 package exec
 
 import (
+	"bufio"
+	"io"
 	"os/exec"
 )
 
-type ExecCommand struct {
-	exec.Cmd
+type Executor interface {
+	Start() error
+	Wait() error
+	StdoutPipe() (io.ReadCloser, error)
+	StderrPipe() (io.ReadCloser, error)
 }
 
-func Command(name string, arg ...string) *ExecCommand {
-	cmd := exec.Command(
-		name,
-		arg...,
-	)
+type RealExecutor struct {
+	*exec.Cmd
+}
 
-	return &ExecCommand{
-		*cmd,
+func WriteOutput(in io.ReadCloser, post io.WriteCloser) error {
+	r := bufio.NewScanner(in)
+	for r.Scan() {
+		m := r.Text()
+		_, err := post.Write([]byte(m + "\n"))
+		if err != nil {
+			return err
+		}
 	}
-}
-
-func (c *ExecCommand) Run() error {
-	return c.Cmd.Run()
+	return nil
 }

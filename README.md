@@ -1,10 +1,10 @@
+# Cavorite
+
+<img src="images/cavorite_logo.png" alt="drawing" width="80" background-color="transparent" align="left"/> A cli tool that makes it easy to track large, binary files in source control repositories by making them "lighter weight" and making binaries less of a burden. Cavorite is compatible with _any_ SCM system.
+
 ## **Disclaimer**
 
 This is not production ready nor feature complete. See [Issues](https://github.com/discentem/cavorite/issues) for upcoming features.
-
-## What is this?
-
-A cli tool that makes it easy to track large, binary files in source control repositories. Compatible with _any_ SCM system.
 
 Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri, this is a re-write in Go with support for s3, Minio, Google Cloud Storage, and other storage systems through plugins. See [internal/stores](internal/stores) for information about implementing new storage drivers.
 

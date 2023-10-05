@@ -96,7 +96,6 @@ func TestInitializeStoreTypeOf(t *testing.T) {
 		stores.StoreTypeGCS,
 		fsys,
 		"~/some_repo_root",
-		opts.BackendAddress,
 		opts,
 	)
 

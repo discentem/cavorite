@@ -40,21 +40,21 @@ func removePathPrefix(objects []string, prefix string) ([]string, error) {
 	return objects, nil
 }
 
-func initStoreFromConfig(ctx context.Context, cfg config.Config, fsys afero.Fs, opts stores.Options) (stores.Store, error) {
+func initStoreFromConfig(ctx context.Context, cfg config.Config, fsys afero.Fs) (stores.Store, error) {
 	switch cfg.StoreType {
 	case stores.StoreTypeS3:
-		s3, err := stores.NewS3StoreClient(ctx, fsys, opts)
+		s3, err := stores.NewS3StoreClient(ctx, fsys, cfg.Options)
 		if err != nil {
 			return nil, fmt.Errorf("improper stores.S3Client init: %v", err)
 		}
 		return stores.Store(s3), nil
 	case stores.StoreTypeGCS:
-		return nil, fmt.Errorf("type %s is not currently supported; support will be re-enabled in a future release", cfg.StoreType)
+		return nil, fmt.Errorf("type %s is not currently supported; support for %q will be re-enabled in a future release", cfg.StoreType, cfg.StoreType)
 	case stores.StoreTypeAzureBlob:
-		return nil, fmt.Errorf("type %s is not currently supported; support will be re-enabled in a future release", cfg.StoreType)
+		return nil, fmt.Errorf("type %s is not currently supported; support for %q will be re-enabled in a future release", cfg.StoreType, cfg.StoreType)
 	case stores.StoreTypeGoPlugin:
-		// FIXME: allow specifying command arguments for plugin
-		ps, err := stores.NewPluggableStore(ctx, opts)
+		// TODO(discentem): allow specifying command arguments for plugin
+		ps, err := stores.NewPluggableStore(ctx, cfg.Options)
 		if err != nil {
 			return nil, fmt.Errorf("improper plugin init: %v", err)
 		}

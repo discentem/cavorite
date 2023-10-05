@@ -11,5 +11,6 @@ go_test(
     name = "exec_test",
     srcs = ["exec_test.go"],
     embed = [":exec"],
+    data = ["test/artifacts/long_running.sh"], # make the script available to bazel
     deps = ["@com_github_stretchr_testify//assert"],
 )

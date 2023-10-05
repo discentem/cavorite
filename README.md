@@ -2,6 +2,8 @@
 
 <img src="images/cavorite_logo.png" alt="drawing" width="80" background-color="transparent" align="left"/> A cli tool that makes it easy to track large, binary files in source control repositories by making them "lighter weight" and making binaries less of a burden. Cavorite is compatible with _any_ SCM system.
 
+<br/>
+
 ## **Disclaimer**
 
 This is not production ready nor feature complete. See [Issues](https://github.com/discentem/cavorite/issues) for upcoming features.

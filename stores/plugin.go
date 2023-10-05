@@ -166,8 +166,8 @@ type PluggableStore struct {
 	Store
 }
 
-func NewPluggableStore(_ context.Context, opts Options) (*PluggableStore, error) {
-	cmd := exec.Command(opts.PluginAddress)
+func NewPluggableStore(_ context.Context, opts Options, cmdArgs ...string) (*PluggableStore, error) {
+	cmd := exec.Command(opts.PluginAddress, cmdArgs...)
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig:  HandshakeConfig,
 		Plugins:          PluginSet,

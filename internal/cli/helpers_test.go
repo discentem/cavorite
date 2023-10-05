@@ -46,7 +46,6 @@ func TestInitStoreFromConfig(t *testing.T) {
 		ctx,
 		cfg,
 		fsys,
-		cfg.Options,
 	)
 	assert.NoError(t, err)
 
@@ -83,7 +82,6 @@ func TestInitStoreFromConfig_InvalidOptions(t *testing.T) {
 		ctx,
 		cfg,
 		fsys,
-		cfg.Options,
 	)
 
 	assert.Errorf(t, err, `improper stores.S3Client init: cavoriteAddress did not contain s3://, http://, or https:// prefix`)
@@ -106,7 +104,6 @@ func TestInitStoreFromConfig_InvalidateStoreType(t *testing.T) {
 		ctx,
 		cfg,
 		fsys,
-		cfg.Options,
 	)
 
 	assert.Errorf(t, err, "type %s is not supported", "s4")

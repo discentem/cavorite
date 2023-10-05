@@ -122,7 +122,6 @@ func uploadFn(cmd *cobra.Command, objects []string) error {
 		cmd.Context(),
 		config.Cfg,
 		fsys,
-		config.Cfg.Options,
 	)
 	if err != nil {
 		return err

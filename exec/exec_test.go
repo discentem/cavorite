@@ -3,6 +3,7 @@ package exec
 import (
 	"bytes"
 	"io"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +15,16 @@ type NopBufferCloser struct {
 
 func (b *NopBufferCloser) Close() error {
 	return nil
+}
+
+func TestStream(t *testing.T) {
+	e := RealExecutor{
+		Cmd: exec.Command("bash", "test/artifacts/long_running.sh"),
+	}
+	out := bytes.Buffer{}
+	err := e.Stream(&NopBufferCloser{Buffer: &out})
+	assert.NoError(t, err)
+	assert.Equal(t, "1 \n2 \n3 \n", out.String())
 }
 
 func TestWriteOutput(t *testing.T) {

@@ -7,11 +7,8 @@ import (
 )
 
 type Executor interface {
-	Command(string, ...string)
-	Start() error
-	Wait() error
-	StdoutPipe() (io.ReadCloser, error)
-	StderrPipe() (io.ReadCloser, error)
+	Command(path string, args ...string)
+	Stream(posters ...io.WriteCloser) error
 }
 
 var (

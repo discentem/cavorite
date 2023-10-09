@@ -20,6 +20,10 @@ type RealExecutor struct {
 }
 
 func (e *RealExecutor) Command(bin string, args ...string) {
+	if e.Cmd == nil {
+		e.Cmd = exec.Command(bin, args...)
+		return
+	}
 	e.Cmd.Path = bin
 	e.Cmd.Args = args
 }

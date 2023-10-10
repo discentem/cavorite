@@ -17,10 +17,21 @@ func (b *NopBufferCloser) Close() error {
 	return nil
 }
 
-func TestStream(t *testing.T) {
+func TestRealExecutorStream(t *testing.T) {
 	re := RealExecutor{
 		Cmd: exec.Command("bash", "test/artifacts/long_running.sh"),
 	}
+	out := bytes.Buffer{}
+	err := re.Stream(&NopBufferCloser{Buffer: &out})
+	assert.NoError(t, err)
+	assert.Equal(t, "1 \n2 \n3 \n", out.String())
+}
+
+func TestRealExecutorNilCmdStream(t *testing.T) {
+	re := RealExecutor{}
+	// if caller doesn't explicitly set RealExecutor.Cmd to some non-nil value in advance,
+	// re.Command still correctly sets the path/args
+	re.Command("bash", "test/artifacts/long_running.sh")
 	out := bytes.Buffer{}
 	err := re.Stream(&NopBufferCloser{Buffer: &out})
 	assert.NoError(t, err)

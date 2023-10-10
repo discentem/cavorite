@@ -8,7 +8,7 @@
 
 This is not production ready nor feature complete. See [Issues](https://github.com/discentem/cavorite/issues) for upcoming features.
 
-Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri, this is a re-write in Go with support for s3, Minio, Google Cloud Storage, and other storage systems through plugins. See [internal/stores](internal/stores) for information about implementing new storage drivers.
+Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri, this is a re-write in Go with support for s3, Minio, Google Cloud Storage, and other storage systems through plugins. See [stores](stores) for information about implementing new storage drivers.
 
 ## Development
 

@@ -3,6 +3,7 @@ package exec
 import (
 	"bytes"
 	"io"
+	"os"
 	"os/exec"
 	"testing"
 
@@ -25,6 +26,22 @@ func TestRealExecutorStream(t *testing.T) {
 	err := re.Stream(&NopBufferCloser{Buffer: &out})
 	assert.NoError(t, err)
 	assert.Equal(t, "1 \n2 \n3 \n", out.String())
+}
+
+func TestRealExecutorStreamNoPosters(t *testing.T) {
+	orig := os.Stdout
+	r, w, err := os.Pipe()
+	assert.NoError(t, err)
+	os.Stdout = w
+	re := RealExecutor{
+		Cmd: exec.Command("bash", "test/artifacts/long_running.sh"),
+	}
+	err = re.Stream()
+	assert.NoError(t, err)
+	os.Stdout = orig
+	w.Close()
+	out, _ := io.ReadAll(r)
+	assert.Equal(t, "1 \n2 \n3 \n", string(out))
 }
 
 func TestRealExecutorNilCmdStream(t *testing.T) {

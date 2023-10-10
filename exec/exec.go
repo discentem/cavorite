@@ -3,6 +3,7 @@ package exec
 import (
 	"bufio"
 	"io"
+	"os"
 	"os/exec"
 )
 
@@ -42,6 +43,11 @@ func (e *RealExecutor) Stream(posters ...io.WriteCloser) error {
 	if err := e.Start(); err != nil {
 		return err
 	}
+
+	if posters == nil {
+		posters = []io.WriteCloser{os.Stdout}
+	}
+
 	for _, pipe := range inputPipes {
 		for _, post := range posters {
 			//nolint:errcheck

@@ -205,3 +205,13 @@ func TestRetrieveAlreadyHaveAllFileLocally(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, strings.Contains(w.String(), "retrieval not needed, all requested files are present from"))
 }
+
+// TODO(discentem): finish this test
+func TestShouldRetrieve(t *testing.T) {
+	_ = []struct {
+		name     string
+		fsys     afero.Fs
+		metadata *metadata.ObjectMetaData
+		cfile    string
+	}{}
+}

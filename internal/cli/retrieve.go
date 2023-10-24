@@ -18,6 +18,9 @@ import (
 )
 
 func shouldRetrieve(fsys afero.Fs, m *metadata.ObjectMetaData, cfile string) (bool, error) {
+	if m == nil {
+		return true, errors.New("m cannot be nil")
+	}
 	expectedHash := m.Checksum
 	f, err := fsys.Open(strings.TrimSuffix(cfile, filepath.Ext(cfile)))
 	if err != nil {
@@ -28,6 +31,7 @@ func shouldRetrieve(fsys afero.Fs, m *metadata.ObjectMetaData, cfile string) (bo
 		return false, err
 	}
 	if actualHash != expectedHash {
+		logger.Errorf("expected hash %q but got %q", expectedHash, actualHash)
 		return true, nil
 	}
 	return false, nil

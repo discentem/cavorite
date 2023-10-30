@@ -205,3 +205,82 @@ func TestRetrieveAlreadyHaveAllFileLocally(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, strings.Contains(w.String(), "retrieval not needed, all requested files are present from"))
 }
+
+// TODO(discentem): finish this test
+func TestShouldRetrieve(t *testing.T) {
+	tests := []struct {
+		name           string
+		fsys           afero.Fs
+		m              *metadata.ObjectMetaData
+		cfile          string
+		shouldRetrieve bool
+		expectedError  func(e error) bool
+	}{
+		{
+			name:           "metadata.ObjectMetadata is nil",
+			fsys:           nil,
+			m:              nil,
+			cfile:          "",
+			shouldRetrieve: true,
+			expectedError: func(err error) bool {
+				return assert.Error(t, err)
+			},
+		},
+		{
+			name: "object is not found locally, should retrieve",
+			fsys: afero.NewMemMapFs(),
+			m: &metadata.ObjectMetaData{
+				Checksum: "blah",
+			},
+			cfile:          "blah",
+			shouldRetrieve: true,
+			expectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "file does not exist")
+
+			},
+		},
+		{
+			name: "object found locally, wrong hash, should retrieve",
+			fsys: func(t *testing.T) afero.Fs {
+				memfs := afero.NewMemMapFs()
+				_, err := memfs.Create("blah")
+				assert.NoError(t, err)
+				return memfs
+			}(t),
+			m: &metadata.ObjectMetaData{
+				Checksum: "blah",
+			},
+			cfile:          "blah.cfile",
+			shouldRetrieve: true,
+			expectedError: func(err error) bool {
+				return err == nil
+			},
+		},
+		{
+			name: "object found locally, correct hash, no need to retrieve",
+			fsys: func(t *testing.T) afero.Fs {
+				memfs := afero.NewMemMapFs()
+				_, err := memfs.Create("blah")
+				assert.NoError(t, err)
+				return memfs
+			}(t),
+			m: &metadata.ObjectMetaData{
+				Checksum: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			},
+			cfile:          "blah.cfile",
+			shouldRetrieve: false,
+			expectedError: func(err error) bool {
+				return err == nil
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual, err := shouldRetrieve(test.fsys, test.m, test.cfile)
+			expectedErr := test.expectedError(err)
+			assert.Equal(t, true, expectedErr)
+			assert.Equal(t, test.shouldRetrieve, actual)
+		})
+
+	}
+}

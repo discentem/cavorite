@@ -1,9 +1,16 @@
 package config
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/discentem/cavorite/stores"
 	"github.com/spf13/afero"
 	"github.com/spf13/viper"
+)
+
+var (
+	ErrViperReadConfig = errors.New("viper.ReadConfig failure")
 )
 
 func Load(fs afero.Fs, cfgDest ...*Config) error {
@@ -23,7 +30,7 @@ func Load(fs afero.Fs, cfgDest ...*Config) error {
 	// Read from the config file path
 	err := viper.ReadInConfig()
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %w", ErrViperReadConfig, err)
 	}
 
 	// if cfgDest is passed, unmarshal into cfgDest[0]. cfgDest[1-len(cfgDest)] is always ignored.

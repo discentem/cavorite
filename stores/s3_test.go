@@ -285,6 +285,18 @@ func TestS3GetBucketNameWithHTTPPrefix(t *testing.T) {
 
 }
 
+func TestGetBucketNameUnsupportedPrefix(t *testing.T) {
+	store := S3Store{
+		Options: Options{
+			BackendAddress:        "blah://thing",
+			MetadataFileExtension: "cfile",
+		},
+	}
+
+	_, err := store.getBucketName()
+	assert.Error(t, err)
+}
+
 func TestRetrieveZeroCfiles(t *testing.T) {
 	s := S3Store{}
 	err := s.Retrieve(context.Background(), metadata.CfileMetadataMap{})

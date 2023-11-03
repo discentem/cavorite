@@ -3,11 +3,15 @@ package config
 import (
 	"context"
 	"errors"
+	"io/fs"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/discentem/cavorite/stores"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateFuncNil(t *testing.T) {
@@ -27,15 +31,63 @@ func TestValidateFails(t *testing.T) {
 	assert.ErrorIs(t, err, ErrValidate)
 }
 
+func TestDirExpanderNil(t *testing.T) {
+	conf := Config{
+		Validate: func() error { return nil },
+		Expander: nil,
+	}
+	err := conf.Write(afero.NewMemMapFs(), "")
+	assert.ErrorIs(t, err, ErrDirExpanderNil)
+}
+
 func TestDirExpanderFails(t *testing.T) {
 	conf := Config{
 		Validate: func() error { return nil },
-	}
-	expander = func(path string) (string, error) {
-		return "", errors.New("borked")
+		Expander: func(path string) (string, error) {
+			return "", errors.New("borked")
+		},
 	}
 	err := conf.Write(afero.NewMemMapFs(), "")
 	assert.ErrorIs(t, err, ErrDirExpander)
+}
+
+type MemFsBrokenStat struct {
+	afero.Fs
+}
+
+func (m *MemFsBrokenStat) Stat(name string) (os.FileInfo, error) {
+	return nil, errors.New("broken")
+}
+
+func TestWriteStatFails(t *testing.T) {
+	conf := Config{
+		Validate: func() error { return nil },
+		Expander: func(path string) (string, error) {
+			return path, nil
+		},
+	}
+	err := conf.Write(&MemFsBrokenStat{Fs: afero.NewMemMapFs()}, "")
+	require.Error(t, err)
+	assert.True(t, strings.Contains(err.Error(), "does not exist"))
+}
+
+type MemFsBrokenMkdirAll struct {
+	afero.Fs
+}
+
+func (m *MemFsBrokenMkdirAll) MkdirAll(string, fs.FileMode) error {
+	return errors.New("broken")
+}
+
+func TestWriteMkdirAllFails(t *testing.T) {
+	conf := Config{
+		Validate: func() error { return nil },
+		Expander: func(path string) (string, error) {
+			return path, nil
+		},
+	}
+	err := conf.Write(&MemFsBrokenMkdirAll{Fs: afero.NewMemMapFs()}, "")
+	require.Error(t, err)
 }
 
 func TestSuccessfulWrite(t *testing.T) {
@@ -47,11 +99,12 @@ func TestSuccessfulWrite(t *testing.T) {
 			Region:                "us-east-9876",
 		},
 		Validate: func() error { return nil },
+		// this is the emulates normal homedir.Expand behavior
+		Expander: func(path string) (string, error) {
+			return path, nil
+		},
 	}
-	// override back to a dirExpander that will succeed, as opposed to previous test
-	expander = func(path string) (string, error) {
-		return path, nil
-	}
+
 	fsys := afero.NewMemMapFs()
 	err := cfg.Write(fsys, ".")
 	assert.NoError(t, err)

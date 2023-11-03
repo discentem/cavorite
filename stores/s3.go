@@ -89,7 +89,7 @@ func getConfig(ctx context.Context, region string, address string) (*aws.Config,
 	return &cfg, nil
 }
 
-func NewS3StoreClient(ctx context.Context, fsys afero.Fs, opts Options) (*S3Store, error) {
+func NewS3Store(ctx context.Context, fsys afero.Fs, opts Options) (*S3Store, error) {
 	cfg, err := getConfig(
 		ctx,
 		opts.Region,

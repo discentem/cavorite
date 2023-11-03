@@ -31,6 +31,9 @@ type ObjectMetaData struct {
 type CfileMetadataMap map[string]ObjectMetaData
 
 func HashFromCfileMatches(fsys afero.Fs, cfile string, expected string) (bool, error) {
+	if fsys == nil {
+		return false, errors.New("fsys cannot be nil")
+	}
 	obj := strings.TrimSuffix(cfile, filepath.Ext(cfile))
 	f, err := fsys.Open(obj)
 	if err != nil {

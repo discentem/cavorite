@@ -43,7 +43,7 @@ func removePathPrefix(objects []string, prefix string) ([]string, error) {
 func initStoreFromConfig(ctx context.Context, cfg config.Config, fsys afero.Fs) (stores.Store, error) {
 	switch cfg.StoreType {
 	case stores.StoreTypeS3:
-		s3, err := stores.NewS3StoreClient(ctx, fsys, cfg.Options)
+		s3, err := stores.NewS3Store(ctx, fsys, cfg.Options)
 		if err != nil {
 			return nil, fmt.Errorf("improper stores.S3Client init: %v", err)
 		}

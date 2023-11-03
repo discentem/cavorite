@@ -15,8 +15,37 @@ import (
 	"github.com/discentem/cavorite/stores"
 )
 
-func rootOfSourceRepo() (*string, error) {
-	absPathOfConfig, err := filepath.Abs(".cavorite/config")
+type fsWithAbs interface {
+	afero.Fs
+	Abs(path string) (string, error)
+}
+
+type osFsWithAbs struct {
+	afero.Fs
+}
+
+func (o *osFsWithAbs) Abs(path string) (string, error) {
+	return filepath.Abs(path)
+}
+
+type fsWithAbsFn func() (fsWithAbs, error)
+
+var (
+	ErrTooManyFsyses = errors.New("too many fsyses, only one is supported")
+)
+
+func rootOfSourceRepo(fsyses ...fsWithAbs) (*string, error) {
+	if len(fsyses) > 1 {
+		return nil, ErrTooManyFsyses
+	}
+	var fsys fsWithAbs
+	if fsyses != nil {
+		fsys = fsyses[0]
+	} else {
+		fsys = &osFsWithAbs{Fs: afero.NewOsFs()}
+	}
+
+	absPathOfConfig, err := fsys.Abs(".cavorite/config")
 	if err != nil {
 		return nil, errors.New(".cavorite/config not detected, not in sourceRepo root")
 	}

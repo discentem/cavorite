@@ -40,6 +40,7 @@ go_test(
         "//metadata",
         "//stores",
         "//testutils",
+        "@com_github_carolynvs_aferox//:aferox",
         "@com_github_gonuts_go_shellquote//:go-shellquote",
         "@com_github_google_logger//:logger",
         "@com_github_hashicorp_go_multierror//:go-multierror",

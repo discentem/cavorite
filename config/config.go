@@ -15,9 +15,10 @@ import (
 )
 
 type Config struct {
-	StoreType stores.StoreType `json:"store_type" mapstructure:"store_type"`
-	Options   stores.Options   `json:"options" mapstructure:"options"`
-	Validate  func() error     `json:"-"`
+	StoreType stores.StoreType             `json:"store_type" mapstructure:"store_type"`
+	Options   stores.Options               `json:"options" mapstructure:"options"`
+	Validate  func() error                 `json:"-"`
+	Expander  func(string) (string, error) `json:"-"`
 }
 
 var (
@@ -27,15 +28,13 @@ var (
 type dirExpander func(string) (string, error)
 
 var (
-	// dirExpander can be overwritten for tests
-	// expander can be overwritten with fakes for tests
-	expander             dirExpander = homedir.Expand
-	ErrValidateNil                   = errors.New("cavorite config must have a Validate() function")
-	ErrValidate                      = errors.New("validate() failed")
-	ErrDirExpander                   = errors.New("dirExpander failed")
-	ErrUnsupportedStore              = errors.New("not a supported store type")
-	ErrConfigNotExist                = errors.New("config file does not exist")
-	ErrConfigDirNotExist             = errors.New("config directory does not exist")
+	ErrValidateNil       = errors.New("cavorite config must have a Validate() function")
+	ErrValidate          = errors.New("validate() failed")
+	ErrDirExpander       = errors.New("dirExpander failed")
+	ErrDirExpanderNil    = errors.New("dirExpander cannot be nil")
+	ErrUnsupportedStore  = errors.New("not a supported store type")
+	ErrConfigNotExist    = errors.New("config file does not exist")
+	ErrConfigDirNotExist = errors.New("config directory does not exist")
 )
 
 func InitalizeStoreTypeOf(
@@ -51,6 +50,7 @@ func InitalizeStoreTypeOf(
 		Validate: func() error {
 			return nil
 		},
+		Expander: homedir.Expand,
 	}
 }
 
@@ -65,7 +65,11 @@ func (c *Config) Write(fsys afero.Fs, sourceRepo string) error {
 	if err != nil {
 		return err
 	}
-	esr, err := expander(sourceRepo)
+	if c.Expander == nil {
+		return ErrDirExpanderNil
+	}
+
+	esr, err := c.Expander(sourceRepo)
 	if err != nil {
 		return fmt.Errorf(
 			"%w: %v",

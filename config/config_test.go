@@ -3,11 +3,15 @@ package config
 import (
 	"context"
 	"errors"
+	"io/fs"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/discentem/cavorite/stores"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateFuncNil(t *testing.T) {
@@ -27,15 +31,63 @@ func TestValidateFails(t *testing.T) {
 	assert.ErrorIs(t, err, ErrValidate)
 }
 
+func TestDirExpanderNil(t *testing.T) {
+	conf := Config{
+		Validate: func() error { return nil },
+		Expander: nil,
+	}
+	err := conf.Write(afero.NewMemMapFs(), "")
+	assert.ErrorIs(t, err, ErrDirExpanderNil)
+}
+
 func TestDirExpanderFails(t *testing.T) {
 	conf := Config{
 		Validate: func() error { return nil },
-	}
-	expander = func(path string) (string, error) {
-		return "", errors.New("borked")
+		Expander: func(path string) (string, error) {
+			return "", errors.New("borked")
+		},
 	}
 	err := conf.Write(afero.NewMemMapFs(), "")
 	assert.ErrorIs(t, err, ErrDirExpander)
+}
+
+type MemFsBrokenStat struct {
+	afero.Fs
+}
+
+func (m *MemFsBrokenStat) Stat(name string) (os.FileInfo, error) {
+	return nil, errors.New("broken")
+}
+
+func TestWriteStatFails(t *testing.T) {
+	conf := Config{
+		Validate: func() error { return nil },
+		Expander: func(path string) (string, error) {
+			return path, nil
+		},
+	}
+	err := conf.Write(&MemFsBrokenStat{Fs: afero.NewMemMapFs()}, "")
+	require.Error(t, err)
+	assert.True(t, strings.Contains(err.Error(), "does not exist"))
+}
+
+type MemFsBrokenMkdirAll struct {
+	afero.Fs
+}
+
+func (m *MemFsBrokenMkdirAll) MkdirAll(string, fs.FileMode) error {
+	return errors.New("broken")
+}
+
+func TestWriteMkdirAllFails(t *testing.T) {
+	conf := Config{
+		Validate: func() error { return nil },
+		Expander: func(path string) (string, error) {
+			return path, nil
+		},
+	}
+	err := conf.Write(&MemFsBrokenMkdirAll{Fs: afero.NewMemMapFs()}, "")
+	require.Error(t, err)
 }
 
 func TestSuccessfulWrite(t *testing.T) {
@@ -47,11 +99,12 @@ func TestSuccessfulWrite(t *testing.T) {
 			Region:                "us-east-9876",
 		},
 		Validate: func() error { return nil },
+		// this is the emulates normal homedir.Expand behavior
+		Expander: func(path string) (string, error) {
+			return path, nil
+		},
 	}
-	// override back to a dirExpander that will succeed, as opposed to previous test
-	expander = func(path string) (string, error) {
-		return path, nil
-	}
+
 	fsys := afero.NewMemMapFs()
 	err := cfg.Write(fsys, ".")
 	assert.NoError(t, err)
@@ -71,7 +124,6 @@ func TestSuccessfulWrite(t *testing.T) {
 	assert.Equal(t, expected, string(b))
 
 }
-
 func TestWrite(t *testing.T) {
 	t.Run("fail if validate() nil", TestValidateFuncNil)
 	t.Run("fail if validate() fails", TestValidateFails)
@@ -82,28 +134,66 @@ func TestWrite(t *testing.T) {
 }
 
 func TestInitializeStoreTypeOf(t *testing.T) {
-	ctx := context.Background()
-	fsys := afero.NewMemMapFs()
-
-	opts := stores.Options{
-		BackendAddress:        "my-test-bucket",
-		MetadataFileExtension: "cfile",
-		Region:                "us-east-9876",
+	tests := []struct {
+		name              string
+		ctx               context.Context
+		fsys              afero.Fs
+		opts              stores.Options
+		expectedStoreType stores.StoreType
+	}{
+		{
+			name: "s3",
+			ctx:  context.Background(),
+			fsys: afero.NewMemMapFs(),
+			opts: stores.Options{
+				BackendAddress:        "s3://my-test-bucket",
+				MetadataFileExtension: "cfile",
+				Region:                "us-east-9876",
+			},
+			expectedStoreType: stores.StoreTypeS3,
+		},
+		{
+			name: "gcs",
+			ctx:  context.Background(),
+			fsys: afero.NewMemMapFs(),
+			opts: stores.Options{
+				BackendAddress:        "gcs://my-test-bucket",
+				MetadataFileExtension: "cfile",
+				Region:                "us-east-9876",
+			},
+			expectedStoreType: stores.StoreTypeGCS,
+		},
+		{
+			name: "pluggable",
+			ctx:  context.Background(),
+			fsys: afero.NewMemMapFs(),
+			opts: stores.Options{
+				BackendAddress:        "whatever",
+				MetadataFileExtension: "cfile",
+				Region:                "us-east-9876",
+			},
+			expectedStoreType: stores.StoreTypeGoPlugin,
+		},
 	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test := test
+			t.Parallel()
+			cfg := InitalizeStoreTypeOf(
+				test.ctx,
+				test.expectedStoreType,
+				test.fsys,
+				"~/some_repo_root",
+				test.opts,
+			)
 
-	cfg := InitalizeStoreTypeOf(
-		ctx,
-		stores.StoreTypeGCS,
-		fsys,
-		"~/some_repo_root",
-		opts,
-	)
+			// Assert the S3Store Config matches all of the inputs
+			assert.Equal(t, cfg.StoreType, test.expectedStoreType)
+			assert.Equal(t, cfg.Options.BackendAddress, test.opts.BackendAddress)
+			assert.Equal(t, cfg.Options.MetadataFileExtension, test.opts.MetadataFileExtension)
+			assert.Equal(t, cfg.Options.Region, test.opts.Region)
 
-	// Assert the S3Store Config matches all of the inputs
-	assert.Equal(t, cfg.StoreType, stores.StoreTypeGCS)
-	assert.Equal(t, cfg.Options.BackendAddress, opts.BackendAddress)
-	assert.Equal(t, cfg.Options.MetadataFileExtension, opts.MetadataFileExtension)
-	assert.Equal(t, cfg.Options.Region, opts.Region)
-
-	assert.NoError(t, cfg.Validate())
+			assert.NoError(t, cfg.Validate())
+		})
+	}
 }

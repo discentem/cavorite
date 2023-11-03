@@ -163,9 +163,9 @@ func TestRetrieve(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestRetrieveAlreadyHaveAllFileLocally(t *testing.T) {
+func TestRetrieveAlreadyHaveAllFilesLocally(t *testing.T) {
 	w := bytes.NewBufferString("")
-	logger.Init("TestRetrieveAlreadyHaveAllFileLocally", true, false, w)
+	logger.Init("TestRetrieveAlreadyHaveAllFilesLocally", true, false, w)
 	mTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")
 	sourceFsys, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
 		"someFile.cfile": {

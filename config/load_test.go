@@ -7,21 +7,7 @@ import (
 	"github.com/discentem/cavorite/testutils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
-
-func FsysWithJsonCavoriteConfig(t *testing.T, b []byte) afero.Fs {
-	t.Helper()
-	fs := afero.NewMemMapFs()
-	err := fs.Mkdir(".cavorite", 0o777)
-	require.NoError(t, err)
-
-	f, err := fs.Create(testutils.AbsFilePath(t, ".cavorite/config"))
-	require.NoError(t, err)
-	_, err = f.Write(b)
-	require.NoError(t, err)
-	return fs
-}
 
 // TestLoadConfig creates a pantri config file in memory
 // to be read and parsed by viper
@@ -38,7 +24,7 @@ func TestLoadConfig(t *testing.T) {
 			name:      "valid config is parsed correctly",
 			parseInto: &Config{},
 			// creating an fsys with a valid cavorite config
-			fsys: FsysWithJsonCavoriteConfig(t, []byte(`{
+			fsys: testutils.FsysWithJsonCavoriteConfig(t, []byte(`{
 					"store_type": "s3",
 					"options": {
 					 "backend_address": "s3://blahaddress/bucket",
@@ -63,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 			parseInto: nil,
 			// "options" is missing the closing curly bracket below
 			// so this is expected to cause ErrViperReadConfig
-			fsys: FsysWithJsonCavoriteConfig(t, []byte(`{
+			fsys: testutils.FsysWithJsonCavoriteConfig(t, []byte(`{
 					"store_type": "s3",
 					"options": {
 					 "backend_address": "s3://blahaddress/bucket",
@@ -79,7 +65,7 @@ func TestLoadConfig(t *testing.T) {
 			parseInto: func() *Config {
 				return &Cfg
 			}(),
-			fsys: FsysWithJsonCavoriteConfig(t, []byte(`{
+			fsys: testutils.FsysWithJsonCavoriteConfig(t, []byte(`{
 					"store_type": "s3",
 					"options": {
 					 "backend_address": "s3://blahaddress/bucket",

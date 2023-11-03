@@ -6,9 +6,11 @@ import (
 	iofs "io/fs"
 	"os"
 	"path/filepath"
+	"testing"
 	"time"
 
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/require"
 )
 
 /*
@@ -65,4 +67,17 @@ func WalkFs(fs afero.Fs, w io.Writer) error {
 		}
 		return nil
 	})
+}
+
+func FsysWithJsonCavoriteConfig(t *testing.T, b []byte) afero.Fs {
+	t.Helper()
+	fs := afero.NewMemMapFs()
+	err := fs.Mkdir(".cavorite", 0o777)
+	require.NoError(t, err)
+
+	f, err := fs.Create(AbsFilePath(t, ".cavorite/config"))
+	require.NoError(t, err)
+	_, err = f.Write(b)
+	require.NoError(t, err)
+	return fs
 }

@@ -124,7 +124,6 @@ func TestSuccessfulWrite(t *testing.T) {
 	assert.Equal(t, expected, string(b))
 
 }
-
 func TestWrite(t *testing.T) {
 	t.Run("fail if validate() nil", TestValidateFuncNil)
 	t.Run("fail if validate() fails", TestValidateFails)
@@ -135,28 +134,66 @@ func TestWrite(t *testing.T) {
 }
 
 func TestInitializeStoreTypeOf(t *testing.T) {
-	ctx := context.Background()
-	fsys := afero.NewMemMapFs()
-
-	opts := stores.Options{
-		BackendAddress:        "my-test-bucket",
-		MetadataFileExtension: "cfile",
-		Region:                "us-east-9876",
+	tests := []struct {
+		name              string
+		ctx               context.Context
+		fsys              afero.Fs
+		opts              stores.Options
+		expectedStoreType stores.StoreType
+	}{
+		{
+			name: "s3",
+			ctx:  context.Background(),
+			fsys: afero.NewMemMapFs(),
+			opts: stores.Options{
+				BackendAddress:        "s3://my-test-bucket",
+				MetadataFileExtension: "cfile",
+				Region:                "us-east-9876",
+			},
+			expectedStoreType: stores.StoreTypeS3,
+		},
+		{
+			name: "gcs",
+			ctx:  context.Background(),
+			fsys: afero.NewMemMapFs(),
+			opts: stores.Options{
+				BackendAddress:        "gcs://my-test-bucket",
+				MetadataFileExtension: "cfile",
+				Region:                "us-east-9876",
+			},
+			expectedStoreType: stores.StoreTypeGCS,
+		},
+		{
+			name: "pluggable",
+			ctx:  context.Background(),
+			fsys: afero.NewMemMapFs(),
+			opts: stores.Options{
+				BackendAddress:        "whatever",
+				MetadataFileExtension: "cfile",
+				Region:                "us-east-9876",
+			},
+			expectedStoreType: stores.StoreTypeGoPlugin,
+		},
 	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test := test
+			t.Parallel()
+			cfg := InitalizeStoreTypeOf(
+				test.ctx,
+				test.expectedStoreType,
+				test.fsys,
+				"~/some_repo_root",
+				test.opts,
+			)
 
-	cfg := InitalizeStoreTypeOf(
-		ctx,
-		stores.StoreTypeGCS,
-		fsys,
-		"~/some_repo_root",
-		opts,
-	)
+			// Assert the S3Store Config matches all of the inputs
+			assert.Equal(t, cfg.StoreType, test.expectedStoreType)
+			assert.Equal(t, cfg.Options.BackendAddress, test.opts.BackendAddress)
+			assert.Equal(t, cfg.Options.MetadataFileExtension, test.opts.MetadataFileExtension)
+			assert.Equal(t, cfg.Options.Region, test.opts.Region)
 
-	// Assert the S3Store Config matches all of the inputs
-	assert.Equal(t, cfg.StoreType, stores.StoreTypeGCS)
-	assert.Equal(t, cfg.Options.BackendAddress, opts.BackendAddress)
-	assert.Equal(t, cfg.Options.MetadataFileExtension, opts.MetadataFileExtension)
-	assert.Equal(t, cfg.Options.Region, opts.Region)
-
-	assert.NoError(t, cfg.Validate())
+			assert.NoError(t, cfg.Validate())
+		})
+	}
 }

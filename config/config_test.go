@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"os"
@@ -35,6 +36,9 @@ func TestDirExpanderNil(t *testing.T) {
 	conf := Config{
 		Validate: func() error { return nil },
 		Expander: nil,
+		Marshal: func(v any) ([]byte, error) {
+			return json.MarshalIndent(v, "", "  ")
+		},
 	}
 	err := conf.Write(afero.NewMemMapFs(), "")
 	assert.ErrorIs(t, err, ErrDirExpanderNil)
@@ -45,6 +49,9 @@ func TestDirExpanderFails(t *testing.T) {
 		Validate: func() error { return nil },
 		Expander: func(path string) (string, error) {
 			return "", errors.New("borked")
+		},
+		Marshal: func(v any) ([]byte, error) {
+			return json.MarshalIndent(v, "", "  ")
 		},
 	}
 	err := conf.Write(afero.NewMemMapFs(), "")
@@ -64,6 +71,9 @@ func TestWriteStatFails(t *testing.T) {
 		Validate: func() error { return nil },
 		Expander: func(path string) (string, error) {
 			return path, nil
+		},
+		Marshal: func(v any) ([]byte, error) {
+			return json.MarshalIndent(v, "", "  ")
 		},
 	}
 	err := conf.Write(&MemFsBrokenStat{Fs: afero.NewMemMapFs()}, "")
@@ -85,6 +95,9 @@ func TestWriteMkdirAllFails(t *testing.T) {
 		Expander: func(path string) (string, error) {
 			return path, nil
 		},
+		Marshal: func(v any) ([]byte, error) {
+			return json.MarshalIndent(v, "", "  ")
+		},
 	}
 	err := conf.Write(&MemFsBrokenMkdirAll{Fs: afero.NewMemMapFs()}, "")
 	require.Error(t, err)
@@ -102,6 +115,9 @@ func TestSuccessfulWrite(t *testing.T) {
 		// this is the emulates normal homedir.Expand behavior
 		Expander: func(path string) (string, error) {
 			return path, nil
+		},
+		Marshal: func(v any) ([]byte, error) {
+			return json.MarshalIndent(v, "", " ")
 		},
 	}
 
@@ -124,6 +140,51 @@ func TestSuccessfulWrite(t *testing.T) {
 	assert.Equal(t, expected, string(b))
 
 }
+
+func TestWriteJsonMarshalFail(t *testing.T) {
+	cfg := Config{
+		StoreType: stores.StoreTypeS3,
+		Options: stores.Options{
+			BackendAddress:        "s3://blahaddress/bucket",
+			MetadataFileExtension: "cfile",
+			Region:                "us-east-9876",
+		},
+		Validate: func() error { return nil },
+		// this is the emulates normal homedir.Expand behavior
+		Expander: func(path string) (string, error) {
+			return path, nil
+		},
+		Marshal: func(interface{}) ([]byte, error) {
+			return nil, errors.New("borked")
+		},
+	}
+
+	fsys := afero.NewMemMapFs()
+	err := cfg.Write(fsys, ".")
+	assert.Error(t, err)
+}
+
+func TestWriteJsonMarshalNil(t *testing.T) {
+	cfg := Config{
+		StoreType: stores.StoreTypeS3,
+		Options: stores.Options{
+			BackendAddress:        "s3://blahaddress/bucket",
+			MetadataFileExtension: "cfile",
+			Region:                "us-east-9876",
+		},
+		Validate: func() error { return nil },
+		// this is the emulates normal homedir.Expand behavior
+		Expander: func(path string) (string, error) {
+			return path, nil
+		},
+		Marshal: nil,
+	}
+
+	fsys := afero.NewMemMapFs()
+	err := cfg.Write(fsys, ".")
+	assert.ErrorIs(t, err, ErrMarshalNil)
+}
+
 func TestWrite(t *testing.T) {
 	t.Run("fail if validate() nil", TestValidateFuncNil)
 	t.Run("fail if validate() fails", TestValidateFails)

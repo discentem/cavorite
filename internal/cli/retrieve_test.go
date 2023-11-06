@@ -209,7 +209,7 @@ func TestRetrieveAlreadyHaveAllFilesLocally(t *testing.T) {
 		"someFile.cfile",
 	)
 	require.NoError(t, err)
-	fmt.Print(fmt.Sprintf("w.String() : %s", w.String()))
+	fmt.Printf("w.String() : %s", w.String())
 	require.True(t, strings.Contains(w.String(), "retrieval not needed, all requested files are present from"))
 }
 func TestShouldRetrieve(t *testing.T) {

@@ -28,8 +28,6 @@ func (o *osFsWithAbs) Abs(path string) (string, error) {
 	return filepath.Abs(path)
 }
 
-type fsWithAbsFn func() (fsWithAbs, error)
-
 var (
 	ErrTooManyFsyses = errors.New("too many fsyses, only one is supported")
 )

@@ -19,19 +19,19 @@ type Config struct {
 	Options   stores.Options               `json:"options" mapstructure:"options"`
 	Validate  func() error                 `json:"-"`
 	Expander  func(string) (string, error) `json:"-"`
+	Marshal   func(v any) ([]byte, error)  `json:"-"`
 }
 
 var (
 	Cfg Config
 )
 
-type dirExpander func(string) (string, error)
-
 var (
 	ErrValidateNil       = errors.New("cavorite config must have a Validate() function")
 	ErrValidate          = errors.New("validate() failed")
 	ErrDirExpander       = errors.New("dirExpander failed")
 	ErrDirExpanderNil    = errors.New("dirExpander cannot be nil")
+	ErrMarshalNil        = errors.New("marshal cannot be nil")
 	ErrUnsupportedStore  = errors.New("not a supported store type")
 	ErrConfigNotExist    = errors.New("config file does not exist")
 	ErrConfigDirNotExist = errors.New("config directory does not exist")
@@ -50,6 +50,9 @@ func InitalizeStoreTypeOf(
 		Validate: func() error {
 			return nil
 		},
+		Marshal: func(v any) ([]byte, error) {
+			return json.MarshalIndent(v, "", "  ")
+		},
 		Expander: homedir.Expand,
 	}
 }
@@ -61,7 +64,12 @@ func (c *Config) Write(fsys afero.Fs, sourceRepo string) error {
 	if err := c.Validate(); err != nil {
 		return fmt.Errorf("%w: %v", ErrValidate, err)
 	}
-	b, err := json.MarshalIndent(c, "", " ")
+
+	if c.Marshal == nil {
+		return ErrMarshalNil
+	}
+
+	b, err := c.Marshal(c)
 	if err != nil {
 		return err
 	}

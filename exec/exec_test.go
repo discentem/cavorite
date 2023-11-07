@@ -18,16 +18,54 @@ func (b *NopBufferCloser) Close() error {
 	return nil
 }
 
-func TestRealExecutorStream(t *testing.T) {
-	re := RealExecutor{
-		Cmd: exec.Command("bash", "test/artifacts/long_running.sh"),
+func TestRealExecutor(t *testing.T) {
+	tests := []struct {
+		name           string
+		exec           *RealExecutor
+		getWriteCloser func(buf *bytes.Buffer) io.WriteCloser
+		expectedErr    error
+		expected       string
+	}{
+		{
+			name: "stream to BufferCloser",
+			exec: &RealExecutor{
+				Cmd: exec.Command("bash", "test/artifacts/long_running.sh"),
+			},
+			getWriteCloser: func(buf *bytes.Buffer) io.WriteCloser {
+				return &NopBufferCloser{Buffer: buf}
+			},
+			expectedErr: nil,
+			expected:    "1 \n2 \n3 \n",
+		},
+		{
+			name: "RealExecutor initialized with call to .Command()",
+			getWriteCloser: func(buf *bytes.Buffer) io.WriteCloser {
+				return &NopBufferCloser{Buffer: buf}
+			},
+			exec: func() *RealExecutor {
+				re := &RealExecutor{}
+				re.Command("bash", "test/artifacts/long_running.sh")
+				return re
+			}(),
+			expectedErr: nil,
+			expected:    "1 \n2 \n3 \n",
+		},
 	}
-	out := bytes.Buffer{}
-	err := re.Stream(&NopBufferCloser{Buffer: &out})
-	assert.NoError(t, err)
-	assert.Equal(t, "1 \n2 \n3 \n", out.String())
-}
 
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			out := &bytes.Buffer{}
+			if test.getWriteCloser == nil {
+				t.Error("test.getWriteCloser must not be nil")
+				t.Fail()
+			}
+			wc := test.getWriteCloser(out)
+			err := test.exec.Stream(wc)
+			assert.Equal(t, test.expectedErr, err)
+			assert.Equal(t, test.expected, out.String())
+		})
+	}
+}
 func TestRealExecutorStreamNoPosters(t *testing.T) {
 	orig := os.Stdout
 	r, w, err := os.Pipe()
@@ -44,17 +82,6 @@ func TestRealExecutorStreamNoPosters(t *testing.T) {
 	out, _ := io.ReadAll(r)
 	// confirm default behavior of re.Stream works
 	assert.Equal(t, "1 \n2 \n3 \n", string(out))
-}
-
-func TestRealExecutorNilCmdStream(t *testing.T) {
-	re := RealExecutor{}
-	// if caller doesn't explicitly set RealExecutor.Cmd to some non-nil value in advance,
-	// re.Command still correctly sets the path/args
-	re.Command("bash", "test/artifacts/long_running.sh")
-	out := bytes.Buffer{}
-	err := re.Stream(&NopBufferCloser{Buffer: &out})
-	assert.NoError(t, err)
-	assert.Equal(t, "1 \n2 \n3 \n", out.String())
 }
 
 func TestRealExecutorAsExecutorStream(t *testing.T) {

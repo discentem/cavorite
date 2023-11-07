@@ -21,6 +21,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// bazel test //internal/cli_test fails due to TestRetrieveAlreadyHaveAllFilesLocally unless we initialize the logger here
+var (
+	w = bytes.NewBufferString("")
+)
+
+func init() {
+	logger.Init("test", true, false, w)
+}
 func TestRetrieveCmd(t *testing.T) {
 	expectedRetrieveCmdArgs := "retrieve ./test_file_one ./test_file_two"
 
@@ -163,9 +171,7 @@ func TestRetrieve(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestRetrieveAlreadyHaveAllFileLocally(t *testing.T) {
-	w := bytes.NewBufferString("")
-	logger.Init("TestRetrieveAlreadyHaveAllFileLocally", true, false, w)
+func TestRetrieveAlreadyHaveAllFilesLocally(t *testing.T) {
 	mTime, _ := time.Parse("2006-01-02T15:04:05.000Z", "2014-11-12T11:45:26.371Z")
 	sourceFsys, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
 		"someFile.cfile": {
@@ -181,7 +187,7 @@ func TestRetrieveAlreadyHaveAllFileLocally(t *testing.T) {
 			ModTime: &mTime,
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	bucket, err := testutils.MemMapFsWith(map[string]testutils.MapFile{
 		"repo/someFile": {
@@ -189,7 +195,7 @@ func TestRetrieveAlreadyHaveAllFileLocally(t *testing.T) {
 			ModTime: &mTime,
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = Retrieve(
 		context.Background(),
 		*sourceFsys,
@@ -202,11 +208,9 @@ func TestRetrieveAlreadyHaveAllFileLocally(t *testing.T) {
 		},
 		"someFile.cfile",
 	)
-	assert.NoError(t, err)
-	assert.True(t, strings.Contains(w.String(), "retrieval not needed, all requested files are present from"))
+	require.NoError(t, err)
+	require.True(t, strings.Contains(w.String(), "retrieval not needed, all requested files are present from"))
 }
-
-// TODO(discentem): finish this test
 func TestShouldRetrieve(t *testing.T) {
 	tests := []struct {
 		name           string

@@ -24,6 +24,14 @@ type MapFile struct {
 	ModTime *time.Time
 }
 
+type MemMapFsWithBrokenCreate struct {
+	afero.Fs
+}
+
+func (m *MemMapFsWithBrokenCreate) Create(name string) (afero.File, error) {
+	return nil, os.ErrPermission
+}
+
 // memMapFsWith creates a afero.MemMapFs from a map[string]mapFile
 func MemMapFsWith(files map[string]MapFile) (*afero.Fs, error) {
 	memfsys := afero.NewMemMapFs()

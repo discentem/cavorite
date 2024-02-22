@@ -1,4 +1,4 @@
-FROM gcr.io/bazel-public/bazel:latest@sha256:91d0c1fcbb9e46c562dab1b99eba360188fe5d1e2890f502b7af509219a3ff5d as bazel
+FROM gcr.io/bazel-public/bazel:latest@sha256:ad5916a7e27eeddbddb003d7671d5a8202c7346e3c682c059b27467b47c0f6d4 as bazel
 
 COPY . .
 

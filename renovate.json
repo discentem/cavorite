@@ -5,7 +5,7 @@
   ],
   "packageRules": [
     {
-      "matchManagers": ["github-actions","bazel"],
+      "matchManagers": ["github-actions","bazel", "gomod"],
       "groupName": "{{manager}}"
     }
 ]

@@ -8,10 +8,6 @@
       "matchManagers": ["bazel", "bazelisk", "github-actions", "gomod", "dockerfile"],
       "groupName": "{{manager}}",
       "excludePackageNames": ["rules_proto_grpc", "com_google_protobuf", "googleapis"]
-    },
-    {
-      "matchManagers": ["bazel", "bazelisk", "github-actions", "gomod", "dockerfile"],
-      "groupName": "{{manager}}",
     }
   ],
   "commitMessagePrefix": "[Renovatebot]"

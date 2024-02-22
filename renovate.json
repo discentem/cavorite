@@ -8,5 +8,6 @@
       "matchManagers": ["github-actions","bazel", "gomod", "dockerfile"],
       "groupName": "{{manager}}"
     }
-]
+  ],
+  "commitMessagePrefix": "[Renovatebot]"
 }

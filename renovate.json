@@ -5,7 +5,7 @@
   ],
   "packageRules": [
     {
-      "matchManagers": ["docker-compose", "npm", "nvm","github-actions","docker-file","regex", "bazel"],
+      "matchManagers": ["docker-compose", "npm", "nvm","github-actions","docker-file", "bazel"],
       "groupName": "{{manager}}"
     }
 ]

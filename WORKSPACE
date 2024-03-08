@@ -369,9 +369,9 @@ golangcilint_dependencies()
 
 http_archive(
     name = "aspect_bazel_lib",
-    sha256 = "b44310bef17d33d0e34a624dbbc74de595d37adc16546bd612d6f178eac426e7",
-    strip_prefix = "bazel-lib-1.34.2",
-    url = "https://github.com/aspect-build/bazel-lib/releases/download/v1.34.2/bazel-lib-v1.34.2.tar.gz",
+    sha256 = "6c25c59581041ede31e117693047f972cc4700c89acf913658dc89d04c338f8d",
+    strip_prefix = "bazel-lib-2.5.3",
+    url = "https://github.com/aspect-build/bazel-lib/releases/download/v2.5.3/bazel-lib-v2.5.3.tar.gz",
 )
 
 load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies")

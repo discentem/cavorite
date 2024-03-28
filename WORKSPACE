@@ -380,10 +380,10 @@ aspect_bazel_lib_dependencies()
 
 http_archive(
     name = "googleapis",
-    sha256 = "9d1a930e767c93c825398b8f8692eca3fe353b9aaadedfbcf1fca2282c85df88",
-    strip_prefix = "googleapis-64926d52febbf298cb82a8f472ade4a3969ba922",
+    sha256 = "e191f0024d7c594934dfcbccea57ba5daafea1c530aa7d39bb5ca3b9e3cf9112",
+    strip_prefix = "googleapis-8fe68cf33c51264152c321321ee78b8a3197f497",
     urls = [
-        "https://github.com/googleapis/googleapis/archive/64926d52febbf298cb82a8f472ade4a3969ba922.zip",
+        "https://github.com/googleapis/googleapis/archive/8fe68cf33c51264152c321321ee78b8a3197f497.zip",
     ],
 )
 

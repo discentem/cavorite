@@ -1,42 +1,18 @@
 # Cavorite
 
-<img src="images/cavorite_logo.png" alt="drawing" width="80" background-color="transparent" align="left"/> A cli tool that makes it easy to track large, binary files in source control repositories by making them "lighter weight" and making binaries less of a burden. Cavorite is compatible with _any_ SCM system.
+<img src="images/cavorite_logo.png" alt="drawing" width="80" background-color="transparent" align="left"/> A cli tool that makes it easy to track large, binary files in source control repositories by swapping the binary files with json metadata. Cavorite is compatible with _any_ SCM system because the binaries are tracked by json metadata files.
 
 <br/>
 
 ## **Disclaimer**
 
-This is not production ready nor feature complete. See [Issues](https://github.com/discentem/cavorite/issues) for upcoming features.
+This is not production ready nor feature complete. See [Issues](https://github.com/discentem/cavorite/issues) for future features.
 
-Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri, this is a re-write in Go with support for s3, Minio, Google Cloud Storage, and other storage systems through plugins. See [stores](stores) for information about implementing new storage drivers.
+Inspired by https://github.com/facebook/IT-CPE/tree/main/pantri, Cavorite is a re-write in Go with support for s3, Minio, Google Cloud Storage, and other storage systems through plugins. See [stores](stores) for information about implementing new storage drivers.
 
-## Development
+## Using Cavorite
 
-### Prerequisites 
-
-Install [bazelisk](https://github.com/bazelbuild/bazelisk)
-
-### How to build
-
-#### with Bazel
-
-`make`
-
-#### with go build
-
-`make go_build`
-
-### Linting
-
-`make lint`
-
-### Unit Tests
-
-`make test`
-
-## End-to-end testing workflow
-
-### Minio (S3)
+### Minio (S3) backend
 
 > These steps for Minio are also performed automatically by our integration test on each pull request and push: [.github/workflows/integration-test.yaml](.github/workflows/integration-test.yaml)
 
@@ -73,7 +49,7 @@ Install [bazelisk](https://github.com/bazelbuild/bazelisk)
    $ export AWS_SECRET_ACCESS_KEY=minioadmin
    ```
 
-1. Initialize cavorite. This assumes default Minio credentials. **You should change these credentials for a production deployment**.
+1. Initialize cavorite.
 
    ```shell
    $ $cavorite_BIN init ~/some_git_project --backend_address http://127.0.0.1:9000/test  --store_type=s3 --region="us-east-1"
@@ -136,7 +112,7 @@ Install [bazelisk](https://github.com/bazelbuild/bazelisk)
    2022/10/18 21:57:53 Retrieving [~/some_git_project/googlechromebeta.dmg]
    ```
 
-### Testing a plugin-based backend (experimental)
+### Plugin backend (arbitrary storage backends at runtime!)
 
 > This is not yet tested automatically in Github Actions.
 
@@ -220,3 +196,27 @@ Install [bazelisk](https://github.com/bazelbuild/bazelisk)
    ```
 
 1. `$CAVORITE_BIN retrieve blob.txt.cfile`
+
+## Development
+
+### Prerequisites 
+
+Install [bazelisk](https://github.com/bazelbuild/bazelisk)
+
+### How to build
+
+#### with Bazel
+
+`make`
+
+#### with go build
+
+`make go_build`
+
+### Linting
+
+`make lint`
+
+### Unit Tests
+
+`make test`

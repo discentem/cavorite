@@ -314,11 +314,11 @@ gazelle_dependencies()
 # Ref: https://github.com/rules-proto-grpc/rules_proto_grpc/blob/master/docs/overriding_deps.rst
 http_archive(
     name = "com_google_protobuf",
-    sha256 = "8b28fdd45bab62d15db232ec404248901842e5340299a57765e48abe8a80d930",
-    strip_prefix = "protobuf-3.20.1",
+    sha256 = "e4ff2aeb767da6f4f52485c2e72468960ddfe5262483879ef6ad552e52757a77",
+    strip_prefix = "protobuf-27.2",
     urls = [
-        "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.20.1.tar.gz",
-        "https://github.com/protocolbuffers/protobuf/archive/v3.20.1.tar.gz",
+        "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v27.2.tar.gz",
+        "https://github.com/protocolbuffers/protobuf/archive/v27.2.tar.gz",
     ],
 )
 

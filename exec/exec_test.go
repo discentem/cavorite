@@ -115,3 +115,21 @@ func TestWriteOutput(t *testing.T) {
 		assert.Equal(t, test.expected, out.String())
 	}
 }
+
+type noopWriteCloser struct {
+	data string
+}
+
+func (_ noopWriteCloser) Close() error {
+	return nil
+}
+func (_ noopWriteCloser) Write(p []byte) (n int, err error) {
+	return 0, nil
+}
+
+func TestWithPosters(t *testing.T) {
+	re := &RealExecutor{}
+	WithPosters(noopWriteCloser{
+		data: "blah",
+	})(re)
+}

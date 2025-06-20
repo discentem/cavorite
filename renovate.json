@@ -1,0 +1,14 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["bazel", "bazelisk", "github-actions", "gomod", "dockerfile"],
+      "groupName": "{{manager}}",
+      "excludePackageNames": ["rules_proto_grpc", "com_google_protobuf", "googleapis"]
+    }
+  ],
+  "commitMessagePrefix": "[Renovatebot]"
+}

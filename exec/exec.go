@@ -18,6 +18,23 @@ var (
 
 type RealExecutor struct {
 	*exec.Cmd
+	posters []io.WriteCloser
+}
+
+type RealExecutorOption func(e *RealExecutor)
+
+func WithPosters(posters ...io.WriteCloser) RealExecutorOption {
+	return func(e *RealExecutor) {
+		e.posters = posters
+	}
+}
+
+func NewRealExecutor(opts ...RealExecutorOption) *RealExecutor {
+	re := &RealExecutor{}
+	for _, opt := range opts {
+		opt(re)
+	}
+	return re
 }
 
 func (e *RealExecutor) Command(bin string, args ...string) {
@@ -45,7 +62,12 @@ func (e *RealExecutor) Stream(posters ...io.WriteCloser) error {
 	}
 
 	if posters == nil {
-		posters = []io.WriteCloser{os.Stdout}
+		if e.posters == nil {
+			posters = []io.WriteCloser{os.Stdout}
+		} else {
+			posters = e.posters
+		}
+
 	}
 
 	for _, pipe := range inputPipes {

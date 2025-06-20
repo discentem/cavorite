@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type NopBufferCloser struct {
@@ -114,4 +115,31 @@ func TestWriteOutput(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, test.expected, out.String())
 	}
+}
+
+type mockWriteCloser struct {
+	io.Writer
+}
+
+func (m *mockWriteCloser) Close() error {
+	return nil
+}
+
+func TestWithPosters_AssignsExactInstances(t *testing.T) {
+	var buf1, buf2 bytes.Buffer
+	w1 := &mockWriteCloser{Writer: &buf1}
+	w2 := &mockWriteCloser{Writer: &buf2}
+
+	exec := RealExecutor{}
+	WithPosters(w1, w2)(&exec)
+
+	require.Len(t, exec.posters, 2)
+
+	// Confirm the WriteClosers themselves are the same (not just equal)
+	require.Same(t, w1, exec.posters[0])
+	require.Same(t, w2, exec.posters[1])
+
+	// Also confirm that the internal buffers are the same instances
+	require.Same(t, &buf1, exec.posters[0].(*mockWriteCloser).Writer)
+	require.Same(t, &buf2, exec.posters[1].(*mockWriteCloser).Writer)
 }

@@ -2,10 +2,10 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
     name = "io_bazel_rules_go",
-    sha256 = "51dc53293afe317d2696d4d6433a4c33feedb7748a9e352072e2ec3c0dafd2c6",
+    sha256 = "86d3dc8f59d253524f933aaf2f3c05896cb0b605fc35b460c0b4b039996124c6",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.40.1/rules_go-v0.40.1.zip",
-        "https://github.com/bazelbuild/rules_go/releases/download/v0.40.1/rules_go-v0.40.1.zip",
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.60.0/rules_go-v0.60.0.zip",
+        "https://github.com/bazelbuild/rules_go/releases/download/v0.60.0/rules_go-v0.60.0.zip",
     ],
 )
 
@@ -15,10 +15,10 @@ go_rules_dependencies()
 
 http_archive(
     name = "bazel_gazelle",
-    sha256 = "ecba0f04f96b4960a5b250c8e8eeec42281035970aa8852dda73098274d14a1d",
+    sha256 = "de86bb09ddac514d9831cd0af5addb49f196eff66cf7c779a595b410cbe40253",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.29.0/bazel-gazelle-v0.29.0.tar.gz",
-        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.29.0/bazel-gazelle-v0.29.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.51.0/bazel-gazelle-v0.51.0.tar.gz",
+        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.51.0/bazel-gazelle-v0.51.0.tar.gz",
     ],
 )
 
@@ -32,10 +32,10 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 
 http_archive(
     name = "bazel_skylib",
-    sha256 = "b8a1527901774180afc798aeb28c4634bdccf19c4d98e7bdd1ce79d1fe9aaad7",
+    sha256 = "3b5b49006181f5f8ff626ef8ddceaa95e9bb8ad294f7b5d7b11ea9f7ddaf8c59",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.4.1/bazel-skylib-1.4.1.tar.gz",
-        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.4.1/bazel-skylib-1.4.1.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.9.0/bazel-skylib-1.9.0.tar.gz",
+        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.9.0/bazel-skylib-1.9.0.tar.gz",
     ],
 )
 
@@ -314,11 +314,11 @@ gazelle_dependencies()
 # Ref: https://github.com/rules-proto-grpc/rules_proto_grpc/blob/master/docs/overriding_deps.rst
 http_archive(
     name = "com_google_protobuf",
-    sha256 = "8b28fdd45bab62d15db232ec404248901842e5340299a57765e48abe8a80d930",
-    strip_prefix = "protobuf-3.20.1",
+    sha256 = "ccff8964efdc4052f0b3579ad503dba28729c28fb0cf4245c060ec17667666aa",
+    strip_prefix = "protobuf-3.29.5",
     urls = [
-        "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.20.1.tar.gz",
-        "https://github.com/protocolbuffers/protobuf/archive/v3.20.1.tar.gz",
+        "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.29.5.tar.gz",
+        "https://github.com/protocolbuffers/protobuf/archive/v3.29.5.tar.gz",
     ],
 )
 
@@ -359,7 +359,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 git_repository(
     name = "com_github_ash2k_bazel_tools",
-    commit = "2add5bb84c2837a82a44b57e83c7414247aed43a",
+    commit = "415483a9e13342a6603a710b0296f6d85b8d26bf",
     remote = "https://github.com/ash2k/bazel-tools.git",
 )
 
@@ -369,9 +369,9 @@ golangcilint_dependencies()
 
 http_archive(
     name = "aspect_bazel_lib",
-    sha256 = "6c25c59581041ede31e117693047f972cc4700c89acf913658dc89d04c338f8d",
-    strip_prefix = "bazel-lib-2.5.3",
-    url = "https://github.com/aspect-build/bazel-lib/releases/download/v2.5.3/bazel-lib-v2.5.3.tar.gz",
+    sha256 = "94e192033ca8027f26de71c9000a67ef9c73695c2b88e2c559045170917ead0c",
+    strip_prefix = "bazel-lib-2.22.5",
+    url = "https://github.com/aspect-build/bazel-lib/releases/download/v2.22.5/bazel-lib-v2.22.5.tar.gz",
 )
 
 load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies")
@@ -380,10 +380,10 @@ aspect_bazel_lib_dependencies()
 
 http_archive(
     name = "googleapis",
-    sha256 = "9d1a930e767c93c825398b8f8692eca3fe353b9aaadedfbcf1fca2282c85df88",
-    strip_prefix = "googleapis-64926d52febbf298cb82a8f472ade4a3969ba922",
+    sha256 = "f1b33bb68bd4e3362e5147b4ebe09bbf97de9c9b9afadf752b6b62c4b73406a4",
+    strip_prefix = "googleapis-0054cdcbd8ea44298f329d916d8173dd736fbaaa",
     urls = [
-        "https://github.com/googleapis/googleapis/archive/64926d52febbf298cb82a8f472ade4a3969ba922.zip",
+        "https://github.com/googleapis/googleapis/archive/0054cdcbd8ea44298f329d916d8173dd736fbaaa.zip",
     ],
 )
 

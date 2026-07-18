@@ -1,12 +1,12 @@
 # Adapted from https://github.com/bazelbuild/rules_go/issues/2111#issuecomment-1355927231
-load("@aspect_bazel_lib//lib:write_source_files.bzl", "write_source_files")
+# load("@aspect_bazel_lib//lib:write_source_files.bzl", "write_source_files")
 load(
-    "@io_bazel_rules_go//go:def.bzl",
+    "@rules_go//go:def.bzl",
     "GoLibrary",
     "go_context",
 )
 load(
-    "@io_bazel_rules_go//proto:compiler.bzl",
+    "@rules_go//proto:compiler.bzl",
     "GoProtoCompiler",
 )
 
@@ -62,13 +62,13 @@ output_go_library_srcs = rule(
         ),
         "compiler": attr.label(
             providers = [GoProtoCompiler],
-            default = "@io_bazel_rules_go//proto:go_proto",
+            default = "@rules_go//proto:go_proto",
         ),
         "_go_context_data": attr.label(
-            default = "@io_bazel_rules_go//:go_context_data",
+            default = "@rules_go//:go_context_data",
         ),
     },
-    toolchains = ["@io_bazel_rules_go//go:toolchain"],
+    toolchains = ["@rules_go//go:toolchain"],
 )
 
 def write_go_proto_srcs(name, go_proto_library, src, visibility = None):
@@ -80,10 +80,10 @@ def write_go_proto_srcs(name, go_proto_library, src, visibility = None):
         visibility = ["//visibility:private"],
     )
 
-    write_source_files(
-        name = name,
-        files = {
-            src: generated_src,
-        },
-        visibility = visibility,
-    )
+    # write_source_files(
+    #     name = name,
+    #     files = {
+    #         src: generated_src,
+    #     },
+    #     visibility = visibility,
+    # )

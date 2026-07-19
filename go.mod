@@ -1,6 +1,6 @@
 module github.com/discentem/cavorite
 
-go 1.22
+go 1.26
 
 require (
 	cloud.google.com/go/storage v1.39.0

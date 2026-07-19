@@ -1,4 +1,4 @@
-FROM golangci/golangci-lint:v1.56.2-alpine
+FROM golangci/golangci-lint:v1.59.1-alpine
 
 WORKDIR /app
 

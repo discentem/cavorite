@@ -25,8 +25,8 @@ go_proto_library(
 )
 
 # needed for golangci-lint to pass outside of bazel
-# write_go_proto_srcs(
-#     name = "write_generated_protos",
-#     src = "plugin.pb.go",
-#     go_proto_library = ":pluginproto_go_proto",
-# )
+write_go_proto_srcs(
+    name = "write_generated_protos",
+    src = "plugin.pb.go",
+    go_proto_library = ":pluginproto_go_proto",
+)

@@ -1,4 +1,9 @@
-FROM golangci/golangci-lint:v1.56.2
+FROM golang:1.26.5-alpine
+
+# Install golangci-lint
+RUN apk add --no-cache git && \
+    go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.60.3
+
 WORKDIR /app
 
 COPY . .

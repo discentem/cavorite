@@ -13,5 +13,7 @@
         "coveredGutterStyle": "blockgreen",
         "uncoveredGutterStyle": "blockred"
     },
-    "go.coverOnSingleTest": true
+    "go.coverOnSingleTest": true,
+    "git.enabled": false,
+    "makefile.configureOnOpen": false
 }

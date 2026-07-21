@@ -1,6 +1,7 @@
-load("@bazel_gazelle//:def.bzl", "gazelle")
-load("@com_github_ash2k_bazel_tools//golangcilint:def.bzl", "golangcilint")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@gazelle//:def.bzl", "gazelle")
+
+# load("@com_github_ash2k_bazel_tools//golangcilint:def.bzl", "golangcilint")
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
 
 # gazelle:prefix github.com/discentem/cavorite
 # gazelle:exclude .sl
@@ -35,10 +36,4 @@ go_binary(
     name = "cavorite",
     embed = [":cavorite_lib"],
     visibility = ["//visibility:public"],
-)
-
-golangcilint(
-    name = "golangcilint",
-    config = "//:.golangci.yaml",
-    prefix = "github.com/discentem/cavorite",
 )

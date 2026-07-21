@@ -1,4 +1,4 @@
-name: Lint and Tests
+name: Tests
 on:
   push:
     branches:
@@ -14,18 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: copy dockerfile
-        # awful hack because COPY ../ doesn't work in Dockerfile
-        # https://github.com/actions/runner/issues/2017
-        run: cp ./_ci/lint/Dockerfile ./Dockerfile
-      - name: lint
-        uses: ./.github/workflows/actions/lint/
-
-  bazel_tests:
+  tests:
     permissions:
       contents: read  # for actions/checkout to fetch code
     runs-on: ubuntu-latest

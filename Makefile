@@ -10,7 +10,7 @@ gazelle:
 	bazel run :gazelle
 
 bazel_build: gazelle
-	bazel build :cavorite
+	bazel build //:cavorite
 	@echo Copy, paste, and execute this in your shell for convenience:
 	@echo
 	@echo CAVORITE_BIN=$(PWD)/$(CAVORITE_BIN)

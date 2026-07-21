@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/logger"
 	"github.com/spf13/cobra"
@@ -28,7 +27,7 @@ func ExecuteWithContext(ctx context.Context) error {
 
 func rootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   fmt.Sprintf(program.Name),
+		Use:   program.Name,
 		Short: "A source control friendly binary storage system",
 		Long:  "A source control friendly binary storage system",
 		// PersistentPreRun -- all downstream cmds will inherit this fn()

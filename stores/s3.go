@@ -2,12 +2,16 @@ package stores
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"net/url"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
@@ -21,6 +25,21 @@ import (
 
 	s3manager "github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 )
+
+// hashWriterAt wraps io.WriterAt and computes a hash of all bytes written to it
+type hashWriterAt struct {
+	w      io.WriterAt
+	hasher hash.Hash
+	mu     sync.Mutex
+}
+
+func (h *hashWriterAt) WriteAt(p []byte, off int64) (n int, err error) {
+	// Hash bytes before writing (thread-safe for concurrent writes)
+	h.mu.Lock()
+	h.hasher.Write(p)
+	h.mu.Unlock()
+	return h.w.WriteAt(p, off)
+}
 
 type S3Downloader interface {
 	Download(
@@ -205,25 +224,35 @@ func (s *S3Store) Retrieve(ctx context.Context, mmap metadata.CfileMetadataMap, 
 			Bucket: aws.String(s3BucketName),
 			Key:    aws.String(m.Name),
 		}
-		// Download the file
-		_, err = s.s3Downloader.Download(ctx, f, obj)
+
+		// Hash the file while downloading with concurrent WriteAt support
+		hw := &hashWriterAt{
+			w:      f,
+			hasher: sha256.New(),
+		}
+
+		// Download the file and compute hash simultaneously
+		_, err = s.s3Downloader.Download(ctx, hw, obj)
 		if err != nil {
 			result = multierr.Append(result, err)
 			continue
 		}
 
-		matches, err := metadata.HashFromCfileMatches(s.fsys, cfile, m.Checksum)
-		if err != nil {
+		// Verify computed hash matches expected checksum
+		computedHash := hex.EncodeToString(hw.hasher.Sum(nil))
+		if computedHash != m.Checksum {
+			logger.Infof("Hash mismatch, got %s but expected %s", computedHash, m.Checksum)
+			err := errors.New("hashes don't match, Retrieve aborted")
+			if rmErr := s.fsys.Remove(m.Name); rmErr != nil {
+				result = multierr.Append(result, rmErr)
+				continue
+			}
 			result = multierr.Append(result, err)
 			continue
 		}
-		if !matches {
-			logger.V(2).Infof("hash for %s did not match expected hash (%q) in %q", m.Name, m.Checksum, cfile)
-			if err := s.fsys.Remove(m.Name); err != nil {
-				result = multierr.Append(result, err)
-				continue
-			}
-			result = multierr.Append(result, metadata.ErrRetrieveFailureHashMismatch)
+
+		if err := f.Close(); err != nil {
+			result = multierr.Append(result, err)
 			continue
 		}
 	}

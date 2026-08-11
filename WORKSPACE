@@ -573,11 +573,11 @@ gazelle_dependencies()
 # Ref: https://github.com/rules-proto-grpc/rules_proto_grpc/blob/master/docs/overriding_deps.rst
 http_archive(
     name = "com_google_protobuf",
-    sha256 = "8b28fdd45bab62d15db232ec404248901842e5340299a57765e48abe8a80d930",
-    strip_prefix = "protobuf-3.20.1",
+    sha256 = "e127ea69dd7be4e88abdd95845fb6c30d25d96971d95827e92b70e2e910d46a1",
+    strip_prefix = "protobuf-35.0",
     urls = [
-        "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v3.20.1.tar.gz",
-        "https://github.com/protocolbuffers/protobuf/archive/v3.20.1.tar.gz",
+        "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v35.0.tar.gz",
+        "https://github.com/protocolbuffers/protobuf/archive/v35.0.tar.gz",
     ],
 )
 
@@ -585,9 +585,9 @@ load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 http_archive(
     name = "rules_proto_grpc",
-    sha256 = "2a0860a336ae836b54671cbbe0710eec17c64ef70c4c5a88ccfd47ea6e3739bd",
-    strip_prefix = "rules_proto_grpc-4.6.0",
-    urls = ["https://github.com/rules-proto-grpc/rules_proto_grpc/releases/download/4.6.0/rules_proto_grpc-4.6.0.tar.gz"],
+    sha256 = "a3f5e589e78ddcf8e8007cd1c8e1ee2df4d51e9da4e67b1861f06ff21905e926",
+    strip_prefix = "rules_proto_grpc-5.8.0",
+    urls = ["https://github.com/rules-proto-grpc/rules_proto_grpc/releases/download/5.8.0/rules_proto_grpc-5.8.0.tar.gz"],
 )
 
 load("@rules_proto_grpc//:repositories.bzl", "rules_proto_grpc_repos", "rules_proto_grpc_toolchains")
@@ -628,9 +628,9 @@ golangcilint_dependencies()
 
 http_archive(
     name = "aspect_bazel_lib",
-    sha256 = "6c25c59581041ede31e117693047f972cc4700c89acf913658dc89d04c338f8d",
-    strip_prefix = "bazel-lib-2.5.3",
-    url = "https://github.com/aspect-build/bazel-lib/releases/download/v2.5.3/bazel-lib-v2.5.3.tar.gz",
+    sha256 = "c6e2be1c7a30ef6de9d0e15cd3a4b6bc62fe156848117c0a1eeedf97561a4f6b",
+    strip_prefix = "bazel-lib-3.3.1",
+    url = "https://github.com/aspect-build/bazel-lib/releases/download/v3.3.1/bazel-lib-v3.3.1.tar.gz",
 )
 
 load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies")

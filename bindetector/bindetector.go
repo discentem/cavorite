@@ -1,23 +1,17 @@
 package bindetector
 
 import (
-	"regexp"
-
-	"github.com/google/logger"
+	shell "github.com/discentem/cavorite/exec"
 )
 
-func IsBinary(filepath string) bool {
+func IsBinary(filepath string) (bool, error) {
 	// for now, we must shell out to /usr/bin/file or respective windows exe called file.exe provided by git
 	// someday, binary determination could be implemented in-house without the need for external tools but until then
 	// shelling out is a necessary evil
-	return isBinary(execFile(filepath))
-}
-
-func isBinary(bytes []byte) bool {
-	matched, err := regexp.Match(`binary`, bytes)
+	e := shell.NewRealExecutor()
+	binary, err := fileIsABinary(e, filepath)
 	if err != nil {
-		logger.Errorf("isBinary regex matching error: %v", err)
+		return false, err
 	}
-
-	return matched
+	return binary, nil
 }

@@ -30,10 +30,8 @@ lint:
 	docker build --tag cavoritelint -f _ci/lint/Dockerfile .
 	docker run cavoritelint
 
-test: gazelle
+tests: gazelle
 	bazel test //...
-
-tests: gazelle test
 
 minio:
 	docker run -p 9000:9000 -p 9001:9001 quay.io/minio/minio server /data --console-address ":9001"

@@ -5,28 +5,35 @@ package bindetector
 
 import (
 	"bytes"
-	"os/exec"
+	"errors"
 
-	"github.com/google/logger"
+	shell "github.com/discentem/cavorite/exec"
 )
 
-func execFile(filepath string) []byte {
-	var stdoutBuf, stderrBuf bytes.Buffer
-	cmd := exec.Command(
+func fileIsABinary(executor shell.Executor, filepath string) (bool, error) {
+	buf := new(bytes.Buffer)
+
+	executor.Command(
 		"/usr/bin/file",
 		"--mime-encoding",
 		"-b",
 		filepath,
 	)
 
-	cmd.Stdout = &stdoutBuf
-	cmd.Stderr = &stderrBuf
-
-	err := cmd.Run()
-	if err != nil {
-		logger.Errorf("isBinary cmd run error: %v", err)
+	if err := executor.Stream(&nopWriteCloser{buf}); err != nil {
+		return false, err
 	}
 
-	return stdoutBuf.Bytes()
+	output := bytes.TrimSpace(buf.Bytes())
+	if len(output) == 0 {
+		return false, errors.New("fileIsABinary: no output from file command")
+	}
 
+	return bytes.Contains(output, []byte("binary")), nil
 }
+
+type nopWriteCloser struct {
+	*bytes.Buffer
+}
+
+func (n *nopWriteCloser) Close() error { return nil }

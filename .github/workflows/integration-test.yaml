@@ -3,76 +3,35 @@ on:
   pull_request:
     branches:
     - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
   integration_tests:
-    name: Integration Testing - S3 Download and Retrieval of Test PKG file
-    runs-on: ubuntu-latest
-    
+    name: S3 (rustfs) and localstore plugin roundtrip tests
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install package
-        run: |
-          sudo apt-get -y install jq
       - uses: bazelbuild/setup-bazelisk@v3
       - name: Mount bazel cache
         uses: actions/cache@v4
         with:
           path: "~/.cache/bazel"
-          key: bazel
-
-      - name: Setup minio S3 bucket
-        run: |
-          wget https://dl.min.io/server/minio/release/linux-amd64/minio
-          chmod +x minio
-          MINIO_ROOT_USER=minioadmin MINIO_ROOT_PASSWORD=minioadmin ./minio server /tmp --address ":9000" --console-address ":9001" &
-
-      - name: Init minio S3 bucket
-        run: |
-          export AWS_ACCESS_KEY_ID=minioadmin
-          export AWS_SECRET_ACCESS_KEY=minioadmin
-          export AWS_EC2_METADATA_DISABLED=true
-          aws --endpoint-url http://127.0.0.1:9000/ s3 mb s3://test
-
-      - name: Build via bazel
-        run: bazel build //...
-      
-      - name: Setup /tmp folder to test cavorite out
-        run: |
-          mkdir -p /tmp/some_git_project
-          cp ./bazel-bin/cavorite_/cavorite /tmp/some_git_project/cavorite
-          chmod a+x /tmp/some_git_project/cavorite
-
-      - name: Init cavorite from bazel build output
-        run: |
-          export AWS_ACCESS_KEY_ID=minioadmin
-          export AWS_SECRET_ACCESS_KEY=minioadmin
-          cd /tmp/some_git_project
-          ./cavorite init /tmp/some_git_project --backend_address http://127.0.0.1:9000/test --store_type=s3 --region="us-east-1"
-
-      - name: Download and Upload some small package to cavorite test S3/minio bucket
-        run: |
-          export AWS_ACCESS_KEY_ID=minioadmin
-          export AWS_SECRET_ACCESS_KEY=minioadmin
-          cd /tmp/some_git_project
-          wget https://github.com/macadmins/nudge/releases/download/v1.1.11.81465/Nudge_Suite-1.1.11.81465.pkg -O nudge_suite.pkg
-          ./cavorite upload nudge_suite.pkg --vv --debug
-
-      - name: Verify cavorite file
-        run: |
-          cd /tmp/some_git_project
-          jq -r '.name == "nudge_suite.pkg"' nudge_suite.pkg.cfile
-          jq -r '.checksum == "7f5b3babb0ed6a299ad588a6d79ee6fe17aa1a20f7e4b6e16f9c7acf1fe36323"' nudge_suite.pkg.cfile
-
-      - name: Test File Retrieval with cavorite from test S3/minio bucket
-        run: |
-          export AWS_ACCESS_KEY_ID=minioadmin
-          export AWS_SECRET_ACCESS_KEY=minioadmin
-          cd /tmp/some_git_project
-          rm -f ./nudge_suite.pkg
-          ./cavorite retrieve nudge_suite.pkg.cfile --vv --debug
+          key: bazel-${{ matrix.os }}
+      - name: Install jq
+        if: runner.os == 'Linux'
+        run: sudo apt-get -y install jq
+      - name: Run integration tests
+        run: ./scripts/run-all-tests.sh
